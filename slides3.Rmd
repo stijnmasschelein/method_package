@@ -1,0 +1,790 @@
+---
+title: "Control Variables and Instrumental Variables"
+author: "Stijn Masschelein"
+date: "`r format(Sys.Date(), '%B, %Y')`"
+output:
+    xaringan::moon_reader:
+        css: "xaringan-themer.css"
+        nature:
+            countIncrementalSlides: false
+            ratio: 16:9
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(dev = 'svg')
+options(htmltools.preserve.raw = FALSE)
+library(tidyverse)
+library(cowplot)
+theme_set(theme_cowplot(font_size = 18))
+library(viridis)
+library(stargazer)
+library(DiagrammeR)
+library(xaringan)
+options(tibble.width = 60)
+options(width = 60)
+```
+
+```{r xaringan-themer, include=FALSE, warning=FALSE}
+uwa_blue = "#003087"
+uwa_gold = "#DAAA00"
+library(xaringanthemer)
+style_duo_accent(
+    primary_color = uwa_blue, #UWA blue
+    secondary_color = uwa_gold,  #UWA gold
+    header_font_google = google_font("Merriweather"),
+    text_font_google   = google_font("Montserrat", "300", "300i"),
+    code_font_google   = google_font("Fira Mono"),
+    table_row_even_background_color = "#FFFFFF" 
+)
+```
+
+class:center, middle
+
+# Causal Graphs 
+
+---
+
+## An Example
+
+<center>
+
+```{r, echo = FALSE,  fig.width = 10, results = 'asis'}
+grViz("
+digraph brand_capital{
+graph[ rankdir = LR ]
+node [shape = box, fontname = Helvetica]
+BrandCapital; CreditRating
+subgraph {
+rank = same; InfoEnvironment; FutureCashFlow;
+}
+{BrandCapital} -> {InfoEnvironment, FutureCashFlow};
+{InfoEnvironment, FutureCashFlow} -> CreditRating;
+}
+")
+```
+</center>
+
+---
+
+## Slightly more complicated example
+
+<center>
+
+```{r,  echo = FALSE, fig.width = 12, fig.height = 6}
+grViz("
+digraph brand_capital_complication{
+graph[layout = dot, rankdir = LR ]
+node [shape = box, fontname = Helvetica]
+CumulAds; BrandCapital; CreditRating
+subgraph {
+rank = same; OtherVars; InfoEnvironment; FutureCashFlow;
+}
+OtherVars -> {CumulAds, CreditRating}
+{CumulAds} -> {BrandCapital}
+{BrandCapital} -> {InfoEnvironment, FutureCashFlow};
+{InfoEnvironment, FutureCashFlow} -> CreditRating;
+}
+")
+```
+</center>
+
+---
+
+## Difference with equilibrium models
+
+- All the information that we have is in the causal graph 
+- Equilibrium model gives us some insight in the mechanisms and
+  underlying conceptual assumptions.
+  - E.g. signalling model
+  
+--
+
+<center>
+
+```{r,  echo = FALSE, fig.width = 9, fig.height = 4}
+grViz("
+digraph brand_capital{
+graph[layout = dot, rankdir = LR ]
+node [shape = box, fontname = Helvetica]
+Performance; Donation; Return;
+Performance -> Donation;
+Donation -> Return;
+}
+")
+```
+</center>
+
+---
+
+class:center, middle
+
+# Measurement error and control variables 
+
+---
+
+## Causal Graph 
+
+```{r,  echo = FALSE, fig.width = 9, fig.height = 4}
+grViz("
+digraph measurement_error{
+graph[layout = dot, rankdir = LR ]
+node [shape = box, fontname = Helvetica]
+subgraph{rank = same; CorporateGovernance; TechIndustry}
+{CorporateGovernance, TechIndustry} -> Performance
+}
+")
+```
+
+---
+
+## Simulation
+
+```{r, measurement}
+set.seed(230383)
+N <- 1000
+CorporateGovernance <- runif(N, 0, 10)
+TechIndustry <- rbinom(N, 1, .25)
+Performance <- rnorm(N, CorporateGovernance * .15 + TechIndustry * 10, 5)
+ds <- tibble(CG = CorporateGovernance,
+             TI = TechIndustry,
+             Performance = Performance)
+```
+
+```{r}
+lm1 <- lm(Performance ~ CG, data = ds)
+lm2 <- lm(Performance ~ CG + TechIndustry, data = ds)
+```
+
+---
+
+<small>
+```{r}
+stargazer(lm1, lm2, type="text", star.cutoffs = c(0.05, 0.01, 0.001),
+          keep.stat = c("n", "rsq"), no.space = T)
+```
+</small>
+
+
+???
+
+Measurement error typically decreases the effect and this is also what
+happened in the assignment. For instance, the difference between the
+donation and no donation should be 3 but it is less. 
+
+---
+
+## Assignment: CSR report
+
+```{r,  echo = FALSE, fig.width = 9, fig.height = 4}
+grViz("
+digraph measurement_error{
+graph[layout = dot]
+node [shape = box, fontname = Helvetica]
+subgraph{rank = same; Performance; CSR_report; Return}
+Performance -> {CSR_report; Scandals}
+CSR_report -> Return
+}
+")
+```
+
+---
+
+class:center, middle
+
+# Confounders and control variables
+
+
+---
+
+## Causal Graph 
+
+<center>
+
+```{r,  echo = FALSE, fig.width = 9, fig.height = 4}
+grViz("
+digraph confounder{
+graph[layout = dot, rankdir = LR ]
+node [shape = box, fontname = Helvetica]
+subgraph{rank = same; CorporateGovernance; TechIndustry}
+{CorporateGovernance, TechIndustry} -> Performance
+TechIndustry -> CorporateGovernance
+}
+")
+```
+
+</center>
+
+---
+
+## Simulation
+
+```{r, confounder}
+set.seed(230383)
+N <- 1000
+TechIndustry <- rbinom(N, 1, .25)
+CorporateGovernance <- rnorm(N, .5 - .2 * TechIndustry, .2)
+Performance <- rnorm(N, TechIndustry, 1)
+ds <- tibble(CG = CorporateGovernance,
+             TI = TechIndustry,
+             Performance = Performance)
+```
+
+
+```{r}
+lm1 <- lm(Performance ~ CG, data = ds)
+lm2 <- lm(Performance ~ CG + TechIndustry, data = ds)
+```
+
+---
+
+<small>
+```{r}
+stargazer(lm1, lm2, type="text", star.cutoffs = c(0.05, 0.01, .001),
+          keep.stat = c("n", "rsq"), no.space = T)
+```
+</small>
+
+---
+
+## Fixed effects as a special case
+
+> Effects that are the same for an industry, year, firm, individual
+> can be adjusted for by using fixed effects.
+
+--
+
+> We do not need to measure the specific variables and can just use
+> indicators variables for each category (e.g. for each different
+> industry).
+
+---
+
+## [A Gif by Nick Huntington-Klein](https://nickchk.com/causalgraphs.html)
+
+.pull-left[
+
+![Nick C. Huntington-Klein - Fixed Effects](https://nickchk.com/anim/Animation%20of%20Fixed%20Effects.gif)
+
+]
+
+.pull-right[
+
+<center>
+
+```{r,  echo = FALSE, fig.width = 6, fig.height = 4}
+grViz("
+digraph fixed{
+graph[layout = dot, rankdir = LR ]
+node [shape = box, fontname = Helvetica]
+subgraph{rank = same; X; Individual}
+{X, Individual} -> Y 
+Individual -> X
+}
+")
+```
+
+</center>
+
+]
+
+---
+
+## Speedboat Racing Example ([Booth and Yamamura, 2018](https://doi.org/10.1162/rest_a_00715))
+
+.pull-left[
+
+- Mixed-sex and single-sex races determined by lottery (*Randomisation*)
+- 7 race courses
+- Multiple races in the same month and location
+
+]
+
+--
+
+.pull-right[
+
+<center>
+
+```{r, fig.width=7, fig.height=6, fig.align="left", echo=FALSE}
+grViz("
+  digraph speedboat{
+  graph[layout = dot]
+  node [shape = box]
+  ave_ability; ltime; mixed_race; female; course;
+  month_location; circumstances;
+  circumstances -> female
+  {mixed_race, female, ave_ability, circumstances} -> ltime
+  female -> {ave_ability}
+  {course month_location} -> circumstances
+  }
+")
+```
+
+</center>
+
+]
+
+---
+
+## Implementation with `lfe`
+```{r speedrace, results = "none"}
+suppressMessages(library(lfe))
+load("data/econ_data/booth_yamamura.RData")
+table <- as_tibble(table) %>%
+  select(p_id, women_dat, time, ltime, mix_ra, course,
+         race_id, yrmt_locid)
+table_clean <- filter(table, complete.cases(table))
+# this takes too much memory.
+# time_reg <- lm(ltime ~ -1 + mix_ra + women_dat : mix_ra +
+#                  as.factor(course) + as.factor(yrmt_locid),
+#                data = table)
+ltime_reg <- felm(I(ltime * 1000) ~
+                   women_dat : mix_ra + mix_ra
+                 | course + p_id + yrmt_locid,
+                 data = table_clean)
+```
+
+---
+
+## Results of Boat Races
+
+<small>
+
+```{r, results = 'asis'}
+stargazer(ltime_reg, type="html", digits = 2, star.cutoffs = c(0.05, 0.01, .001),
+          keep.stat = c("n", "rsq"), no.space = T)
+```
+
+</small>
+
+---
+
+class:center, middle
+
+# Colliders 
+## Bad Controls, Survival Bias, Selection Bias, Self-Selection Bias 
+
+---
+
+## Causal Diagram 
+
+<center>
+
+```{r,  echo = FALSE, fig.width = 9, fig.height = 1.5}
+grViz("
+digraph confounder{
+graph[layout = dot, rankdir = LR ]
+node [shape = box, fontname = Helvetica]
+CorporateGovernance -> Performance
+Performance -> StockPrice 
+}
+")
+```
+
+--
+
+```{r,  echo = FALSE, fig.width = 9, fig.height = 1.5}
+grViz("
+digraph confounder{
+graph[layout = dot, rankdir = LR ]
+node [shape = box, fontname = Helvetica]
+CorporateGovernance -> Performance
+Performance -> Survival
+}
+")
+```
+
+--
+
+```{r,  echo = FALSE, fig.width = 9, fig.height = 1.5}
+grViz("
+digraph confounder{
+graph[layout = dot, rankdir = LR ]
+node [shape = box, fontname = Helvetica]
+CorporateGovernance -> Performance
+Performance -> SP500
+}
+")
+```
+
+--
+
+```{r,  echo = FALSE, fig.width = 9, fig.height = 1.5}
+grViz("
+digraph confounder{
+graph[layout = dot, rankdir = LR ]
+node [shape = box, fontname = Helvetica]
+CorporateGovernance -> Performance
+Performance -> IPO
+}
+")
+```
+
+</center>
+
+---
+
+
+## Example in the assignment
+
+---
+
+## Simulation Bad Control
+
+```{r corp_gov_collider}
+corp_gov <- rnorm(N, 0, 1)
+acc_profit <- rnorm(N, corp_gov, sd = 3)
+market_return <- rnorm(N, 2 * corp_gov + acc_profit, sd = 5)
+d <- tibble(corp_gov = corp_gov,
+       acc_profit = acc_profit,
+       market_return = market_return)
+lm1 <- lm(acc_profit ~ corp_gov, data = d)
+lm2 <- lm(acc_profit ~ corp_gov + market_return, data = d)
+```
+
+---
+
+## Results Bad Control 
+
+<small><small>
+```{r}
+stargazer(lm1, lm2, type="text", digits = 2, star.cutoffs = c(0.05, 0.01, .001),
+          keep.stat = c("n", "rsq"), no.space = T)
+```
+</small></small>
+
+---
+
+## Simulation Survival Bias
+
+```{r}
+d <- mutate(d, survival = if_else(market_return > 5, 1, 0))
+lm1 <- lm(acc_profit ~ corp_gov, data = filter(d, survival == 1))
+lm2 <- lm(acc_profit ~ corp_gov * survival, data = d)
+```
+
+---
+
+## Results Survival Bias
+
+<small><small>
+```{r}
+stargazer(lm1, lm2, type="text", digits = 2, star.cutoffs = c(0.05, 0.01, .001),
+          keep.stat = c("n", "rsq"), no.space = T)
+```
+</small></small>
+
+---
+
+## Visualisation of colliders 
+
+```{r, fig.align='center', fig.height=5, fig.width = 11, echo = FALSE,warning = FALSE}
+d <- mutate(d, survival2 = as.character(survival))
+plot_coll <- ggplot(d, aes(x = corp_gov, y = acc_profit))
+plot_coll1 <- plot_coll + geom_point(alpha = .1) +
+    geom_smooth(method = "lm", formula = y ~ x) +
+    ggtitle("Full Sample")
+plot_coll2 <- plot_coll + 
+  geom_point(aes(colour = survival2), alpha = .1) +
+  geom_smooth(aes(colour = survival2, group = survival2),
+              method = "lm", formula = y ~ x) + 
+  scale_colour_viridis(discrete = TRUE) + 
+  theme(legend.position = 'none') +
+  ggtitle("Survival vs No Survival")
+plot_coll3 <- ggplot(filter(d, survival == 1),
+                     aes(x = corp_gov, y = acc_profit)) + 
+  geom_smooth(method = "lm", formula = y ~ x) + 
+  geom_point(alpha = .1) +
+  ggtitle("Survival Only")
+plot_grid(plot_coll1, plot_coll2, plot_coll3, nrow = 1)
+```
+
+---
+
+class:center, middle
+
+# Instrumental Variable
+
+---
+
+## Causal Diagram
+
+
+.pull-left[
+
+<center>
+```{r, fig.width=9, fig.height=6, echo=FALSE}
+grViz("
+    digraph randomisation{
+    node [shape = box]
+    subgraph{
+      rank = same; x; y;
+    }
+    confounder; collider;
+    confounder -> {x, y};
+
+    {x, y} -> collider
+    edge [color = blue]
+    x -> y
+    }
+")
+```
+</center>
+
+]
+
+--
+
+.pull-right[
+
+<center>
+```{r, fig.width=9, fig.height=6, echo=FALSE}
+grViz("
+    digraph randomisation{
+    node [shape = box]
+    subgraph{
+      rank = same; x; y; iv;
+    }
+    random; confounder; collider;
+    confounder -> {x, y};
+
+    random -> iv;
+    {x, y} -> collider
+    edge [color = blue]
+    x -> y
+    iv -> x;
+    }
+")
+```
+</center>
+]
+
+---
+
+## Simulation and Implementation with `lfe`
+
+```{r simulation-iv}
+iv <- rnorm(N, 0, 1)
+confounder <- rnorm(N, 0, 1)
+x <- rnorm(N, .6 * iv - .6 * confounder, .6)
+y <- rnorm(N, .6 * x + .6 * confounder, .6)
+survival <- if_else(y + x > 0, 1, 0)
+d <- tibble(iv = iv, x = x, y = y,
+            confounder = confounder,
+            surivival = survival)
+surv <- filter(d, survival == 1)
+lm1 <- lm(y ~ x, d)
+lm2 <- lm(y ~ x + confounder, d)
+lm3 <- lm(y ~ x, surv)
+lm4 <- lm(y ~ x + confounder, surv)
+iv1 <- felm(y ~ 1 | 0 | (x ~ iv), data = d)
+iv2 <- felm(y ~ 1 | 0 | (x ~ iv), data = surv)
+```
+
+---
+
+## Simulation results with effect
+
+<small><small><small>
+```{r, results-iv}
+stargazer(lm1, lm2, lm3, lm4, iv1, iv2, type="text",
+          digits = 2, star.cutoffs = c(0.05, 0.01, .001),
+          keep.stat = c("n", "rsq"), no.space = T)
+```
+</small></small></small>
+
+---
+
+
+## Simulation and Implementation with `lfe`
+
+```{r simulation-iv2}
+iv <- rnorm(N, 0, 1)
+confounder <- rnorm(N, 0, 1)
+x <- rnorm(N, .6 * iv - .6 * confounder, .6)
+y <- rnorm(N, .6 * confounder, .6)
+survival <- if_else(y + x > 0, 1, 0)
+d <- tibble(iv = iv, x = x, y = y,
+            confounder = confounder,
+            surivival = survival)
+surv <- filter(d, survival == 1)
+lm1 <- lm(y ~ x, d)
+lm2 <- lm(y ~ x + confounder, d)
+lm3 <- lm(y ~ x, surv)
+lm4 <- lm(y ~ x + confounder, surv)
+iv1 <- felm(y ~ 1 | 0 | (x ~ iv), data = d)
+iv2 <- felm(y ~ 1 | 0 | (x ~ iv), data = surv)
+```
+
+---
+
+## Simulation results with no effect
+
+<small><small><small>
+```{r, results-iv2}
+stargazer(lm1, lm2, lm3, lm4, iv1, iv2, type="text",
+          digits = 2, star.cutoffs = c(0.05, 0.01, .001),
+          keep.stat = c("n", "rsq"), no.space = T)
+```
+</small></small></small>
+
+---
+
+## Example:Sitting Duck Governors [(Falk and Shelton, 2018)](https://pubs.aeaweb.org/doi/pdfplus/10.1257/pol.20160365)
+
+
+- Research Question: Does political uncertainty effect investment?
+- More uncertainty in a state when governor does not come up for
+  reelection.
+- State level laws with term limits (~ Random)
+
+---
+
+## Data
+
+```{r}
+library(readit)
+duck <- readit("data/econ_data/LameDuckData.dta") %>%
+  select(-starts_with("nstate"), -starts_with("stdum"),
+         -starts_with("yd_alt")) %>%
+  group_by(statename) %>%
+  arrange(year) %>%  
+  mutate(log_I_1 = lag(log_I), log_I_2 = lag(log_I, 2),
+         log_Y_1 = lag(log_Y), log_Y_2 = lag(log_Y, 2),
+         log_real_GDP_1 = lag(log_real_GDP),
+         log_real_GDP_2 = lag(log_real_GDP, 2)) %>%
+  ungroup() %>%  
+  arrange(statename) %>%
+  filter(year >= 1967, year <= 2004)
+```
+
+---
+
+## Reduced Form
+
+```{r}
+form_red <- formula(
+  log_I ~ gov_exogenous_middling + log_I_1 + log_I_2 +
+  log_Y + log_Y_1 + log_Y_2 + log_real_GDP + log_real_GDP_1 +
+  log_real_GDP_2
+  # fixed effects | iv formula | Clusters for standard errors|
+  | statename | 0 | statename
+  )
+red_reg <- felm(
+  formula = form_red,
+  data = duck)
+```
+
+---
+
+## 2 Stage Least Squares (2SLS)
+
+```{r}
+form_iv <- formula(log_I ~ log_I_1 + log_I_2 +
+  log_Y + log_Y_1 + log_Y_2 + log_real_GDP + log_real_GDP_1 +
+  log_real_GDP_2
+  # fixed effects
+  | statename
+  # 1st regression
+  | (uncertainty_continuous ~ gov_exogenous_middling)
+  # clusters for standard errors
+  | statename
+  )
+iv_reg <- felm(
+  formula = form_iv,
+  data = duck)
+
+```
+
+---
+
+## Results
+
+
+<small><small>
+```{r}
+stargazer(red_reg, iv_reg, iv_reg$stage1, type="text",
+          digits = 3, star.cutoffs = c(0.05, 0.01, .001),
+          keep.stat = c("n", "rsq"), no.space = T,
+          dep.var.labels = c('logI', 'uncertainty'),
+          keep = c("gov", "uncertainty"),
+          covariate.labels = c("govExogenous", "uncertainty", "3"))
+```
+</small></small>
+
+---
+
+## Diagnostics
+
+### Test for weak instrument
+
+```{r iv-diagnostics}
+# Weak Instruments
+summ_1st <- summary(iv_reg$stage1)
+summ_iv <- summary(iv_reg)
+weak_instruments <- summ_1st$iv1fstat
+prettyNum(weak_instruments, dig = 2)[4:6]
+
+```
+
+---
+
+### Sargan Test (Needs more instruments than endogenous variables)
+
+```{r}
+sargan(iv_reg)
+```
+
+---
+
+### Test for endogeneity (Durbin Watson)
+
+```{r}
+# Endogeneity Test - Durbin Watson (by hand)
+uncert_iv_beta <- coefficients(summ_iv)[9,1]
+uncert_iv_se <- coefficients(summ_iv)[9,2]
+# Regression assuming no iv needed
+form_lm <- formula(log_I ~ uncertainty_continuous +
+  log_I_1 + log_I_2 + log_Y + log_Y_1 + log_Y_2 +
+    log_real_GDP + log_real_GDP_1 + log_real_GDP_2
+  # fixed effects
+  | statename | 0 | statename
+  )
+
+lm_reg <- felm(formula = form_lm, data = duck)
+coef_lm_reg <- coefficients(summary(lm_reg))
+uncert_lm_beta <- coef_lm_reg[1,1]
+uncert_lm_se <- coef_lm_reg[1,2]
+duwa <- (uncert_iv_beta - uncert_lm_beta) /
+  sqrt(uncert_iv_se^2 - uncert_lm_se^2)
+print(duwa)
+```
+
+---
+
+class: center, middle
+
+# Pitching Template
+
+
+---
+
+## Pitching Format
+
+1. Description (Important)
+    - Title
+    - Research Question
+    - Key Paper
+    - Motivation
+2. THREE (IDioT) (Important)
+    - Idea 
+    - Data 
+    - Tools 
+3. TWO 
+    - What's new?
+    - So what?
+4. ONE contribution
+5. Other considerations.
+
+
