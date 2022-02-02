@@ -1,0 +1,130 @@
+---
+author: Stijn Masschelein
+title: introduction to Rstudio for Accounting and Finance
+---
+
+
+# Get the data
+
+We establish a connection with the WRDS databases with my account.
+
+```{r wrds_connection, eval = FALSE}
+library(here) # To better deal with the directory structure
+i_am("auxilary/introduction_to_rstudio_for_accfin.Rmd")
+library(RPostgres)
+wrds <- dbConnect(Postgres(),
+              host='wrds-pgdata.wharton.upenn.edu',
+              port=9737,
+              dbname='wrds',
+              user='stimas',
+              sslmode='require')
+```
+
+With an SQL string, we define which data we want. We send the SQL query to the database via de connection. We download the actual data and save in an R object. We close the data, see whether our dataset is the right one, and then save the R object as a file on our computer.
+
+```{r wrds_comp, eval = FALSE}
+library(tidyverse)
+sql1 <- "SELECT year, gvkey, cusip,
+       exec_fullname, coname, ceoann,
+       execid, bonus, salary,
+       stock_awards_fv, stock_unvest_val,
+       eip_unearn_num, eip_unearn_val,
+       option_awards, option_awards_blk_value,
+       option_awards_num, tdc1, tdc2,
+       shrown_tot_pct,
+       becameceo, joined_co, reason
+       FROM EXECCOMP.ANNCOMP
+       WHERE year > 2010 AND ceoann = 'CEO'"
+res <- dbSendQuery(wrds, sql1)
+compensation <- as_tibble(dbFetch(res)) %>%
+  rename_all(tolower)
+dbClearResult(res)
+glimpse(compensation)
+
+saveRDS(compensation, here("data", "us-compensation-new.RDS"))
+```
+
+Now, we do the same for the market value of the company.
+
+```{r wrds_value, eval = FALSE}
+gvkeys <- unique(compensation$gvkey)
+length(gvkeys)
+sql2 <- paste0("SELECT fyear, gvkey, mkvalt, ni ",
+            "FROM COMP.FUNDA ",
+            "WHERE fyear > 2010 ",
+            "AND gvkey in ('",
+            paste(gvkeys, collapse = "','"),
+            "')"
+           )
+res <- dbSendQuery(wrds, sql2)
+value <- as_tibble(dbFetch(res)) %>%
+  rename_all(tolower)
+dbClearResult(res)
+glimpse(value)
+value <- distinct(value)
+glimpse(value)
+
+saveRDS(value, here("data", "us-value-new.RDS"))
+```
+
+# Explore the data
+
+## With the tidyverse
+
+```{r, packages}
+library(tidyverse)
+```
+
+```{r}
+us_comp <- readRDS(here("data", "us-compensation-new.RDS"))
+glimpse(us_comp)
+```
+
+```{r}
+filter(us_comp, gvkey == "001004")
+```
+
+```{r}
+filter(us_comp, bonus == 0, year == 2012)
+```
+
+## A Gamestop to introduce the pipe
+
+1. Look for any company where "gamestop" is in the name of the company.
+2. Look for the `gvkey` of Gamestop. Then use `filter` with exactly that key.
+
+```{r gamestop}
+filter(us_comp, str_detect(tolower(coname),
+                           "gamestop"))
+filter(us_comp, gvkey == "145049")
+```
+
+## Moving on
+
+```{r}
+select(us_comp, year, coname, bonus, salary, total = tdc1)
+```
+
+We first build up the dataset with `select` and `mutate` and the pipe `%>%`. When we are satisfied with the result, we can save the dataset as an R object with the name `us_comp_small`.
+
+```{r}
+us_comp_small <-
+  select(us_comp, year, coname, bonus,
+       salary, total = tdc1) %>%
+    mutate(salary_percentage = salary/total)
+```
+
+
+## Quick descriptive statistics
+
+```{r}
+group_by(us_comp, gvkey) %>%
+    summarise(N = n(), N_CEO = n_distinct(execid),
+              average = mean(salary),
+              sd = sd(salary),
+              med = median(salary),
+              min = min(salary),
+              max = max(salary)) %>%
+    ungroup() %>%
+  filter(med > 1000)
+```
