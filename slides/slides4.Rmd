@@ -1,583 +1,747 @@
 ---
-title: "Introduction to Research Methods"
+title: "Research Design 1: Fixed Effects and Instrumental Variables"
 author: "Stijn Masschelein"
 date: "`r format(Sys.Date(), '%B, %Y')`"
 output:
-  slidy_presentation:
-    css: styles_presentation.css
-    font_adjustment: +1
-    highlight: kate
-    fig.width: 6
-    fig.height: 4
+    xaringan::moon_reader:
+        css: "xaringan-themer.css"
+        nature:
+            highlightLines: true
+            countIncrementalSlides: false
+            ratio: 16:9
 ---
 
-# Introduction
-
-## Packages and helper function
-
-```{r}
-pretty_ols = function(lm, digits = 2){
-  knitr::kable(apply(coefficients(summary(lm)), 1:2, 
-                function(x) prettyNum(x, dig = digits)),
-               format = "markdown")
-}
+```{r, setup, include = FALSE}
 library(tidyverse)
-library(lubridate)
 library(cowplot)
+theme_set(theme_cowplot(font_size = 18))
 library(DiagrammeR)
-library(viridis)
+library(fixest)
+library(modelsummary)
+uwa_blue = "#003087"
+uwa_gold = "#DAAA00"
+knitr::opts_chunk$set(dpi = 200, dev = "svg")
+gof_omit = "Adj|IC|Log"
 ```
 
-## Revision
+```{css, echo = FALSE, run = FALSE}
+.remark-slide tr:nth-child(even) {
+    background: #FFFFFF;
+}
+```
 
-<div class="content_slide">
-```{r libby-boxes-1, fig.cap = 'Libby Boxes', fig.align = 'center', echo = FALSE}
+class: middle
+
+## Did we not cover that already?
+
+- Yes, but briefly
+<br>
+- Yes, but starting from the perspective of a regression (and the code)
+
+???
+The regression perspective is not bad. It means that we can see that more advanced regression techniques can be implemented in our linear regression framework. It's also how most researchers in accounting and finance have been thought to think about research methods. However, there is a shift coming from economics where the focus is more on the research design.
+
+---
+
+class: center, middle
+
+# Research Design
+
+---
+
+class: middle
+
+## The focus is on Research Design
+
+- Which data should we use?
+     - For instance [Alcohol and Mortality, Chapter 5, The Effect](https://theeffectbook.net/ch-Identification.html#alcohol-and-mortality).
+
+<br>
+
+- Which comparison *identifies* the *effect* that we are interested in?
+     - Is there sufficient variation in the treatment and the outcome?
+     - Are we reasonably sure that there are no confounders or only a few and we can measure them? 
+
+???
+Is there sufficient variation that can identify the effect.
+- See also the pitching document
+- A specific example is the identification of performance effects
+
+---
+
+## Prevously, we used models and assumptions to identify effects
+
+.pull-left[
+
+### Mathematical models
+
+
+$$
+V = T^{\alpha_T} \Bigl( \frac{K}{\alpha_K} \Bigl)^{\alpha_K}
+                 \Bigl( \frac{L}{\alpha_L} \Bigl)^{\alpha_L}
+$$
+$$
+\alpha_T + \alpha_K + \alpha_L = 1
+$$
+
+- $V =$ The value of the firm
+- $K =$ Capital of the firm
+- $L =$ Labour of the firm
+- $T =$ CEO talent/skills/ability/experience
+
+
+]
+
+.pull-right[
+
+
+### DAGs
+
+
+<center>
+
+```{r, fig.width=2, fig.height=1.5, fig.align="left", echo=FALSE}
 grViz("
-    digraph libby_boxes{
-    graph [fontsize = 18, layout = 'dot'] 
-    
-    node [shape = box, group = 'cause_group']
-    cause [label = 'Performance']
-    m_cause [label = 'Change_Log_Value']
-    node [shape = box, group = 'effect_group']
-    effect [label = 'Pay']
-    m_effect [label = 'Change_Log_Wealth']
-    controls
-    
-    cause -> effect [label = '(1)']
-    m_cause -> m_effect [label = '(2)']
-    cause -> m_cause [label = ' (3) ']
-    effect -> m_effect [label = ' (4) ']
-    m_effect -> controls [dir=back, label = '(5)']
-    
-    subgraph{
-    rank = same; cause; effect;
-    }
-    subgraph{
-    rank = same; m_cause; m_effect; controls;
-    }
+  digraph speedboat{
+  graph[layout = dot]
+  node [shape = box]
+  ave_ability; ltime; mixed_race; female; course;
+  month_location; circumstances;
+  circumstances -> female
+  {mixed_race, female, ave_ability, circumstances} -> ltime
+  female -> {ave_ability}
+  {course month_location} -> circumstances
   }
 ")
 ```
-</div>
 
-## The data
+</center>
 
-```{r combined-control}
-us_comp <- readRDS("data/us-compensation.RDS") %>%
-  rename(total_comp = tdc1, shares = shrown_tot_pct)
-us_value <- readRDS("data/us-value.RDS") %>%
-  rename(year = fyear, market_value = mkvalt)
-us_firm <- readRDS("data/us-company.RDS") %>%
-  mutate(comp_age = dmy("31-12-2018") - begdat)
+]
 
-combined <- left_join(us_comp, us_firm, by = "cusip") %>%
-  left_join(us_value, by = c("year", "gvkey")) %>%
-  mutate(ipo_ceo = I(becameceo < begdat),
-         ipo_employee = I(joined_co < begdat),
-         wealth = shares * market_value / 100) %>%
-  mutate(ipo_employee = if_else(is.na(ipo_employee), ipo_ceo,
-                                ipo_employee)) %>%
-  mutate(ipo = ifelse(ipo_ceo, "ceo",
-                      ifelse(ipo_employee, "employee", "none")))
+---
 
-combined_change <- group_by(combined, gvkey) %>%
-  arrange(year) %>%
+## Why not just focus on a setting where we are confident in the assumptions?
+.pull-left[
+
+### Actual random assignment 
+Speedboat racing, game shows, Vietnam draft, 
+
+### Natural experiments 
+(See [Gippel et al. 2015](https://onlinelibrary.wiley.com/doi/full/10.1111/abac.12048), [Chapter 19 Instrumental Variables, The Effect](https://theeffectbook.net/ch-InstrumentalVariables.html))
+
+]
+
+--
+
+.pull-right[
+
+### Policy Changes 
+
+[Chapter 18, Difference-in-Difference, The Effect](https://theeffectbook.net/ch-DifferenceinDifference.html)
+
+### Discrete cutoffs 
+e.g. WAM > 75, [Chapter 20 Regression Continuity Design, The Effect](https://theeffectbook.net/ch-RegressionDiscontinuity.html)
+
+### Unexpected news 
+
+[Chapter 17 Event Studies, The
+Effect](https://theeffectbook.net/ch-EventStudies.html)
+
+]
+
+???
+
+Natural experiments is not the best terminology because most of these instances are not natural nor real experiments. Nevertheless, I still prefer the name over an instrumental variable approach. In too many proposals, I read an off hand comment that the student proposes to use a robustness test where they are going to use an instrumental variable approach. My answer to that is (1) if you have a natural experiment where you can exploit an instrumental variable, this should be the main analysis and (2) instrumental variables need to be defended as a research design based on your understanding of the setting. Calling the design a natural experiment forces you to think more about the experiment (i.e. the research design).
+
+---
+
+class: middle
+
+## Look for these designs!
+
+- Based on your understanding of the industry and setting or the *Data Generating Process*
+- When you read **good** papers for this unit and other units.
+
+
+???
+
+This is one of the main reasons that I want you to read broadly. It is unlikely that you will find a paper with a good research design exactly for the research question that you are interested in. However, you might find inspiration in similar or related fields that help you to design a better study for the research question that you are interested in.
+
+---
+
+class: center, middle
+
+# Effect
+
+---
+
+class: middle
+
+## What effect can we identify?
+
+- **A**verage **T**reatment **E**ffect
+
+- **A**verage **T**reatment on the **T**reated
+
+- **A**verage **T**reatment on the **U**ntreated
+
+- **L**ocal **A**verage **T**reatment **E**ffect
+
+- **W**eigthed **A**verage **T**reatment **E**ffect
+
+[Chapter 10, Treatment Effects in The Effect](https://theeffectbook.net/ch-TreatmentEffects.html)
+
+???
+
+- Do you have an example of an effect that we might be interested in in Accounting and Finance? 
+- Average implies that not all firms will respond the same to the treatment. This is the source of a lot trouble. 
+- Average over which population?
+- How would you put these different effects in your own words?
+- WATE is evil and I am going to largely ignore it. 
+
+---
+
+## It all depends on where the variation is coming from.
+
+### Different firms react differently and are differently represented in the control group and the treatment group.
+
+--
+
+### Some rules of thumb
+
+> With actual random assignment, you probably have an ATE for the population that received the assignment.
+
+> If you can use a control group because that is what the treated group would look like if they were not treated, you probably have an ATT.
+
+> If you use a natural experiment to identify part of the variation, you probably have a LATE.
+
+[Chapter 10, Treatment Effects in The Effect](https://theeffectbook.net/ch-TreatmentEffects.html#i-just-want-an-ate-it-would-make-me-feel-great-what-do-i-get)
+
+---
+
+class: middle
+
+## Why do we care?
+
+--
+
+### Research Design
+
+> There is a deep connection between the variation in your research design and the effect you can identify. 
+
+--
+
+### Policy implications!
+
+> Whether your study has implications for "regulators and investors" depends  heavily on the type of effect you can identify.
+
+
+[Chapter 10, Treatment Effects in The Effect](https://theeffectbook.net/ch-TreatmentEffects.html#who-cares)
+
+---
+
+class: center, middle
+
+# A simulated example
+
+---
+
+## Generate the Data
+
+```{r, data-effect}
+N <- 1000
+rd1 <- tibble(
+  firm = 1:N,
+  high_performance = rbinom(N, 1, 0.5),
+  noise = rnorm(N, 0, 3)
+) %>%
   mutate(
-    delta_total = log(total_comp) - log(lag(total_comp)),
-    delta_wealth = log(wealth) - log(lag(wealth)),
-    delta_value = log(market_value) - log(lag(market_value))) %>%
-  filter(!is.infinite(delta_total),
-         !is.infinite(delta_value),
-         !is.infinite(delta_wealth),
-         year > 2011)
+    donation = high_performance,
+    performance = ifelse(high_performance == 1, 4, 1),
+    payoff_donation = 4 - 8 / performance + noise,
+    payoff_no_donation = 1 + noise
+  )
+glimpse(rd1) 
 ```
 
-## Directed Acyclical Graphs (or DAG)
+???
 
-<div class="content_slide">
-```{r dag-joey, echo = FALSE}
+What is the effect that we are we interested in? What are the policy implications?
+
+---
+
+## Have a look at the data
+
+```{r, plot-effect1, fig.height = 3.5, fig.width = 10}
+plot1 <- rd1 %>%
+  pivot_longer(cols = starts_with("payoff"), names_to = "type",
+               values_to = "payoff") %>%
+  ggplot(aes(x = type, y = payoff, group = firm)) +
+  geom_line() + xlab(label = NULL) +
+  facet_wrap(~ donation)
+print(plot1)
+```
+
+---
+
+## Have a second look at the data
+
+```{r, plot-effect2, fig.height = 3.5, fig.width = 10}
+plot2 <- rd1 %>%
+  pivot_longer(cols = starts_with("payoff"), names_to = "type",
+               values_to = "payoff") %>%
+  ggplot(aes(x = interaction(type, donation), y = payoff)) +
+  geom_jitter(width = .1) + xlab(label = NULL)
+print(plot2)
+```
+
+---
+
+## Real data does not have the counterfactuals. We only observe blue!
+
+```{r, plot-effect3, echo = FALSE, fig.height = 3.5, fig.width = 12}
+plot3 <- rd1 %>%
+  pivot_longer(cols = starts_with("payoff"), names_to = "type",
+               values_to = "payoff") %>%
+  mutate(observed = donation == 1 & type == "payoff_donation" |
+                    donation == 0 & type == "payoff_no_donation") %>%
+  ggplot(aes(x = interaction(type, donation), y = payoff,
+             colour = observed)) +
+  scale_colour_manual(values = c(uwa_gold, uwa_blue)) + 
+  geom_jitter(width = .1) + xlab(label = NULL)
+print(plot3)
+```
+
+> The actual sample determines which comparisons we can make.
+
+
+???
+
+Why does this work? What effect are we identifying and how.
+
+---
+
+## Let's redo the simulated example with averages
+
+```{r, causal_by_means}
+rd1 %>%
+  mutate(causal_effect = payoff_donation - payoff_no_donation) %>% #<<
+  summarise(M_causal = mean(causal_effect),
+            sd_causal = sd(causal_effect),
+            N = n()) %>%
+  knitr::kable(format = "markdown", digits = 2)
+```
+
+
+
+---
+
+## Let's redo the simulated example with averages
+
+```{r, causal_by_means2, echo = FALSE}
+rd1 %>%
+  mutate(causal_effect = payoff_donation - payoff_no_donation) %>%
+  summarise(M_causal = mean(causal_effect),
+            sd_causal = sd(causal_effect),
+            N = n()) %>%
+  knitr::kable(format = "markdown", digits = 2)
+```
+
+```{r, conditional_causal_by_means}
+rd1 %>%
+  mutate(causal_effect = payoff_donation - payoff_no_donation) %>%
+  group_by(donation) %>% #<<
+  summarise(M_causal = mean(causal_effect),
+            sd_causal = sd(causal_effect),
+            N = n()) %>%
+  knitr::kable(format = "markdown", digits = 2)
+```
+
+---
+
+## Let's redo the regression with averages
+
+```{r, causal-regression}
+summary_data  <- rd1 %>%
+  group_by(donation) %>%
+  summarise(M_payoff_donation = mean(payoff_donation),
+            M_payoff_no_donation = mean(payoff_no_donation))
+knitr::kable(summary_data, format = "markdown", digits = 2)
+causal_effect_true <-
+  summary_data$M_payoff_donation[summary_data$donation == 1] -
+  summary_data$M_payoff_no_donation[summary_data$donation == 1]
+causal_effect_reg <-
+  summary_data$M_payoff_donation[summary_data$donation == 1] -
+  summary_data$M_payoff_no_donation[summary_data$donation == 0]
+```
+
+- The true ATT is `r round(causal_effect_true, 3)`
+- The effect estimated by the regression is `r round(causal_effect_reg, 3)`
+
+---
+
+## If you do not believe me, here is the regression
+
+.right-column[
+```{r}
+rd1 <- mutate(rd1, actual_payoff =
+       ifelse(donation, payoff_donation, payoff_no_donation))
+ols <- feols(actual_payoff ~ donation, data = rd1)
+```
+]
+
+.left-column[
+```{r, echo = FALSE, results = "asis"}
+msummary(ols, gof_omit = gof_omit)
+```
+]
+
+---
+
+## What could possibly go wrong?
+
+```{r, tidy = FALSE}
+rd2 <- tibble(
+  high_performance = rbinom(N, 1, 0.5),
+  noise = rnorm(N, 0, 3)) %>%
+  mutate(
+    donation = high_performance,
+    performance = ifelse(high_performance == 1, 4, 1),
+    payoff_donation = 4 - 8 / performance + noise,
+    payoff_no_donation = ifelse(high_performance == 1, 1, 2) + noise #<<
+  )
+```
+
+---
+
+## Causal Effect Estimates with a Confounder
+
+```{r}
+summary_data  <- rd2 %>%
+  group_by(donation) %>%
+  summarise(M_payoff_donation = mean(payoff_donation),
+            M_payoff_no_donation = mean(payoff_no_donation))
+knitr::kable(summary_data, format = "markdown", digits = 2)
+causal_effect_true <-
+  summary_data$M_payoff_donation[summary_data$donation == 1] -
+  summary_data$M_payoff_no_donation[summary_data$donation == 1]
+causal_effect_reg <-
+  summary_data$M_payoff_donation[summary_data$donation == 1] -
+  summary_data$M_payoff_no_donation[summary_data$donation == 0]
+```
+
+- The true ATT is `r round(causal_effect_true, 3)`
+- The effect estimated by the regression is `r round(causal_effect_reg, 3)`
+
+---
+
+class: center, middle
+
+# A Simulated Example of Panel Data
+
+---
+
+class: center, middle
+
+### We want to use the counterfactual as the control group
+
+--
+
+### Panel data + fixed effects is the next best thing
+
+---
+
+class: middle
+
+## Where is the variation coming from?
+
+--
+
+#### We need firms that make mistakes
+
+- Firms that should donate but do not always do it.
+- Firms that should not donate but sometimes donate.
+
+---
+
+## Panel Data Simulation (100 firms)
+
+```{r}
+N <- 100 #<<
+rd_firm <- tibble(
+  firm = 1:N,
+  high_performance = rbinom(N, 1, 0.5),
+  other_payoff = rnorm(N, 0, 3)) %>%
+  mutate(
+    donation = high_performance,
+    performance = ifelse(high_performance == 1, 4, 1),
+    payoff_no_donation = ifelse(high_performance == 1, 1, 2) + other_payoff,
+    payoff_donation = 4 - 8/performance + other_payoff
+  )
+summary_data  <- rd_firm %>%
+  group_by(donation) %>%
+  summarise(M_payoff_donation = mean(payoff_donation),
+            M_payoff_no_donation = mean(payoff_no_donation))
+knitr::kable(summary_data, digits = 1)
+```
+
+---
+
+## Panel Data Simulation (10 time periods)
+
+#### The variation comes from high performers not donating some years
+
+```{r}
+T <- 10
+rd_panel_forget <- tibble(
+  firm = rep(1:N, each = T),
+  year = rep(1:T, times = N)) %>%
+  left_join(rd_firm, by = "firm") %>% #<<
+  mutate(forget_donation = rbinom(N * T, 1, plogis(other_payoff)), #<<
+         actual_donation = (1 - forget_donation) * donation,
+         actual_payoff = ifelse(actual_donation == 1,
+                                payoff_donation, payoff_no_donation))
+```
+
+[See this very good paper on data structures by Hadley Wickham](https://doi.org/10.18637/jss.v059.i10)
+
+???
+
+- The way we simulate the data reflects the firm fixed effects and the time varying effects.
+- Which effect are we identifying with this sample?
+
+---
+
+class: middle
+
+## The New Assignment
+
+- Run a fixed effect model and interpret the result
+- Create a new dataset where all firms make mistakes
+- Run a fixed effect model and interpret the result
+
+---
+
+class: middle, center
+
+# Instrumental Variable Approach
+
+---
+
+## Let's assume that firms are *less* likely to donate when there is a local election
+
+```{r,rd_iv_election}
+N <- 5000
+rd_iv_el <- tibble(
+  high_performance = rbinom(N, 1, .5),
+  extra_payoff = rnorm(N, 0, 3),
+  local_election = rbinom(N, 1, .33)) %>% #<<
+  mutate(
+    actual_donation = ifelse(high_performance == 1, 1 - local_election, 0), #<<
+    payoff_donation = ifelse(high_performance == 1, 2, - 4) + extra_payoff,
+    payoff_no_donation = ifelse(high_performance == 1, 1, 2) + extra_payoff,
+    actual_payoff = ifelse(actual_donation == 1,
+                           payoff_donation, payoff_no_donation))
+```
+
+???
+
+- Which effect can we identify with this data?
+- Run the instrumental variable analyses and interpret the results.
+
+---
+
+class: middle, center
+
+# A published example paper
+
+#### [How Do Quasi-Random Option Grants Affect CEO Risk-Taking? by Shue and Townsend (2017) in The Journal of Finance](https://doi.org/10.1111/jofi.12545)
+
+---
+
+## This paper is a finished product, your pitch, proposal, or dissertation is not.
+
+> Kelly Shue is with Yale University, School of Management and NBER; Richard Townsend (cor- responding author) is with the University of California San Diego, Rady School of Management. We are grateful to Michael Roberts (the Editor), the Associate Editor, two anonymous referees, Marianne Bertrand, Ing-Haw Cheng, Ken French, Ed Glaeser, Todd Gormley, Ben Iverson (discus- sant), Steve Kaplan, Borja Larrain (discussant), Jonathan Lewellen, Katharina Lewellen, David Matsa (discussant), David Metzger (discussant), Toby Moskowitz, Candice Prendergast, Enrichetta Ravina (discussant), Amit Seru, and Wei Wang (discussant) for helpful suggestions. We thank seminar participants at AFA, BYU, CICF Conference, Depaul, Duke, Gerzensee ESSFM, Harvard, HKUST Finance Symposium, McGill Todai Conference, Finance UC Chile, Helsinki, IDC Herzliya Finance Conference, NBER Corporate Finance and Personnel Meetings, SEC, Simon Fraser Uni- versity, Stanford, Stockholm School of Economics, University of Amsterdam, UC Berkeley, UCLA, and Wharton for helpful comments. We thank David Yermack for his generosity in sharing data. We thank Matt Turner at Pearl Meyer, Don Delves at the Delves Group, and Stephen O’Byrne at Shareholder Value Advisors for helping us understand the intricacies of executive stock option plans. Menaka Hampole provided excellent research assistance. We acknowledge financial support from the Initiative on Global Markets. 
+
+???
+
+On the one hand, we do not expect you to come up with a design like this. On the other hand, why not use these hard won insights.
+
+---
+
+class: middle, center
+
+## This paper has 1 (one!) research question
+
+???
+
+It's not necessarily advantageous to have too many hypotheses. You want to answer one question well.
+
+---
+
+## Do increases in option grants increase risk taking?
+
+<center>
+```{r, fig.width=4, fig.height=2, echo=FALSE}
 grViz("
-    digraph dag_joey{
-    node [shape = box]
-    inst_own_before; xbrl; inst_own_after; size;
-    price_info; info_envir;
-    size -> {xbrl, inst_own_before};
-    {xbrl, inst_own_before} -> info_envir ;
-    info_envir -> {inst_own_after; price_info}
-    inst_own_before -> inst_own_after
-    }
+   digraph options{
+   node [shape = box]
+   subgraph{
+     rank = same; 'Option Grants'; 'Risk Taking'
+   }
+   Annoyances;
+   Annoyances -> {'Option Grants', 'Risk Taking'}
+   edge [color = '#DAAA00']
+   'Option Grants' -> 'Risk Taking'
+}
 ")
 ```
-</div>
+</center>
 
-# Controlling for measurement error
+???
 
-## DAG
+Examples of annoyances: 
+- Risk averse CEOs might take less risks and therefore receive more option  grants.
 
-<div class="content_slide">
-```{r dag-measurement, echo = FALSE}
+---
+
+## IV 1: Scheduled Discrete Increases in Fixed-Value Option Grants
+
+<center>
+```{r, fig.width=4, fig.height=1, echo=FALSE}
 grViz("
-    digraph measurement_error{
-    node [shape = box]
-    x
-    y
-    z
-    x -> y
-    z -> y
-    }
+   digraph options{
+   node [shape = box]
+   subgraph{
+     rank = same; 'Predicted New Grant Cycle', 'Option Grants'; 'Risk Taking'
+   }
+   Annoyances;
+   Annoyances -> {'Option Grants', 'Risk Taking'}
+   'Predicted New Grant Cycle' -> 'Option Grants'
+   edge [color = '#DAAA00']
+   'Option Grants' -> 'Risk Taking'
+}
 ")
 ```
-</div>
+</center>
 
-## Simulation
+> For our first instrument, we use fixed-value firms, for which option grants can increase only at regularly prescheduled intervals (i.e., when new cycles start). For example, consider a fixed-value firm on regular three-year cycles. Other time-varying factors may drive trends in risk for this firm. However, these trends are unlikely to coincide exactly with the timing of when new cycles are scheduled to start.
 
-<div class="content_slide_wide">
-```{r, results = 'asis'}
-set.seed(830323)
-obs = 500
-x <- rnorm(n = obs); z <- rnorm(n = obs)
-y <- rnorm(n = obs, mean = 1 * x + 10 * z, sd = 10)
-d <- tibble(y = y, x = x, z = z)
-yx <- lm(y ~ x, data = d)
-yxz <- lm(y ~ x + z, data = d)
-pretty_ols(yx)
-pretty_ols(yxz)
-```
-</div>
 
-## Real data
+???
 
-```{r, echo = FALSE, fig.align='center', fig.height = 6}
-meas_data <-  select(combined, market_value, shares, ipo) %>%
-              filter(complete.cases(.))
-ownership <-
-  ggplot(data = meas_data,
-      aes(x = market_value/1000, y = shares + 0.001)) +
-  geom_point(na.rm = T) +
-  scale_x_continuous(trans = "log",
-    breaks = scales::log_breaks(n = 5, base = 10),
-    labels = function(x) prettyNum(x, dig = 2)) +
-  scale_y_continuous(trans = "log",
-    breaks = scales::log_breaks(n = 5, base = 10),
-    labels = function(x) prettyNum(x, dig = 2),
-    limits = c(NA, 50)) +
-  labs(y = "CEO ownership", x = "Market Value in $ Billion")
-print(ownership)
-```
+Basically saying the beginning of a cycle effect on option grants is not affected by the annoyances.
 
-## Founders and early employees
+---
 
-<div class="content_slide_wide">
-```{r, results = 'asis'}
-form <- log(shares + 0.001) ~ log(market_value/1000)
-base <- lm(form, data = combined)
-form_error <- update(form, . ~ . + ipo_ceo + ipo_employee)
-error <- lm(form_error, data = combined)
-pretty_ols(base)
-pretty_ols(error)
-```
-</div>
-  
-## Pre IPO employees and CEOs
+## IV 2: Within Cycle Grant Increases due to Industry Shocks in Fixed-Number Option Grants
 
-<div class="content_slide">
-```{r, results = 'asis'}
-combined %>% select(ipo_ceo, ipo_employee, year) %>%
-  group_by(year) %>%
-  summarise(
-    ipo_both = mean(ipo_ceo * ipo_employee, na.rm = T),
-    ipo_ceo_only = mean(ipo_ceo * (1 - ipo_employee),
-                        na.rm = T),
-    ipo_empl_only = mean((1 - ipo_ceo) * ipo_employee,
-                         na.rm = T),
-    ipo_none = mean((1 - ipo_ceo) * (1 - ipo_employee),
-                    na.rm = T)
-  ) %>% knitr::kable(digits = 2, 'markdown')
-```
-</div>
-
-## Visualisation of pre IPO employees and CEOs
-
-```{r, echo = FALSE, fig.align = 'center'}
-own_color <- ownership + 
-  geom_point(aes(color = ipo), na.rm = T) +
-  scale_colour_viridis_d()
-print(own_color)
-```
-
-## Visulation of controlling
-
-```{r, echo = FALSE, fig.align = 'center'}
-mshares <- mean(log(meas_data$shares + 0.001))
-mvalue <- mean(log(meas_data$market_value/1000))
-meas_sum <- group_by(meas_data, ipo) %>%
-  summarise(shares = exp(mean(log(shares + 0.001)) + 0.001),
-            market_value = exp(mean(log(market_value/1000))))
-own_means <- own_color + 
-  geom_hline(data = meas_sum, 
-             mapping = aes(yintercept = shares,
-                           group = ipo, color = ipo)) + 
-  geom_vline(data = meas_sum,
-             mapping = aes(xintercept = market_value,
-                           group = ipo, color = ipo))
-meas_data_adj <- left_join(meas_data, meas_sum, by = "ipo") %>%
-  mutate(market_value = exp(log(market_value.x/1000) -
-                              log(market_value.y) + mvalue),
-         shares = exp(log(shares.x + 0.001) 
-                      - log(shares.y + 0.001) + mshares) + 0.001)
-own_adjust <- 
-  ggplot(data = meas_data_adj, 
-         aes(group = ipo, colour = ipo,
-             y = shares, x = market_value)) + 
-  geom_point(na.rm = T) + 
-  scale_colour_viridis_d() +
-  scale_x_continuous(trans = "log", 
-    breaks = scales::log_breaks(n = 5, base = 10),
-    labels = function(x) prettyNum(x, dig = 2)) + 
-  scale_y_continuous(trans = "log", 
-    breaks = scales::log_breaks(n = 5, base = 10),
-    labels = function(x) prettyNum(x, dig = 2),
-    limits = c(NA, 50)) +
-  labs(y = "Adjusted CEO ownership", 
-       x = "Adjusted Market Value in $ Billion") +
-  geom_hline(yintercept = exp(mshares) + 0.001) + 
-  geom_vline(xintercept = exp(mvalue))
-plot_meas <- plot_grid(
-  own_means + theme(legend.position = "top"),
-  own_adjust + theme(legend.position = "top"), ncol = 2)
-print(plot_meas)
-```
-
-## Interaction effect
-
-```{r, echo = FALSE, fig.align='center'}
-own_interaction <- own_color + 
-  geom_smooth(mapping = aes(group = ipo, color = ipo),
-              method = "lm", formula = y ~ x,
-              na.rm = T)
-print(own_interaction)
-```
-
-## Interaction effect
-
-<div class="content_slide_wide">
-```{r}
-form_interaction <- update(form, . ~ log(market_value/1000) 
-                        * (ipo_ceo + ipo_employee))
-interaction <- lm(form_interaction, data = combined)
-pretty_ols(interaction)
-```
-</div>
-
-## Interaction effect and measurement error
-
-<div class="content_slide">
-```{r}
-c <- sqrt(1/3)
-3 * c^2
-mfc <- tibble(
-  mother = rnorm(obs, 0, 1),
-  father = rnorm(obs, 0, 1),
-  divorce = rbinom(obs, size = 1, prob = .2),
-  child = rnorm(obs, mean = c * (1 - divorce) * father 
-                            + c * mother, sd = c)
-)
-```
-</div>
-
-## Interaction effect and measurement error
-
-<div class="content_slide">
-```{r, results='asis'}
-group_by(mfc, divorce) %>%
-  summarise(cor_mother_child = cor(child, mother),
-            sd_child = sd(child)) %>%
-  knitr::kable(digits = 2, 'markdown')
-
-pretty_ols(lm(child ~ mother * divorce, data = mfc))
-pretty_ols(lm(child ~ mother + father * divorce, data = mfc))
-```
-</div>
-
-# Controlling for confounding factors
-
-## DAG
-
-```{r dag-confounding, echo = FALSE, fig.align='center'}
+<center>
+```{r, fig.width=4, fig.height=1, echo=FALSE}
 grViz("
-    digraph confounding{
-    node [shape = box]
-    subgraph{
-    rank = same; x; y;
-    }
-    z
-    x -> y
-    z -> {y x}
-    }
+   digraph options{
+   node [shape = box]
+   subgraph{
+     rank = same; 'Industry Shocks (Fixed Number)', 'Option Grants'; 'Risk Taking'
+   }
+   Annoyances;
+   Annoyances -> {'Option Grants', 'Risk Taking'}
+   'Industry Shocks (Fixed Number)' -> 'Option Grants'
+   edge [color = '#DAAA00']
+   'Option Grants' -> 'Risk Taking'
+}
 ")
 ```
+</center>
+
+> For our second instrument, we focus on fixed-number firms. The value of options granted in any particular year varies with aggregate returns within a fixed-number cycle. This means that the timing of increases in option pay within a cycle will be random in the sense that the increases are driven in part by industry shocks that are beyond the control of the firm and are largely unpredictable. To account for the possibility that aggregate returns can directly affect risk, we use fixed-value firms as a control group because their option compensation must remain fixed despite changes in aggregate returns.
+
+???
+
+The identifying assumption is that fixed-number vs fixed-value might be a part of the annoyances. So might the industry shocks. However, the IV assumes that  the industry shocks are not different except in how they effect the option grant value.
+
+---
+
+## The authors know their setting!
+
+> Our identification strategy builds on Hall’s (1999)) observation that firms often award options according to multiyear plans. Two types of plans are commonly used: fixed-number and fixed-value. Under a fixed-number plan, an executive receives the same number of options each year within a cycle. Under a fixed-value plan, an executive receives the same value of options each year within a cycle.
 
 
-## Simulation
+> Our conversations with leading compensation consultants suggest that multiyear plans are used to minimize contracting costs, as option compensation only has to be set once every few years. Hall (1999, p. 97) argues that firms sort into the two types of plans somewhat arbitrarily, observing that “Boards seem to substitute one plan for another without much analysis or understanding of their differences."
 
-<div class="content_slide_wide">
-```{r}
-xyz = tibble(
-  z = rnorm(obs, 0, 5),
-  x = rnorm(obs, 1 + z, 5),
-  y = rnorm(obs, 1 + 2 * z, 5),
-)
-pretty_ols(lm(y ~ x, data = xyz), dig = 2)
-pretty_ols(lm(y ~ x + z, data = xyz), dig = 2)
-```
-</div>
+???
 
-## Real Data
+- Read qualitative studies and descriptions of actual practice!
+- We are looking at "slightly suboptimal" decision making to get variation. 
 
-<div class="content_slide">
-```{r data-confound}
-mean_delta <- filter(combined_change, !is.na(delta_value),
-                     !is.na(delta_wealth)) %>%
-  group_by(year) %>%
-  summarise(delta_market = mean(delta_value),
-            delta_total_market = mean(delta_total),
-            delta_wealth_market = mean(delta_wealth)) %>%
-  ungroup()
-d_conf <- ungroup(combined_change) %>%
-  filter(!is.na(delta_value)) %>%
-  select(delta_value, delta_total, delta_wealth, 
-         gvkey, year, ipo_employee) %>%
-  left_join(mean_delta, by = "year")
-```
-</div>
+---
 
-## Controlling for average market returns
+## Two Key Assumptions
 
-<div class="content_slide">
-```{r}
-form <- delta_total ~ delta_value
-pretty_ols(lm(form, data = d_conf))
-form_conf <- update(form, . ~ . + delta_market)
-pretty_ols(lm(form_conf, data = d_conf))
-```
-</div>
+.pull-left[
+### Relevance: IV is related to Option Grants
 
-## Visualisation
+> We find that the first-year indicator corresponds to a 15% larger increase in the Black-Scholes value of new option grants than in other years.
 
-<div class="content_slide_wide">
-```{r}
-resid_total <-  residuals(lm(delta_total ~ delta_market, d_conf))
-resid_value <- residuals(lm(delta_value ~ delta_market, d_conf))
-d_conf <- mutate(d_conf,
-                 resid_total = resid_total,
-                 resid_value = resid_value) 
-```
-</div>
+> All estimates are highly significant, with F-statistics greatly exceeding 10, the rule of thumb threshold for concerns related to weak instruments (Staiger and Stock (1997). (III A.)
+]
 
-```{r, echo = FALSE, fig.align='center', fig.height=5, fig.width=10}
-plot_conf <- ggplot(data = d_conf, 
-               aes(y = delta_total, x = delta_value, 
-                   colour = delta_market))
-plot_conf <- plot_conf + geom_point(alpha = .75, na.rm = T) 
-plot_conf <- plot_conf + scale_colour_viridis()
-plot_conf <- plot_conf + scale_x_continuous(limits = c(-1, 1.5)) 
-plot_conf <- plot_conf + scale_y_continuous(limits = c(-1.5, 1.5))
+--
 
-plot_resid <- ggplot(data = d_conf, 
-               aes(y = resid_total, x = resid_value, 
-                   colour = delta_market))
-plot_resid <- plot_resid + geom_point(alpha = .75, na.rm = T) 
-plot_resid <- plot_resid + scale_colour_viridis()
-plot_resid <- plot_resid + scale_x_continuous(limits = c(-1, 1.5)) 
-plot_resid <- plot_resid + scale_y_continuous(limits = c(-1.5, 1.5))
+.pull-right[
+### Exclusion (or validity): Only path from IV to Risk Taking is through Option Grants.
 
-plot_controlling <- plot_grid(
-  plot_conf, plot_resid + theme(legend.position = 'none'),  
-  labels = "AUTO", rel_widths = c(1.3, 1))
-print(plot_controlling)
-```
+> One might be concerned that predicted first years provide exogenously timed but potentially anticipated increases in option compensation. However, this is not an issue for our empirical strategy. [...]  He would have no incentive to increase risk prior to an anticipated increase in the value of his option compensation next period. 
 
-## Fixed effects
+> In addition, we directly examine whether fixed-value cycles appear to be correlated with other firm cycles [...]
 
-<div class="content_slide">
-```{r}
-form_fyear <- update(form, . ~ . - 1 + as.factor(year))
-pretty_ols(lm(form_fyear, data = d_conf), 2)
-```
-</div>
+]
 
-## Visualisation Fixed Effects
+[Chapter 19 Instrumental Variables, The Effect](https://theeffectbook.net/ch-InstrumentalVariables.html#assumptions-for-instrumental-variables)
 
-```{r, echo = FALSE, fig.align='center', fig.align='center', fig.height=5}
-plot_conf <- plot_conf + 
-  geom_hline(aes(yintercept = delta_total_market), 
-             data = mean_delta) + 
-  geom_vline(aes(xintercept = delta_market),
-             data = mean_delta)
-d_conf <- 
-  mutate(d_conf,
-         delta_total_c = delta_total - delta_total_market,
-         delta_wealth_c = delta_wealth - delta_wealth_market,
-         delta_value_c = delta_value - delta_market)
+???
 
-plot_conf_c <- ggplot(data = d_conf, 
-               aes(y = delta_total_c, x = delta_value_c, 
-                   colour = delta_market))
-plot_conf_c <- plot_conf_c + geom_point(alpha = .75, na.rm = T) 
-plot_conf_c <- plot_conf_c + scale_colour_viridis()
-plot_conf_c <- plot_conf_c + scale_x_continuous(limits = c(-1, 1.5)) 
-plot_conf_c <- plot_conf_c + scale_y_continuous(limits = c(-1.5, 1.5))
-plot_conf_c <- plot_conf_c + 
-  geom_hline(aes(yintercept = mean(delta_total_c)))
-plot_conf_c <- plot_conf_c + 
-  geom_vline(aes(xintercept = mean(delta_value_c)))
-plot_conf_c <- plot_conf_c + 
-  geom_smooth(method = "lm", na.rm = T)
+The key for the exclusion assumption is that anticipation would have an impact on the risk taking prior to the new cycle. This than would have an impact on the actual measure, i.e. the change in risk. 
 
-plot_confounding <- plot_grid(
-  plot_conf, plot_conf_c + theme(legend.position = 'none'),
-  rel_widths=c(1.3, 1), labels = "AUTO")
-print(plot_confounding)
-```
+---
 
-# Bad controls or 'beware the causal salad'
+## One Criticism
 
-## Background Listening
+.pull-left[
 
-<iframe width="400" height="225" 
-src="http://www.youtube.com/embed/l_7yIUqWBmE?rel=0" 
-frameborder="0" allowfullscreen></iframe>
+> First, option compensation tends to follow an increasing step function for executives on fixed-value plans. This is because compensation tends to drift upward over time, yet executives on fixed-value plans cannot experience an upward drift within a cycle.
 
-<iframe width="400" height="225" 
-src="http://www.youtube.com/embed/0Jc6Kgw5qc0?rel=0" 
-frameborder="0" allowfullscreen></iframe>
+> While these two stylized facts do not hold in all cases—as can also be seen in Figure 1—our identification strategy only requires that they hold **on average.**
 
-## Pipe: DAG
+]
 
-```{r dag-pipe, fig.align='center', echo = FALSE}
-grViz("
-    digraph pipe{
-    node [shape = box]
-    subgraph{rank = same; x; y; z}
-    z
-    x -> z
-    z -> y 
-    }
-")
-```
+--
 
-## Pipe: Simulation
+.pull-right[
 
-<div class="content_slide_wide">
-```{r sim-pipe}
-corp_gov <- rnorm(obs, 0, 1)
-acc_profit <- rnorm(obs, corp_gov, sd = 3)
-market_return <- rnorm(obs, acc_profit, sd = 5)
-d <- tibble(corp_gov = corp_gov,
-       acc_profit = acc_profit,
-       market_return = market_return)
-pretty_ols(lm(acc_profit ~ corp_gov, data = d))
-pretty_ols(lm(market_return ~ corp_gov, data = d))
-pretty_ols(lm(market_return ~ corp_gov + acc_profit, data = d))
-```
-</div>
+### Some more terminology
 
-## Colliders: DAG
+- Compliers
 
-```{r dag-collider, fig.align='center', echo = FALSE}
-grViz("
-    digraph measurement_error{
-    node [shape = box]
-    subgraph{rank = same; x; y}
-    x -> {y, z}
-    y -> z
-    }
-")
-```
+- Always-takers/never-takers
 
-## Colliders: Coporate government
+- Defiers
 
-<div class="content_slide_wide">
-```{r corp_gov_collider}
-corp_gov <- rnorm(obs, 0, 1)
-acc_profit <- rnorm(obs, corp_gov, sd = 3)
-market_return <- rnorm(obs, 2 * corp_gov + acc_profit, sd = 5)
-d <- tibble(corp_gov = corp_gov,
-       acc_profit = acc_profit,
-       market_return = market_return)
-pretty_ols(lm(acc_profit ~ corp_gov, data = d))
-pretty_ols(lm(acc_profit ~ corp_gov + market_return, data = d))
-```
-</div>
+[Chapter 19 Instrumental Variables, The Effect](https://theeffectbook.net/ch-InstrumentalVariables.html#instrumental-variables-and-treatment-effects)
 
-## Colliders
+]
 
-<div class="content_slide_wide">
-```{r corp_gov_collider_regression}
-d <- mutate(d, neg_return = if_else(market_return < 0, 1, 0))
-pretty_ols(lm(acc_profit ~ corp_gov * neg_return, data = d))
-```
-</div>
+???
 
-## Colliders and selection bias
+The LATE is identified for the compliers. IV assumes that there are no defiers because now our estimated effect becomes an average of the defiers and compliers. One solution is to just remove the defiers if you can (which they do in the paper as a robustness check).
 
-<div class="content_slide_wide">
-```{r corp_gov_collider_selection}
-pretty_ols(lm(acc_profit ~ corp_gov * neg_return, data = d),
-           digits = 3)
-pretty_ols(lm(acc_profit ~ corp_gov,
-              data = filter(d, neg_return == 0)),
-           digits = 3)
-```
-</div>
 
-## Visualisation of colliders 
 
-```{r, fig.align='center', fig.height=4, fig.width = 12, echo = FALSE}
-d <- mutate(d, neg_return2 = as.character(neg_return))
-plot_coll <- ggplot(d, aes(x = corp_gov, y = acc_profit))
-plot_coll1 <- plot_coll + geom_point() +
-  geom_smooth(method = "lm")
-plot_coll2 <- plot_coll + 
-  geom_point(aes(colour = neg_return2)) +
-  geom_smooth(aes(colour = neg_return2, group = neg_return2),
-              method = "lm") + 
-  scale_colour_viridis(discrete = TRUE) + 
-  theme(legend.position = 'none')
-plot_coll3 <- ggplot(filter(d, neg_return == 0),
-                     aes(x = corp_gov, y = acc_profit)) + 
-  geom_smooth(method = "lm") + 
-  scale_y_continuous(limits = c(-10, NA)) +
-  geom_point()
-plot_coll4 <- 
-  ggplot(filter(d, percent_rank(market_return) > .75),
-         aes(x = corp_gov, y = acc_profit)) + 
-  geom_smooth(method = "lm") + 
-  scale_y_continuous(limits = c(-10, NA)) +
-  geom_point()
-plot_collider <- plot_grid(
-  plot_coll1, plot_coll2, plot_coll3, plot_coll4,
-  nrow = 1, labels = "AUTO")  
-print(plot_collider)
-```
 
-## Regression with performance as outcome variable
 
-<div class="content_slide">
-```{r}
-d_perf <- ungroup(combined_change) %>%
-  mutate(sensitivity = delta_total/ delta_value) %>%
-  select(year, exec_fullname, gvkey, 
-         sensitivity, delta_value) %>%
-  group_by(exec_fullname, gvkey) %>%
-  arrange(year) %>%
-  mutate(prev_sensitivity = lag(sensitivity)) %>%
-  ungroup %>%
-  filter(complete.cases(.))
 
-pretty_ols(lm(delta_value ~ prev_sensitivity, data = d_perf))
-```
-</div>
+
+
 
 

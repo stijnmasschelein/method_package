@@ -17,9 +17,13 @@ knitr::opts_chunk$set(dev = 'svg')
 library(tidyverse)
 library(cowplot)
 library(viridis)
+library(here)
+i_am("slides/slides2.Rmd")
 theme_set(theme_cowplot(font_size = 18))
 options(tibble.width = 60)
 options(width = 60)
+uwa_blue = "#003087"
+uwa_gold = "#DAAA00"
 ```
 
 class: center, middle
@@ -31,18 +35,16 @@ class: center, middle
 ## Why simulate data?
 
 - Visualising your theory
-- Experimenting and understanding statistical tests 
+- Experimenting with and understanding statistical tests 
 - Experimenting with statistical approaches without peaking at your data.
+
+See also [Chapter 15, The Effect](https://theeffectbook.net/ch-Simulation.html)
 
 ???
 
-- Visualising can help you sharpen your intuition for your theory and for
-  which values are reasonable and which are not.
-- You can simulate variables and causal structures that you cannot observe.
-  - see also this week's homework
-- You don't want to just decide on which statistical test to use because it 
-  gives you the "right" answer. If you want to experiment with different 
-  statistical models, you can do that with simulated data.
+- Visualising can help you sharpen your intuition for your theory and for which values are reasonable and which are not.
+- You can simulate variables and causal structures that you cannot observe. See also this week's homework
+- You don't want to just decide on which statistical test to use because it gives you the "right" answer. If you want to experiment with different statistical models, you can do that with simulated data.
 
 ---
 
@@ -51,12 +53,12 @@ class: center, middle
 
 ```{r random-number}
 N <- 1000
-normal <- rnorm(N, 2, 5)
-uniform <- runif(N, 1, 5)
-binomial <- rbinom(N, 1, .25)
-sample <- sample(1:10, N, replace = T)
-random <- tibble(normal = normal, uniform = uniform,
-                 binomial = binomial, sample = sample)
+random <- tibble(
+  normal = rnorm(N, 2, 5),
+  uniform = runif(N, 1, 5),
+  binomial = rbinom(N, 1, .25),
+  sample = sample(1:10, N, replace = T)
+)
 glimpse(random)
 ```
 
@@ -64,7 +66,7 @@ glimpse(random)
 
 ```{r random-plot1, fig.width = 18}
 p1 <- ggplot(random, aes(x = normal)) + geom_density() + ggtitle("normal density")
-plot_grid(p1, ncol = 4)  
+plot_grid(p1, ncol = 4)
 ```
 
 ---
@@ -72,7 +74,7 @@ plot_grid(p1, ncol = 4)
 ```{r random-plot2, fig.width = 18}
 p1 <- ggplot(random, aes(x = normal)) + geom_density() + ggtitle("normal density")
 p2 <- ggplot(random, aes(x = uniform)) + geom_histogram(bins = 50) + ggtitle("uniform histogram")
-plot_grid(p1, p2, ncol = 4)  
+plot_grid(p1, p2, ncol = 4)
 ```
 
 ---
@@ -80,8 +82,8 @@ plot_grid(p1, p2, ncol = 4)
 ```{r random-plot3, fig.width = 18}
 p1 <- ggplot(random, aes(x = normal)) + geom_density() + ggtitle("normal density")
 p2 <- ggplot(random, aes(x = uniform)) + geom_histogram(bins = 50) + ggtitle("uniform histogram")
-p3 <- ggplot(random, aes(x = binomial, y = normal)) + geom_point() + ggtitle("binomal-normal") 
-plot_grid(p1, p2, p3, ncol = 4)  
+p3 <- ggplot(random, aes(x = binomial, y = normal)) + geom_point() + ggtitle("binomal-normal")
+plot_grid(p1, p2, p3, ncol = 4)
 ```
 
 ---
@@ -89,10 +91,10 @@ plot_grid(p1, p2, p3, ncol = 4)
 ```{r random-plot4, fig.width = 18}
 p1 <- ggplot(random, aes(x = normal)) + geom_density() + ggtitle("normal density")
 p2 <- ggplot(random, aes(x = uniform)) + geom_histogram(bins = 50) + ggtitle("uniform histogram")
-p3 <- ggplot(random, aes(x = binomial, y = normal)) + geom_point() + ggtitle("binomal-normal") 
+p3 <- ggplot(random, aes(x = binomial, y = normal)) + geom_point() + ggtitle("binomal-normal")
 p4 <- ggplot(random, aes(x = as.factor(sample), y = uniform)) + geom_jitter(width = .2) +
     ggtitle("sample-uniform") + labs(x = "sample")
-plot_grid(p1, p2, p3, p4, ncol = 4)  
+plot_grid(p1, p2, p3, p4, ncol = 4)
 ```
 
 ---
@@ -114,7 +116,7 @@ The model is the second one presented in Edmans and Gabraix
 (2016). A more rigorous proof is shown in
 [Tervio (2008)](https://www.aeaweb.org/articles?id=10.1257/aer.98.3.642)
 
-A simplified explanation is in [Chapter 5 of the lecture notes](https://stijn-masschelein.netlify.app/teaching_material/_book/maths-sim.html)
+A simplified explanation is in [Chapter 5 of the lecture notes](https://stijn-masschelein.netlify.app/teaching/just_enough/maths-sim.htm)
 
 ---
 
@@ -124,21 +126,21 @@ A simplified explanation is in [Chapter 5 of the lecture notes](https://stijn-ma
 
 ```{r matching-viz, echo = FALSE}
 obs <- 500
-size_rate <- 1; talent_rate <- 2/3; 
-C <- 10; scale <- 600; w0 = 1; 
+size_rate <- 1; talent_rate <- 2/3;
+C <- 10; scale <- 600; w0 = 1;
 n <- c(1:obs)
 size <- scale * n ^ (-size_rate)
 talent <- - 1/talent_rate * n ^ (talent_rate)
 wage <- rep(NA, obs)
 wage[obs] <- w0
 for (i in (obs - 1):1){
-  wage[i] <- wage[i + 1] + 1/scale * C * size[i + 1] * 
+  wage[i] <- wage[i + 1] + 1/scale * C * size[i + 1] *
       (talent[i] - talent[i + 1])
 }
 
 matching_plot <- qplot(x = size, y = wage) +
     labs(x = "Company Market Value", y = "CEO compensation")
-plot(matching_plot + ggtitle("Value - Compensation"))                                                  
+plot(matching_plot + ggtitle("Value - Compensation"))
 ```
 
 ]
@@ -162,9 +164,9 @@ plot(matching_plot +
 ## CEO compensation data
 
 ```{r}
-us_comp <- readRDS("data/us-compensation.RDS") %>%
+us_comp <- readRDS(here("data", "us-compensation-new.RDS")) %>%
   rename(total_comp = tdc1)
-us_value <- readRDS("data/us-value.RDS") %>%
+us_value <- readRDS(here("data", "us-value-new.RDS")) %>%
   rename(year = fyear, market_value = mkvalt)
 summary(us_value$market_value)
 ```
@@ -266,6 +268,8 @@ class: middle, center
 
 # Linear regression in `R`
 
+See [Chapter 6 of the lecture notes](https://stijn-masschelein.netlify.app/teaching/just_enough/linear-regression.html)
+
 ---
 
 ## Notation 
@@ -287,6 +291,9 @@ y_i = a + b_1 x_{1i} + ... + b_n x_{ni} + \epsilon_i
 \begin{equation}
 \vec{y} = \mathcal{N}(a + \vec{b} X, \sigma)
 \end{equation}
+
+See also [Chapter 13, The Effect](https://theeffectbook.net/ch-StatisticalAdjustment.html)
+
 ]
 
 --
@@ -299,6 +306,7 @@ summary(reg)
 ```
 
 ]
+
 
 ---
 
@@ -316,44 +324,31 @@ class: center, middle
 
 # CEO Incentives and Size
 
+See [Chapter 7 of the lecture notes](https://stijn-masschelein.netlify.app/teaching/just_enough/measurement.html)
 
 ---
 
 ## Historical Discussion
 
-> Our estimates of the pay-performance relation (including pay,
-> options, stockholdings, and dismissal) for chief executive officers
-> indicate that CEO wealth changes $3.25 for every $1,000 change in
-> shareholder wealth. [(Jensen and Murphy,
-> 1990)](https://www.journals.uchicago.edu/doi/10.1086/261677)
+> Our estimates of the pay-performance relation (including pay, options, stockholdings, and dismissal) for chief executive officers indicate that CEO wealth changes $3.25 for every $1,000 change in shareholder wealth. [(Jensen and Murphy, 1990)](https://www.journals.uchicago.edu/doi/10.1086/261677)
 
 --
 
-> [...] The statistic in isolation can present a misleading picture of
-> pay to performance relationships because the denominator - the
-> change in firm value - is so large. [(Hall and Liebman,
-> 1998)](https://doi.org/10.1162/003355398555702)
+> [...] The statistic in isolation can present a misleading picture of pay to performance relationships because the denominator - the change in firm value - is so large. [(Hall and Liebman, 1998)](https://doi.org/10.1162/003355398555702)
 
 --
 
-> This article addresses four major concerns about the pay of
-> U.S. CEOs: (1) failure to pay for performance; [...]. The authors'
-> main message is that most if not all of these concerns are
-> exaggerated by the popular tendency to focus on the annual income of
-> CEOs (consisting of salary, bonus, and stock and option grants)
-> while ignoring their existing holdings of company equity. [(Core,
-> Guay, and Thomas
-> , 2005)](https://doi.org/10.1111/j.1745-6622.2005.00063.x)
+> This article addresses four major concerns about the pay of U.S. CEOs: (1) failure to pay for performance; [...]. The authors' main message is that most if not all of these concerns are exaggerated by the popular tendency to focus on the annual income of CEOs (consisting of salary, bonus, and stock and option grants) while ignoring their existing holdings of company equity. [(Core, Guay, and Thomas , 2005)](https://doi.org/10.1111/j.1745-6622.2005.00063.x)
 
 ---
 
 ## Stock holding data
 
 ```{r}
-us_comp <- readRDS("data/us-compensation.RDS") %>%
+us_comp <- readRDS(here("data", "us-compensation-new.RDS")) %>%
     rename(total_comp = tdc1, shares = shrown_tot_pct) %>%
     select(gvkey, execid, year, shares, total_comp)
-us_value <- readRDS("data/us-value.RDS") %>%
+us_value <- readRDS(here("data", "us-value-new.RDS")) %>%
     rename(year = fyear, market_value = mkvalt) %>%
     select(-ni) 
 us_comp_value <- left_join(
@@ -373,7 +368,7 @@ glimpse(us_comp_value)
 plot_shares <- ggplot(
     data = us_comp_value,
     aes(x = market_value/1000, y = shares)) +
-    geom_point(alpha = .10) + 
+    geom_point(alpha = .10) +
     ylab("CEO Ownership") +
     xlab("Firm Market Value (in Billions)") +
     scale_x_continuous(
@@ -390,13 +385,12 @@ plot_shares <- ggplot(
                 prettyNum(x, digits = 2),
         breaks =
             scales::log_breaks(n = 5,
-                               base = 10)) 
-    
+                               base = 10))
 ```
 ]
 
 .pull-right[
-```{r, fig.height = 5}
+```{r, warning = FALSE, fig.height = 5}
 print(plot_shares)
 ```
 ]
@@ -509,10 +503,10 @@ rand_cor <- replicate(1e4,
 hist_sim <- ggplot(
     mapping = aes(
         x = rand_cor,
-        fill = abs(rand_cor) < abs(observed_cor))) + 
-    geom_histogram(bins = 1000) + 
+        fill = abs(rand_cor) < abs(observed_cor))) +
+    geom_histogram(bins = 1000) +
     xlab("Random Correlations") +
-    scale_fill_viridis(discrete = TRUE) +
+    scale_fill_manual(values = c(uwa_blue, uwa_gold)) +
     theme(legend.position = "none") +
     coord_cartesian(
         xlim = c(-0.1, 0.1))
@@ -532,7 +526,7 @@ plot(hist_sim)
 
 ---
 
-## Bootstrap 
+## Bootstrap
 
 .pull-left[
 
@@ -540,8 +534,8 @@ plot(hist_sim)
 calc_corr <- function(d){
   n <- nrow(d)
   id_sample <- sample(1:n, size = n,
-                      replace = TRUE) 
-  sample <- d[id_sample, ] 
+                      replace = TRUE)
+  sample <- d[id_sample, ]
   corr <- cor(sample$sensitivity,
               sample$market_value)
   return(corr)
@@ -553,9 +547,10 @@ boot_corr <- replicate(
 ```{r}
 plot_boot <- ggplot(
     mapping = aes(x = boot_corr)) +
-    geom_histogram(bins = 100) + 
+  geom_histogram(bins = 100, colour = uwa_blue,
+                 fill = uwa_blue) +
     geom_vline(aes(xintercept = 0),
-               col = "darkorange") + 
+               colour = uwa_gold) +
     xlab("Bootstrapped Correlation")
 ```
 
@@ -582,7 +577,9 @@ print(plot_boot)
 - Calculate the statistic for each random sample
 - Is the observed statistic more extreme than the randomly resampled
   statistic?
-  
+
+See also [Chapter 4.2, Causal Mixtape](https://mixtape.scunning.com/potential-outcomes.html#randomization-inference)
+
 ]
 
 --
@@ -595,6 +592,8 @@ print(plot_boot)
 - Calculate the statistic you are interested in.
 - Is the distribution of resampled statistics unlikely to be 0 (= Null
   Hypothesis)?
+
+See also [Chapter 15, The Effect](https://theeffectbook.net/ch-Simulation.html#simulation-with-existing-data-the-bootstrap)
 
 ]
 

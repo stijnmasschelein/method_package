@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Research Design 1: Fixed Effects and Instrumental Variables</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Stijn Masschelein" />
+    <script src="slides4_files/header-attrs-2.11/header-attrs.js"></script>
+    <script src="slides4_files/htmlwidgets-1.5.4/htmlwidgets.js"></script>
+    <script src="slides4_files/viz-1.8.2/viz.js"></script>
+    <link href="slides4_files/DiagrammeR-styles-0.2/styles.css" rel="stylesheet" />
+    <script src="slides4_files/grViz-binding-1.0.8/grViz.js"></script>
+    <script src="slides4_files/kePrint-0.0.1/kePrint.js"></script>
+    <link href="slides4_files/lightable-0.0.1/lightable.css" rel="stylesheet" />
+    <link rel="stylesheet" href="xaringan-themer.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Research Design 1: Fixed Effects and Instrumental Variables
+### Stijn Masschelein
+### February, 2022
+
+---
+
+
+
+
+&lt;style type="text/css"&gt;
+.remark-slide tr:nth-child(even) {
+    background: #FFFFFF;
+}
+&lt;/style&gt;
+
+class: middle
+
+## Did we not cover that already?
+
+- Yes, but briefly
+&lt;br&gt;
+- Yes, but starting from the perspective of a regression (and the code)
+
+???
+The regression perspective is not bad. It means that we can see that more advanced regression techniques can be implemented in our linear regression framework. It's also how most researchers in accounting and finance have been thought to think about research methods. However, there is a shift coming from economics where the focus is more on the research design.
+
+---
+
+class: center, middle
+
+# Research Design
+
+---
+
+class: middle
+
+## The focus is on Research Design
+
+- Which data should we use?
+     - For instance [Alcohol and Mortality, Chapter 5, The Effect](https://theeffectbook.net/ch-Identification.html#alcohol-and-mortality).
+
+&lt;br&gt;
+
+- Which comparison *identifies* the *effect* that we are interested in?
+     - Is there sufficient variation in the treatment and the outcome?
+     - Are we reasonably sure that there are no confounders or only a few and we can measure them? 
+
+???
+Is there sufficient variation that can identify the effect.
+- See also the pitching document
+- A specific example is the identification of performance effects
+
+---
+
+## Prevously, we used models and assumptions to identify effects
+
+.pull-left[
+
+### Mathematical models
+
+
+$$
+V = T^{\alpha_T} \Bigl( \frac{K}{\alpha_K} \Bigl)^{\alpha_K}
+                 \Bigl( \frac{L}{\alpha_L} \Bigl)^{\alpha_L}
+$$
+$$
+\alpha_T + \alpha_K + \alpha_L = 1
+$$
+
+- `\(V =\)` The value of the firm
+- `\(K =\)` Capital of the firm
+- `\(L =\)` Labour of the firm
+- `\(T =\)` CEO talent/skills/ability/experience
+
+
+]
+
+.pull-right[
+
+
+### DAGs
+
+
+&lt;center&gt;
+
+<div id="htmlwidget-512f7e84520aec421180" style="width:400px;height:300px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-512f7e84520aec421180">{"x":{"diagram":"\n  digraph speedboat{\n  graph[layout = dot]\n  node [shape = box]\n  ave_ability; ltime; mixed_race; female; course;\n  month_location; circumstances;\n  circumstances -> female\n  {mixed_race, female, ave_ability, circumstances} -> ltime\n  female -> {ave_ability}\n  {course month_location} -> circumstances\n  }\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+
+&lt;/center&gt;
+
+]
+
+---
+
+## Why not just focus on a setting where we are confident in the assumptions?
+.pull-left[
+
+### Actual random assignment 
+Speedboat racing, game shows, Vietnam draft, 
+
+### Natural experiments 
+(See [Gippel et al. 2015](https://onlinelibrary.wiley.com/doi/full/10.1111/abac.12048), [Chapter 19 Instrumental Variables, The Effect](https://theeffectbook.net/ch-InstrumentalVariables.html))
+
+]
+
+--
+
+.pull-right[
+
+### Policy Changes 
+
+[Chapter 18, Difference-in-Difference, The Effect](https://theeffectbook.net/ch-DifferenceinDifference.html)
+
+### Discrete cutoffs 
+e.g. WAM &gt; 75, [Chapter 20 Regression Continuity Design, The Effect](https://theeffectbook.net/ch-RegressionDiscontinuity.html)
+
+### Unexpected news 
+
+[Chapter 17 Event Studies, The
+Effect](https://theeffectbook.net/ch-EventStudies.html)
+
+]
+
+???
+
+Natural experiments is not the best terminology because most of these instances are not natural nor real experiments. Nevertheless, I still prefer the name over an instrumental variable approach. In too many proposals, I read an off hand comment that the student proposes to use a robustness test where they are going to use an instrumental variable approach. My answer to that is (1) if you have a natural experiment where you can exploit an instrumental variable, this should be the main analysis and (2) instrumental variables need to be defended as a research design based on your understanding of the setting. Calling the design a natural experiment forces you to think more about the experiment (i.e. the research design).
+
+---
+
+class: middle
+
+## Look for these designs!
+
+- Based on your understanding of the industry and setting or the *Data Generating Process*
+- When you read (good** papers for this unit and other units.
+
+
+???
+
+This is one of the main reasons that I want you to read broadly. It is unlikely that you will find a paper with a good research design exactly for the research question that you are interested in. However, you might find inspiration in similar or related fields that help you to design a better study for the research question that you are interested in.
+
+---
+
+class: center, middle
+
+# Effect
+
+---
+
+class: middle
+
+## What effect can we identify?
+
+- **A**verage **T**reatment **E**ffect
+
+- **A**verage **T**reatment on the **T**reated
+
+- **A**verage **T**reatment on the **U**ntreated
+
+- **L**ocal **A**verage **T**reatment **E**ffect
+
+- **W**eigthed **A**verage **T**reatment **E**ffect
+
+[Chapter 10, Treatment Effects in The Effect](https://theeffectbook.net/ch-TreatmentEffects.html)
+
+???
+
+- Do you have an example of an effect that we might be interested in in Accounting and Finance? 
+- Average implies that not all firms will respond the same to the treatment. This is the source of a lot trouble. 
+- Average over which population?
+- How would you put these different effects in your own words?
+- WATE is evil and I am going to largely ignore it. 
+
+---
+
+## It all depends on where the variation is coming from.
+
+### Different firms react differently and are differently represented in the control group and the treatment group.
+
+--
+
+### Some rules of thumb
+
+&gt; With actual random assignment, you probably have an ATE for the population that received the assignment.
+
+&gt; If you can use a control group because that is what the treated group would look like if they were not treated, you probably have an ATT.
+
+&gt; If you use a natural experiment to identify part of the variation, you probably have a LATE.
+
+[Chapter 10, Treatment Effects in The Effect](https://theeffectbook.net/ch-TreatmentEffects.html#i-just-want-an-ate-it-would-make-me-feel-great-what-do-i-get)
+
+---
+
+class: middle
+
+## Why do we care?
+
+--
+
+### Research Design
+
+&gt; There is a deep connection between the variation in your research design and the effect you can identify. 
+
+--
+
+### Policy implications!
+
+&gt; Whether your study has implications for "regulators and investors" depends  heavily on the type of effect you can identify.
+
+
+[Chapter 10, Treatment Effects in The Effect](https://theeffectbook.net/ch-TreatmentEffects.html#who-cares)
+
+---
+
+class: center, middle
+
+# A simulated example
+
+---
+
+## Generate the Data
+
+
+```r
+N &lt;- 1000
+rd1 &lt;- tibble(
+  firm = 1:N,
+  high_performance = rbinom(N, 1, 0.5),
+  noise = rnorm(N, 0, 3)
+) %&gt;%
+  mutate(
+    donation = high_performance,
+    performance = ifelse(high_performance == 1, 4, 1),
+    payoff_donation = 4 - 8 / performance + noise,
+    payoff_no_donation = 1 + noise
+  )
+glimpse(rd1) 
+```
+
+```
+## Rows: 1,000
+## Columns: 7
+## $ firm               &lt;int&gt; 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, …
+## $ high_performance   &lt;int&gt; 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, …
+## $ noise              &lt;dbl&gt; -1.7635937, -0.1413254, 0.4727844, -7.8123538, -1.0…
+## $ donation           &lt;int&gt; 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, …
+## $ performance        &lt;dbl&gt; 1, 4, 1, 1, 4, 1, 4, 1, 1, 4, 4, 4, 4, 4, 1, 4, 4, …
+## $ payoff_donation    &lt;dbl&gt; -5.7635937, 1.8586746, -3.5272156, -11.8123538, 0.9…
+## $ payoff_no_donation &lt;dbl&gt; -0.76359367, 0.85867459, 1.47278437, -6.81235383, -…
+```
+
+???
+
+What is the effect that we are we interested in? What are the policy implications?
+
+---
+
+## Have a look at the data
+
+
+```r
+plot1 &lt;- rd1 %&gt;%
+  pivot_longer(cols = starts_with("payoff"), names_to = "type",
+               values_to = "payoff") %&gt;%
+  ggplot(aes(x = type, y = payoff, group = firm)) +
+  geom_line() + xlab(label = NULL) +
+  facet_wrap(~ donation)
+print(plot1)
+```
+
+![](slides4_files/figure-html/plot-effect1-1.svg)&lt;!-- --&gt;
+
+---
+
+## Have a second look at the data
+
+
+```r
+plot2 &lt;- rd1 %&gt;%
+  pivot_longer(cols = starts_with("payoff"), names_to = "type",
+               values_to = "payoff") %&gt;%
+  ggplot(aes(x = interaction(type, donation), y = payoff)) +
+  geom_jitter(width = .1) + xlab(label = NULL)
+print(plot2)
+```
+
+![](slides4_files/figure-html/plot-effect2-1.svg)&lt;!-- --&gt;
+
+---
+
+## Real data does not have the counterfactuals. We only observe blue!
+
+![](slides4_files/figure-html/plot-effect3-1.svg)&lt;!-- --&gt;
+
+&gt; The actual sample determines which comparisons we can make.
+
+
+???
+
+Why does this work? What effect are we identifying and how.
+
+---
+
+## Let's redo the simulated example with averages
+
+
+```r
+rd1 %&gt;%
+* mutate(causal_effect = payoff_donation - payoff_no_donation) %&gt;%
+  summarise(M_causal = mean(causal_effect),
+            sd_causal = sd(causal_effect),
+            N = n()) %&gt;%
+  knitr::kable(format = "markdown", digits = 2)
+```
+
+
+
+| M_causal| sd_causal|    N|
+|--------:|---------:|----:|
+|    -2.06|         3| 1000|
+
+
+
+---
+
+## Let's redo the simulated example with averages
+
+
+| M_causal| sd_causal|    N|
+|--------:|---------:|----:|
+|    -2.06|         3| 1000|
+
+
+```r
+rd1 %&gt;%
+  mutate(causal_effect = payoff_donation - payoff_no_donation) %&gt;%
+* group_by(donation) %&gt;%
+  summarise(M_causal = mean(causal_effect),
+            sd_causal = sd(causal_effect),
+            N = n()) %&gt;%
+  knitr::kable(format = "markdown", digits = 2)
+```
+
+
+
+| donation| M_causal| sd_causal|   N|
+|--------:|--------:|---------:|---:|
+|        0|       -5|         0| 510|
+|        1|        1|         0| 490|
+
+---
+
+## Let's redo the regression with averages
+
+
+```r
+summary_data  &lt;- rd1 %&gt;%
+  group_by(donation) %&gt;%
+  summarise(M_payoff_donation = mean(payoff_donation),
+            M_payoff_no_donation = mean(payoff_no_donation))
+knitr::kable(summary_data, format = "markdown", digits = 2)
+```
+
+
+
+| donation| M_payoff_donation| M_payoff_no_donation|
+|--------:|-----------------:|--------------------:|
+|        0|             -3.99|                 1.01|
+|        1|              1.97|                 0.97|
+
+```r
+causal_effect_true &lt;-
+  summary_data$M_payoff_donation[summary_data$donation == 1] -
+  summary_data$M_payoff_no_donation[summary_data$donation == 1]
+causal_effect_reg &lt;-
+  summary_data$M_payoff_donation[summary_data$donation == 1] -
+  summary_data$M_payoff_no_donation[summary_data$donation == 0]
+```
+
+- The true ATT is 1
+- The effect estimated by the regression is 0.966
+
+---
+
+## If you do not believe me, here is the regression
+
+.right-column[
+
+```r
+rd1 &lt;- mutate(rd1, actual_payoff =
+       ifelse(donation, payoff_donation, payoff_no_donation))
+ols &lt;- feols(actual_payoff ~ donation, data = rd1)
+```
+]
+
+.left-column[
+&lt;table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt;   &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Model 1 &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; (Intercept) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1.008 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.126) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; donation &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.966 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.180) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Num.Obs. &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1000 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.028 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 Within &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 Pseudo &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Std.Errors &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; IID &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+]
+
+---
+
+## What could possibly go wrong?
+
+
+```r
+rd2 &lt;- tibble(
+  high_performance = rbinom(N, 1, 0.5),
+  noise = rnorm(N, 0, 3)) %&gt;%
+  mutate(
+    donation = high_performance,
+    performance = ifelse(high_performance == 1, 4, 1),
+    payoff_donation = 4 - 8 / performance + noise,
+*   payoff_no_donation = ifelse(high_performance == 1, 1, 2) + noise
+  )
+```
+
+---
+
+## Causal Effect Estimates with a Confounder
+
+
+```r
+summary_data  &lt;- rd2 %&gt;%
+  group_by(donation) %&gt;%
+  summarise(M_payoff_donation = mean(payoff_donation),
+            M_payoff_no_donation = mean(payoff_no_donation))
+knitr::kable(summary_data, format = "markdown", digits = 2)
+```
+
+
+
+| donation| M_payoff_donation| M_payoff_no_donation|
+|--------:|-----------------:|--------------------:|
+|        0|             -4.05|                 1.95|
+|        1|              2.03|                 1.03|
+
+```r
+causal_effect_true &lt;-
+  summary_data$M_payoff_donation[summary_data$donation == 1] -
+  summary_data$M_payoff_no_donation[summary_data$donation == 1]
+causal_effect_reg &lt;-
+  summary_data$M_payoff_donation[summary_data$donation == 1] -
+  summary_data$M_payoff_no_donation[summary_data$donation == 0]
+```
+
+- The true ATT is 1
+- The effect estimated by the regression is 0.08
+
+---
+
+class: center, middle
+
+# A Simulated Example of Panel Data
+
+---
+
+class: center, middle
+
+### We want to use the counterfactual as the control group
+
+--
+
+### Panel data + fixed effects is the next best thing
+
+---
+
+class: middle
+
+## Where is the variation coming from?
+
+--
+
+#### We need firms that make mistakes
+
+- Firms that should donate but do not always do it.
+- Firms that should not donate but sometimes donate.
+
+---
+
+## Panel Data Simulation (100 firms)
+
+
+```r
+*N &lt;- 100
+rd_firm &lt;- tibble(
+  firm = 1:N,
+  high_performance = rbinom(N, 1, 0.5),
+  other_payoff = rnorm(N, 0, 3)) %&gt;%
+  mutate(
+    donation = high_performance,
+    performance = ifelse(high_performance == 1, 4, 1),
+    payoff_no_donation = ifelse(high_performance == 1, 1, 2) + other_payoff,
+    payoff_donation = 4 - 8/performance + other_payoff
+  )
+summary_data  &lt;- rd_firm %&gt;%
+  group_by(donation) %&gt;%
+  summarise(M_payoff_donation = mean(payoff_donation),
+            M_payoff_no_donation = mean(payoff_no_donation))
+knitr::kable(summary_data, digits = 1)
+```
+
+&lt;table&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:right;"&gt; donation &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; M_payoff_donation &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; M_payoff_no_donation &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 0 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -4.4 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.6 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2.4 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.4 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+---
+
+## Panel Data Simulation (10 time periods)
+
+#### The variation comes from high performers not donating some years
+
+
+```r
+T &lt;- 10
+rd_panel_forget &lt;- tibble(
+  firm = rep(1:N, each = T),
+  year = rep(1:T, times = N)) %&gt;%
+* left_join(rd_firm, by = "firm") %&gt;%
+* mutate(forget_donation = rbinom(N * T, 1, plogis(other_payoff)),
+         actual_donation = (1 - forget_donation) * donation,
+         actual_payoff = ifelse(actual_donation == 1,
+                                payoff_donation, payoff_no_donation))
+```
+
+[See this very good paper on data structures by Hadley Wickham](https://doi.org/10.18637/jss.v059.i10)
+
+???
+
+- The way we simulate the data reflects the firm fixed effects and the time varying effects.
+- Which effect are we identifying with this sample?
+
+---
+
+class: middle
+
+## The New Assignment
+
+- Run a fixed effect model and interpret the result
+- Create a new dataset where all firms make mistakes
+- Run a fixed effect model and interpret the result
+
+---
+
+class: middle, center
+
+# Instrumental Variable Approach
+
+---
+
+## Let's assume that firms are *less* likely to donate when there is a local election
+
+
+```r
+N &lt;- 5000
+rd_iv_el &lt;- tibble(
+  high_performance = rbinom(N, 1, .5),
+  extra_payoff = rnorm(N, 0, 3),
+* local_election = rbinom(N, 1, .33)) %&gt;%
+  mutate(
+*   actual_donation = ifelse(high_performance == 1, 1 - local_election, 0),
+    payoff_donation = ifelse(high_performance == 1, 2, - 4) + extra_payoff,
+    payoff_no_donation = ifelse(high_performance == 1, 1, 2) + extra_payoff,
+    actual_payoff = ifelse(actual_donation == 1,
+                           payoff_donation, payoff_no_donation))
+```
+
+???
+
+- Which effect can we identify with this data?
+- Run the instrumental variable analyses and interpret the results.
+
+---
+
+class: middle, center
+
+# A published example paper
+
+#### [How Do Quasi-Random Option Grants Affect CEO Risk-Taking? by Shue and Townsend (2017) in The Journal of Finance](https://doi.org/10.1111/jofi.12545)
+
+---
+
+## This paper is a finished product, your pitch, proposal, or dissertation is not.
+
+&gt; Kelly Shue is with Yale University, School of Management and NBER; Richard Townsend (cor- responding author) is with the University of California San Diego, Rady School of Management. We are grateful to Michael Roberts (the Editor), the Associate Editor, two anonymous referees, Marianne Bertrand, Ing-Haw Cheng, Ken French, Ed Glaeser, Todd Gormley, Ben Iverson (discus- sant), Steve Kaplan, Borja Larrain (discussant), Jonathan Lewellen, Katharina Lewellen, David Matsa (discussant), David Metzger (discussant), Toby Moskowitz, Candice Prendergast, Enrichetta Ravina (discussant), Amit Seru, and Wei Wang (discussant) for helpful suggestions. We thank seminar participants at AFA, BYU, CICF Conference, Depaul, Duke, Gerzensee ESSFM, Harvard, HKUST Finance Symposium, McGill Todai Conference, Finance UC Chile, Helsinki, IDC Herzliya Finance Conference, NBER Corporate Finance and Personnel Meetings, SEC, Simon Fraser Uni- versity, Stanford, Stockholm School of Economics, University of Amsterdam, UC Berkeley, UCLA, and Wharton for helpful comments. We thank David Yermack for his generosity in sharing data. We thank Matt Turner at Pearl Meyer, Don Delves at the Delves Group, and Stephen O’Byrne at Shareholder Value Advisors for helping us understand the intricacies of executive stock option plans. Menaka Hampole provided excellent research assistance. We acknowledge financial support from the Initiative on Global Markets. 
+
+???
+
+On the one hand, we do not expect you to come up with a design like this. On the other hand, why not use these hard won insights.
+
+---
+
+class: middle, center
+
+## This paper has 1 (one!) research question
+
+???
+
+It's not necessarily advantageous to have too many hypotheses. You want to answer one question well.
+
+---
+
+## Do increases in option grants increase risk taking?
+
+&lt;center&gt;
+<div id="htmlwidget-66c89d015cd32695c5d4" style="width:800px;height:400px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-66c89d015cd32695c5d4">{"x":{"diagram":"\n   digraph options{\n   node [shape = box]\n   subgraph{\n     rank = same; \"Option Grants\"; \"Risk Taking\"\n   }\n   Annoyances;\n   Annoyances -> {\"Option Grants\", \"Risk Taking\"}\n   edge [color = \"#DAAA00\"]\n   \"Option Grants\" -> \"Risk Taking\"\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+&lt;/center&gt;
+
+???
+
+Examples of annoyances: 
+- Risk averse CEOs might take less risks and therefore receive more option  grants.
+
+---
+
+## IV 1: Scheduled Discrete Increases in Fixed-Value Option Grants
+
+&lt;center&gt;
+<div id="htmlwidget-3acc45159748a27fadd0" style="width:800px;height:200px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-3acc45159748a27fadd0">{"x":{"diagram":"\n   digraph options{\n   node [shape = box]\n   subgraph{\n     rank = same; \"Predicted New Grant Cycle\", \"Option Grants\"; \"Risk Taking\"\n   }\n   Annoyances;\n   Annoyances -> {\"Option Grants\", \"Risk Taking\"}\n   \"Predicted New Grant Cycle\" -> \"Option Grants\"\n   edge [color = \"#DAAA00\"]\n   \"Option Grants\" -> \"Risk Taking\"\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+&lt;/center&gt;
+
+&gt; For our first instrument, we use fixed-value firms, for which option grants can increase only at regularly prescheduled intervals (i.e., when new cycles start). For example, consider a fixed-value firm on regular three-year cycles. Other time-varying factors may drive trends in risk for this firm. However, these trends are unlikely to coincide exactly with the timing of when new cycles are scheduled to start.
+
+
+???
+
+Basically saying the beginning of a cycle effect on option grants is not affected by the annoyances.
+
+---
+
+## IV 2: Within Cycle Grant Increases due to Industry Shocks in Fixed-Number Option Grants
+
+&lt;center&gt;
+<div id="htmlwidget-f114ef120c38807082ad" style="width:800px;height:200px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-f114ef120c38807082ad">{"x":{"diagram":"\n   digraph options{\n   node [shape = box]\n   subgraph{\n     rank = same; \"Industry Shocks (Fixed Number)\", \"Option Grants\"; \"Risk Taking\"\n   }\n   Annoyances;\n   Annoyances -> {\"Option Grants\", \"Risk Taking\"}\n   \"Industry Shocks (Fixed Number)\" -> \"Option Grants\"\n   edge [color = \"#DAAA00\"]\n   \"Option Grants\" -> \"Risk Taking\"\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+&lt;/center&gt;
+
+&gt; For our second instrument, we focus on fixed-number firms. The value of options granted in any particular year varies with aggregate returns within a fixed-number cycle. This means that the timing of increases in option pay within a cycle will be random in the sense that the increases are driven in part by industry shocks that are beyond the control of the firm and are largely unpredictable. To account for the possibility that aggregate returns can directly affect risk, we use fixed-value firms as a control group because their option compensation must remain fixed despite changes in aggregate returns.
+
+???
+
+The identifying assumption is that fixed-number vs fixed-value might be a part of the annoyances. So might the industry shocks. However, the IV assumes that  the industry shocks are not different except in how they effect the option grant value.
+
+---
+
+## The authors know their setting!
+
+&gt; Our identification strategy builds on Hall’s (1999)) observation that firms often award options according to multiyear plans. Two types of plans are commonly used: fixed-number and fixed-value. Under a fixed-number plan, an executive receives the same number of options each year within a cycle. Under a fixed-value plan, an executive receives the same value of options each year within a cycle.
+
+
+&gt; Our conversations with leading compensation consultants suggest that multiyear plans are used to minimize contracting costs, as option compensation only has to be set once every few years. Hall (1999, p. 97) argues that firms sort into the two types of plans somewhat arbitrarily, observing that “Boards seem to substitute one plan for another without much analysis or understanding of their differences."
+
+???
+
+- Read qualitative studies and descriptions of actual practice!
+- We are looking at "slightly suboptimal" decision making to get variation. 
+
+---
+
+## Two Key Assumptions
+
+.pull-left[
+### Relevance: IV is related to Option Grants
+
+&gt; We find that the first-year indicator corresponds to a 15% larger increase in the Black-Scholes value of new option grants than in other years.
+
+&gt; All estimates are highly significant, with F-statistics greatly exceeding 10, the rule of thumb threshold for concerns related to weak instruments (Staiger and Stock (1997). (III A.)
+]
+
+--
+
+.pull-right[
+### Exclusion (or validity): Only path from IV to Risk Taking is through Option Grants.
+
+&gt; One might be concerned that predicted first years provide exogenously timed but potentially anticipated increases in option compensation. However, this is not an issue for our empirical strategy. [...]  He would have no incentive to increase risk prior to an anticipated increase in the value of his option compensation next period. 
+
+&gt; In addition, we directly examine whether fixed-value cycles appear to be correlated with other firm cycles [...]
+
+]
+
+[Chapter 19 Instrumental Variables, The Effect](https://theeffectbook.net/ch-InstrumentalVariables.html#assumptions-for-instrumental-variables)
+
+???
+
+The key for the exclusion assumption is that anticipation would have an impact on the risk taking prior to the new cycle. This than would have an impact on the actual measure, i.e. the change in risk. 
+
+---
+
+## One Criticism
+
+.pull-left[
+
+&gt; First, option compensation tends to follow an increasing step function for executives on fixed-value plans. This is because compensation tends to drift upward over time, yet executives on fixed-value plans cannot experience an upward drift within a cycle.
+
+&gt; While these two stylized facts do not hold in all cases—as can also be seen in Figure 1—our identification strategy only requires that they hold **on average.**
+
+]
+
+--
+
+.pull-right[
+
+### Some more terminology
+
+- Compliers
+
+- Always-takers/never-takers
+
+- Defiers
+
+[Chapter 19 Instrumental Variables, The Effect](https://theeffectbook.net/ch-InstrumentalVariables.html#instrumental-variables-and-treatment-effects)
+
+]
+
+???
+
+The LATE is identified for the compliers. IV assumes that there are no defiers because now our estimated effect becomes an average of the defiers and compliers. One solution is to just remove the defiers if you can (which they do in the paper as a robustness check).
+
+
+
+
+
+
+
+
+
+
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightLines": true,
+"countIncrementalSlides": false,
+"ratio": "16:9"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

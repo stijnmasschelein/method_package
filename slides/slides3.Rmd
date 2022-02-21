@@ -17,10 +17,11 @@ options(htmltools.preserve.raw = FALSE)
 library(tidyverse)
 library(cowplot)
 theme_set(theme_cowplot(font_size = 18))
+library(modelsummary)
 library(viridis)
-library(stargazer)
 library(DiagrammeR)
-library(xaringan)
+library(here)
+i_am("slides/slides3.Rmd")
 options(tibble.width = 60)
 options(width = 60)
 ```
@@ -28,15 +29,6 @@ options(width = 60)
 ```{r xaringan-themer, include=FALSE, warning=FALSE}
 uwa_blue = "#003087"
 uwa_gold = "#DAAA00"
-library(xaringanthemer)
-style_duo_accent(
-    primary_color = uwa_blue, #UWA blue
-    secondary_color = uwa_gold,  #UWA gold
-    header_font_google = google_font("Merriweather"),
-    text_font_google   = google_font("Montserrat", "300", "300i"),
-    code_font_google   = google_font("Fira Mono"),
-    table_row_even_background_color = "#FFFFFF" 
-)
 ```
 
 class:center, middle
@@ -142,28 +134,24 @@ subgraph{rank = same; CorporateGovernance; TechIndustry}
 
 ```{r, measurement}
 set.seed(230383)
+gof_omit <- "Adj|IC|Log"
 N <- 1000
-CorporateGovernance <- runif(N, 0, 10)
-TechIndustry <- rbinom(N, 1, .25)
-Performance <- rnorm(N, CorporateGovernance * .15 + TechIndustry * 10, 5)
-ds <- tibble(CG = CorporateGovernance,
-             TI = TechIndustry,
-             Performance = Performance)
+ds <- tibble(CG = runif(N, 0, 10),
+             TI = rbinom(N, 1, .25)) %>%
+  mutate(Performance = rnorm(N, CG * .15 + TI * 10, 5))
 ```
 
 ```{r}
 lm1 <- lm(Performance ~ CG, data = ds)
-lm2 <- lm(Performance ~ CG + TechIndustry, data = ds)
+lm2 <- lm(Performance ~ CG + TI, data = ds)
 ```
 
 ---
 
-<small>
-```{r}
-stargazer(lm1, lm2, type="text", star.cutoffs = c(0.05, 0.01, 0.001),
-          keep.stat = c("n", "rsq"), no.space = T)
+```{r, warnings = FALSE}
+msummary(list(lm1, lm2), stars = TRUE,
+         gof_omit = gof_omit)
 ```
-</small>
 
 
 ???
@@ -183,7 +171,7 @@ graph[layout = dot]
 node [shape = box, fontname = Helvetica]
 subgraph{rank = same; Performance; CSR_report; Return}
 Performance -> {CSR_report; Scandals}
-CSR_report -> Return
+CSR_report -> {Return; Observed_Report}
 }
 ")
 ```
@@ -193,7 +181,6 @@ CSR_report -> Return
 class:center, middle
 
 # Confounders and control variables
-
 
 ---
 
@@ -222,26 +209,23 @@ TechIndustry -> CorporateGovernance
 ```{r, confounder}
 set.seed(230383)
 N <- 1000
-TechIndustry <- rbinom(N, 1, .25)
-CorporateGovernance <- rnorm(N, .5 - .2 * TechIndustry, .2)
-Performance <- rnorm(N, TechIndustry, 1)
-ds <- tibble(CG = CorporateGovernance,
-             TI = TechIndustry,
-             Performance = Performance)
+ds <- tibble(TI = rbinom(N, 1, .25)) %>%
+  mutate(Performance = rnorm(N, TI, 1),
+         CG = rnorm(N, .5 - TI), .2)
 ```
 
 
 ```{r}
 lm1 <- lm(Performance ~ CG, data = ds)
-lm2 <- lm(Performance ~ CG + TechIndustry, data = ds)
+lm2 <- lm(Performance ~ CG + TI, data = ds)
 ```
 
 ---
 
 <small>
 ```{r}
-stargazer(lm1, lm2, type="text", star.cutoffs = c(0.05, 0.01, .001),
-          keep.stat = c("n", "rsq"), no.space = T)
+msummary(list(lm1, lm2), stars = TRUE,
+         gof_omit = gof_omit)
 ```
 </small>
 
@@ -327,22 +311,19 @@ grViz("
 
 ---
 
-## Implementation with `lfe`
+## Implementation with `fixest`
 ```{r speedrace, results = "none"}
-suppressMessages(library(lfe))
-load("data/econ_data/booth_yamamura.RData")
+library(fixest)
+load(here("data", "booth_yamamura.Rdata"))
 table <- as_tibble(table) %>%
   select(p_id, women_dat, time, ltime, mix_ra, course,
          race_id, yrmt_locid)
-table_clean <- filter(table, complete.cases(table))
-# this takes too much memory.
-# time_reg <- lm(ltime ~ -1 + mix_ra + women_dat : mix_ra +
-#                  as.factor(course) + as.factor(yrmt_locid),
-#                data = table)
-ltime_reg <- felm(I(ltime * 1000) ~
-                   women_dat : mix_ra + mix_ra
-                 | course + p_id + yrmt_locid,
-                 data = table_clean)
+table_clean <- filter(table, complete.cases(table)) %>%
+  select(ltime, women_dat, mix_ra, course, p_id,
+         yrmt_locid)
+ltime_reg <- feols(ltime ~ women_dat : mix_ra + mix_ra
+                   | course + p_id + yrmt_locid,
+                   data = table_clean)
 ```
 
 ---
@@ -352,8 +333,7 @@ ltime_reg <- felm(I(ltime * 1000) ~
 <small>
 
 ```{r, results = 'asis'}
-stargazer(ltime_reg, type="html", digits = 2, star.cutoffs = c(0.05, 0.01, .001),
-          keep.stat = c("n", "rsq"), no.space = T)
+msummary(ltime_reg, gof_omit = gof_omit, stars = TRUE)
 ```
 
 </small>
@@ -428,17 +408,25 @@ Performance -> IPO
 
 ## Example in the assignment
 
----
+```{r,  echo = FALSE, fig.width = 9, fig.height = 4}
+grViz("
+digraph measurement_error{
+graph[layout = dot]
+node [shape = box, fontname = Helvetica]
+subgraph{rank = same; Performance; CSR_report; Return}
+Performance -> {CSR_report; Scandals}
+CSR_report -> {Return; Observed_Report}
+}
+")
+```
 
 ## Simulation Bad Control
 
 ```{r corp_gov_collider}
-corp_gov <- rnorm(N, 0, 1)
-acc_profit <- rnorm(N, corp_gov, sd = 3)
-market_return <- rnorm(N, 2 * corp_gov + acc_profit, sd = 5)
-d <- tibble(corp_gov = corp_gov,
-       acc_profit = acc_profit,
-       market_return = market_return)
+d <- tibble(corp_gov = rnorm(N, 0, 1)) %>%
+  mutate(acc_profit = rnorm(N, corp_gov, sd = 3),
+         market_return = rnorm(N, 2 * corp_gov + acc_profit,
+                               sd = 3))
 lm1 <- lm(acc_profit ~ corp_gov, data = d)
 lm2 <- lm(acc_profit ~ corp_gov + market_return, data = d)
 ```
@@ -449,8 +437,8 @@ lm2 <- lm(acc_profit ~ corp_gov + market_return, data = d)
 
 <small><small>
 ```{r}
-stargazer(lm1, lm2, type="text", digits = 2, star.cutoffs = c(0.05, 0.01, .001),
-          keep.stat = c("n", "rsq"), no.space = T)
+msummary(list(lm1, lm2),
+         gof_omit = gof_omit, stars = TRUE)
 ```
 </small></small>
 
@@ -470,10 +458,12 @@ lm2 <- lm(acc_profit ~ corp_gov * survival, data = d)
 
 <small><small>
 ```{r}
-stargazer(lm1, lm2, type="text", digits = 2, star.cutoffs = c(0.05, 0.01, .001),
-          keep.stat = c("n", "rsq"), no.space = T)
+msummary(list(lm1, lm2),
+         gof_omit = gof_omit, stars = TRUE)
 ```
 </small></small>
+
+?? One interpretation is that a firm can survive by being lucky (and having high returns) and by having good corporate governance (which translates in high returns). The survivors all are more likely to be having good corporate governance and there is little that can be explained further.
 
 ---
 
@@ -482,23 +472,25 @@ stargazer(lm1, lm2, type="text", digits = 2, star.cutoffs = c(0.05, 0.01, .001),
 ```{r, fig.align='center', fig.height=5, fig.width = 11, echo = FALSE,warning = FALSE}
 d <- mutate(d, survival2 = as.character(survival))
 plot_coll <- ggplot(d, aes(x = corp_gov, y = acc_profit))
-plot_coll1 <- plot_coll + geom_point(alpha = .1) +
-    geom_smooth(method = "lm", formula = y ~ x) +
+plot_coll1 <- plot_coll + geom_point(alpha = .5, colour = uwa_blue) +
+    geom_smooth(method = "lm", formula = y ~ x, colour = uwa_blue) +
     ggtitle("Full Sample")
-plot_coll2 <- plot_coll + 
-  geom_point(aes(colour = survival2), alpha = .1) +
+plot_coll2 <- plot_coll +
+  geom_point(aes(colour = survival2), alpha = .5) +
   geom_smooth(aes(colour = survival2, group = survival2),
-              method = "lm", formula = y ~ x) + 
-  scale_colour_viridis(discrete = TRUE) + 
+              method = "lm", formula = y ~ x) +
+  scale_colour_manual(values = c(uwa_blue, uwa_gold)) +
   theme(legend.position = 'none') +
   ggtitle("Survival vs No Survival")
 plot_coll3 <- ggplot(filter(d, survival == 1),
-                     aes(x = corp_gov, y = acc_profit)) + 
-  geom_smooth(method = "lm", formula = y ~ x) + 
-  geom_point(alpha = .1) +
+                     aes(x = corp_gov, y = acc_profit)) +
+  geom_smooth(method = "lm", formula = y ~ x, colour = uwa_gold) +
+  geom_point(alpha = .5, colour = uwa_gold) +
   ggtitle("Survival Only")
 plot_grid(plot_coll1, plot_coll2, plot_coll3, nrow = 1)
 ```
+
+
 
 ---
 
@@ -562,70 +554,68 @@ grViz("
 
 ---
 
-## Simulation and Implementation with `lfe`
+## Simulation and Implementation with `fixest`
 
 ```{r simulation-iv}
-iv <- rnorm(N, 0, 1)
-confounder <- rnorm(N, 0, 1)
-x <- rnorm(N, .6 * iv - .6 * confounder, .6)
-y <- rnorm(N, .6 * x + .6 * confounder, .6)
-survival <- if_else(y + x > 0, 1, 0)
-d <- tibble(iv = iv, x = x, y = y,
-            confounder = confounder,
-            surivival = survival)
+d <- tibble(
+  iv = rnorm(N, 0, 1),
+  confounder = rnorm(N, 0, 1)) %>%
+  mutate(
+    x = rnorm(N, .6 * iv - .6 * confounder, .6),
+    y = rnorm(N, .6 * x + .6 * confounder, .6),
+    survival = if_else(y + x > 0, 1, 0)
+  )
 surv <- filter(d, survival == 1)
 lm1 <- lm(y ~ x, d)
 lm2 <- lm(y ~ x + confounder, d)
 lm3 <- lm(y ~ x, surv)
 lm4 <- lm(y ~ x + confounder, surv)
-iv1 <- felm(y ~ 1 | 0 | (x ~ iv), data = d)
-iv2 <- felm(y ~ 1 | 0 | (x ~ iv), data = surv)
+iv1 <- feols(y ~ 1 | 0 | x ~ iv, data = d)
+iv2 <- feols(y ~ 1 | 0 | x ~ iv, data = surv)
 ```
 
----
-
-## Simulation results with effect
-
-<small><small><small>
-```{r, results-iv}
-stargazer(lm1, lm2, lm3, lm4, iv1, iv2, type="text",
-          digits = 2, star.cutoffs = c(0.05, 0.01, .001),
-          keep.stat = c("n", "rsq"), no.space = T)
-```
-</small></small></small>
-
----
-
-
-## Simulation and Implementation with `lfe`
-
-```{r simulation-iv2}
-iv <- rnorm(N, 0, 1)
-confounder <- rnorm(N, 0, 1)
-x <- rnorm(N, .6 * iv - .6 * confounder, .6)
-y <- rnorm(N, .6 * confounder, .6)
-survival <- if_else(y + x > 0, 1, 0)
-d <- tibble(iv = iv, x = x, y = y,
-            confounder = confounder,
-            surivival = survival)
-surv <- filter(d, survival == 1)
-lm1 <- lm(y ~ x, d)
-lm2 <- lm(y ~ x + confounder, d)
-lm3 <- lm(y ~ x, surv)
-lm4 <- lm(y ~ x + confounder, surv)
-iv1 <- felm(y ~ 1 | 0 | (x ~ iv), data = d)
-iv2 <- felm(y ~ 1 | 0 | (x ~ iv), data = surv)
-```
+?? All the exogenous variable are in the tibble statement, all the endogenous variables are in the mutate statement. That is not a coincidence. 
+It also highlights the value and tight link between being able to simulate your theory and understanding it.
 
 ---
 
 ## Simulation results with no effect
 
 <small><small><small>
+```{r, results-iv}
+msummary(list(lm1, lm2, lm3, lm4, iv1, iv2),
+         gof_omit = gof_omit, stars = TRUE)
+```
+</small></small></small>
+
+
+## Simulation and Implementation with `fixest`
+
+```{r, simulation-iv2}
+d <- tibble(
+  iv = rnorm(N, 0, 1),
+  confounder = rnorm(N, 0, 1)) %>%
+  mutate(
+    x = rnorm(N, .6 * iv - .6 * confounder, .6),
+    y = rnorm(N, .6 * confounder, .6),
+    survival = if_else(y + x > 0, 1, 0)
+  )
+surv <- filter(d, survival == 1)
+lm1 <- lm(y ~ x, d)
+lm2 <- lm(y ~ x + confounder, d)
+lm3 <- lm(y ~ x, surv)
+lm4 <- lm(y ~ x + confounder, surv)
+iv1 <- feols(y ~ 1 | 0 | x ~ iv, data = d)
+iv2 <- feols(y ~ 1 | 0 | x ~ iv, data = surv)
+```
+---
+
+## Simulation results with no effect
+
+<small><small><small>
 ```{r, results-iv2}
-stargazer(lm1, lm2, lm3, lm4, iv1, iv2, type="text",
-          digits = 2, star.cutoffs = c(0.05, 0.01, .001),
-          keep.stat = c("n", "rsq"), no.space = T)
+msummary(list(lm1, lm2, lm3, lm4, iv1, iv2),
+         gof_omit = gof_omit, stars = TRUE)
 ```
 </small></small></small>
 
@@ -645,16 +635,16 @@ stargazer(lm1, lm2, lm3, lm4, iv1, iv2, type="text",
 
 ```{r}
 library(readit)
-duck <- readit("data/econ_data/LameDuckData.dta") %>%
+duck <- readit(here("data", "LameDuckData.dta")) %>%
   select(-starts_with("nstate"), -starts_with("stdum"),
          -starts_with("yd_alt")) %>%
   group_by(statename) %>%
-  arrange(year) %>%  
+  arrange(year) %>%
   mutate(log_I_1 = lag(log_I), log_I_2 = lag(log_I, 2),
          log_Y_1 = lag(log_Y), log_Y_2 = lag(log_Y, 2),
          log_real_GDP_1 = lag(log_real_GDP),
          log_real_GDP_2 = lag(log_real_GDP, 2)) %>%
-  ungroup() %>%  
+  ungroup() %>%
   arrange(statename) %>%
   filter(year >= 1967, year <= 2004)
 ```
@@ -667,13 +657,9 @@ duck <- readit("data/econ_data/LameDuckData.dta") %>%
 form_red <- formula(
   log_I ~ gov_exogenous_middling + log_I_1 + log_I_2 +
   log_Y + log_Y_1 + log_Y_2 + log_real_GDP + log_real_GDP_1 +
-  log_real_GDP_2
-  # fixed effects | iv formula | Clusters for standard errors|
-  | statename | 0 | statename
+  log_real_GDP_2 | statename
   )
-red_reg <- felm(
-  formula = form_red,
-  data = duck)
+red_reg <- feols(form_red, data = duck)
 ```
 
 ---
@@ -687,13 +673,9 @@ form_iv <- formula(log_I ~ log_I_1 + log_I_2 +
   # fixed effects
   | statename
   # 1st regression
-  | (uncertainty_continuous ~ gov_exogenous_middling)
-  # clusters for standard errors
-  | statename
+  | uncertainty_continuous ~ gov_exogenous_middling
   )
-iv_reg <- felm(
-  formula = form_iv,
-  data = duck)
+iv_reg <- feols(form_iv, data = duck)
 
 ```
 
@@ -704,12 +686,13 @@ iv_reg <- felm(
 
 <small><small>
 ```{r}
-stargazer(red_reg, iv_reg, iv_reg$stage1, type="text",
-          digits = 3, star.cutoffs = c(0.05, 0.01, .001),
-          keep.stat = c("n", "rsq"), no.space = T,
-          dep.var.labels = c('logI', 'uncertainty'),
-          keep = c("gov", "uncertainty"),
-          covariate.labels = c("govExogenous", "uncertainty", "3"))
+coef_map = c("gov_exogenous_middling" = "lame duck governor",
+             "fit_uncertainty_continuous" = "uncertainty")
+msummary(list("reduced" = red_reg,
+              "first stage iv" = summary(iv_reg, stage = 1),
+              "second stage iv" = iv_reg),
+         gof_omit = gof_omit, stars = TRUE,
+         coef_map = coef_map)
 ```
 </small></small>
 
@@ -719,20 +702,19 @@ stargazer(red_reg, iv_reg, iv_reg$stage1, type="text",
 
 ### Test for weak instrument
 
-```{r iv-diagnostics}
+```{r iv-diagnostics, eval = FALSE}
 # Weak Instruments
 summ_1st <- summary(iv_reg$stage1)
 summ_iv <- summary(iv_reg)
 weak_instruments <- summ_1st$iv1fstat
 prettyNum(weak_instruments, dig = 2)[4:6]
-
 ```
 
 ---
 
 ### Sargan Test (Needs more instruments than endogenous variables)
 
-```{r}
+```{r, eval = FALSE}
 sargan(iv_reg)
 ```
 
@@ -740,7 +722,7 @@ sargan(iv_reg)
 
 ### Test for endogeneity (Durbin Watson)
 
-```{r}
+```{r, eval = FALSE}
 # Endogeneity Test - Durbin Watson (by hand)
 uncert_iv_beta <- coefficients(summ_iv)[9,1]
 uncert_iv_se <- coefficients(summ_iv)[9,2]
@@ -766,7 +748,6 @@ print(duwa)
 class: center, middle
 
 # Pitching Template
-
 
 ---
 

@@ -27,18 +27,22 @@ options(width = 60)
 
 ```{r xaringan-themer, include=FALSE, warning=FALSE}
 # This code block is to mimic the UWA approved style
-uwa_blue = "#003087"
-uwa_gold = "#DAAA00"
+uwa_blue <- "#003087"
+uwa_gold <- "#DAAA00"
+extra_css <- list(
+  ".remark-slide tr:nth-child(even)" =
+    list("background" = "#FFFFFF")
+)
 library(xaringanthemer)
 style_duo_accent(
-    primary_color = uwa_blue, #UWA blue
-    secondary_color = uwa_gold,  #UWA gold
-    header_font_google = google_font("Merriweather"),
-    text_font_google   = google_font("Montserrat", "300", "300i"),
-    code_font_google   = google_font("Fira Mono")
-)
+  primary_color = uwa_blue, #UWA blue
+  secondary_color = uwa_gold, #UWA gold
+  header_font_google = google_font("Merriweather"),
+  text_font_google   = google_font("Montserrat", "300", "300i"),
+  code_font_google   = google_font("Fira Mono"),
+  extra_css = extra_css
+  )
 ```
-
 
 class: center, middle
 
@@ -74,19 +78,19 @@ All modules work as stand-alone units and aim to cover a wide range of topics. N
 - No Exam
 
 - (Almost weekly) Assignments (70%)
-    - Assignment 1 (7.5%) (TBA)
-    - Assignment 2 (7.5%) (TBA)
-    - Assignment 3 (7.5%) (TBA)
-    - Assignment 4 (7.5%) (TBA)
+    - Assignment 1 (7.5%) (11 March)
+    - Assignment 2 (7.5%) (18 March)
+    - Assignment 3 (7.5%) (1 April)
+    - Assignment 4 (12.5%) (8 April)
     - Other assignments (35%)
 
 - Proposal and presentation (30%) 
-    - Pitch (10%) ()
-    - Proposal (10%) ()
-    - Presentation (10%) ()
+    - Pitch (10%) (25 March)
+    - Proposal (10%) (13 May)
+    - Presentation (10%) (Probably Thursday 21 July)
 
 ???
-We want you to (1) do some data analysis and (2) be well prepared to undertake (the data analaysis part of) a research project. So we are going to evaluate you by letting you (1) analyse data and (2) prepare your honours thesis.
+We want you to (1) do some data analysis and (2) be well prepared to undertake (the data analysis part of) a research project. So we are going to evaluate you by letting you (1) analyse data and (2) prepare your honours thesis.
 
 
 ---
@@ -395,6 +399,56 @@ companies after the GFC". However, you can start with an overview paper about
 CEO compensation. Like the one I found: ["Executive Compensation: A Modern
 Primer"](https://dx.doi.org/10.1257/jel.20161153) by Alex Edmans and Xavier
 Gabraix in *Journal of Economic Literature*.
+
+---
+
+class: center, middle
+
+# Plan Your Year!
+
+---
+
+## Signs of bad workload management 
+
+- Irregular sleeping habits
+- Loss of motivation
+- Postponing difficult tasks 
+
+---
+
+## Working with a supervisor
+
+1. The role of the supervisor
+  - Guide you towards a feasible research project
+  - Help you finish the dissertation
+  
+2. Work process
+  - Schedule weekly or fortnightly meetings
+  - Submit writing or data analysis before every meeting. 
+  
+3. Add a tl;dr section. 
+  - Your supervisor is not your copy-editor, let them know when you submit an "early" draft.
+  - Tell your supervisor what has changed
+  - Clarify the sample and the main variables in tables
+  - Tell your supervisor what the main table or figure is
+
+---
+
+## Managing the workload (40 hours per week)
+
+1. Plan ahead (with your supervisor) towards major deadlines
+
+2. It's okay to submit partial assignments, as long as you make progress. (Especially for programming exercises)
+
+3. Keep writing!
+
+4. Reach out when you need help with planning or when you feel overwhelmed.
+    - stijn.masschelein@uwa.edu.au
+    - [UWA Counselling services](https://www.student.uwa.edu.au/experience/health-wellbeing-safety/counselling)
+
+???
+
+The plan can be an excel sheet with deadlines and milestones. Breaking down 5000 words into 10 weeks of 500 words is a lot less daunting. 
 
 ---
 

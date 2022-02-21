@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Control Variables and Instrumental Variables</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Stijn Masschelein" />
+    <script src="slides3_files/header-attrs-2.11/header-attrs.js"></script>
+    <script src="slides3_files/htmlwidgets-1.5.4/htmlwidgets.js"></script>
+    <script src="slides3_files/viz-1.8.2/viz.js"></script>
+    <link href="slides3_files/DiagrammeR-styles-0.2/styles.css" rel="stylesheet" />
+    <script src="slides3_files/grViz-binding-1.0.7/grViz.js"></script>
+    <script src="slides3_files/kePrint-0.0.1/kePrint.js"></script>
+    <link href="slides3_files/lightable-0.0.1/lightable.css" rel="stylesheet" />
+    <link rel="stylesheet" href="xaringan-themer.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Control Variables and Instrumental Variables
+### Stijn Masschelein
+### February, 2022
+
+---
+
+
+
+
+
+
+class:center, middle
+
+# Causal Graphs 
+
+---
+
+## An Example
+
+&lt;center&gt;
+
+<div id="htmlwidget-f773a0190d3d491f413d" style="width:720px;height:504px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-f773a0190d3d491f413d">{"x":{"diagram":"\ndigraph brand_capital{\ngraph[ rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nBrandCapital; CreditRating\nsubgraph {\nrank = same; InfoEnvironment; FutureCashFlow;\n}\n{BrandCapital} -> {InfoEnvironment, FutureCashFlow};\n{InfoEnvironment, FutureCashFlow} -> CreditRating;\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+&lt;/center&gt;
+
+---
+
+## Slightly more complicated example
+
+&lt;center&gt;
+
+<div id="htmlwidget-5e77efb712f3c2db8b8b" style="width:864px;height:432px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-5e77efb712f3c2db8b8b">{"x":{"diagram":"\ndigraph brand_capital_complication{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nCumulAds; BrandCapital; CreditRating\nsubgraph {\nrank = same; OtherVars; InfoEnvironment; FutureCashFlow;\n}\nOtherVars -> {CumulAds, CreditRating}\n{CumulAds} -> {BrandCapital}\n{BrandCapital} -> {InfoEnvironment, FutureCashFlow};\n{InfoEnvironment, FutureCashFlow} -> CreditRating;\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+&lt;/center&gt;
+
+---
+
+## Difference with equilibrium models
+
+- All the information that we have is in the causal graph 
+- Equilibrium model gives us some insight in the mechanisms and
+  underlying conceptual assumptions.
+  - E.g. signalling model
+  
+--
+
+&lt;center&gt;
+
+<div id="htmlwidget-7eff58fdf115a04b1fb7" style="width:648px;height:288px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-7eff58fdf115a04b1fb7">{"x":{"diagram":"\ndigraph brand_capital{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nPerformance; Donation; Return;\nPerformance -> Donation;\nDonation -> Return;\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+&lt;/center&gt;
+
+---
+
+class:center, middle
+
+# Measurement error and control variables 
+
+---
+
+## Causal Graph 
+
+<div id="htmlwidget-f94099500be4beb91d2e" style="width:648px;height:288px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-f94099500be4beb91d2e">{"x":{"diagram":"\ndigraph measurement_error{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nsubgraph{rank = same; CorporateGovernance; TechIndustry}\n{CorporateGovernance, TechIndustry} -> Performance\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+
+---
+
+## Simulation
+
+
+```r
+set.seed(230383)
+gof_omit &lt;- "Adj|IC|Log"
+N &lt;- 1000
+ds &lt;- tibble(CG = runif(N, 0, 10),
+             TI = rbinom(N, 1, .25)) %&gt;%
+  mutate(Performance = rnorm(N, CG * .15 + TI * 10, 5))
+```
+
+
+```r
+lm1 &lt;- lm(Performance ~ CG, data = ds)
+lm2 &lt;- lm(Performance ~ CG + TI, data = ds)
+```
+
+---
+
+
+```r
+msummary(list(lm1, lm2), stars = TRUE,
+         gof_omit = gof_omit)
+```
+
+```
+## Warning: In version 0.8.0 of the `modelsummary` package, the default significance markers produced by the `stars=TRUE` argument were changed to be consistent with R's defaults.
+## This warning is displayed once per session.
+```
+
+&lt;table style="NAborder-bottom: 0; width: auto !important; margin-left: auto; margin-right: auto;" class="table"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt;   &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Model 1 &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Model 2 &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; (Intercept) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 2.976*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.036 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.408) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.310) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; CG &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.081 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.130* &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.073) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.052) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; TI &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 10.433*** &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.344) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Num.Obs. &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1000 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1000 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.001 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.480 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; F &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1.233 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 459.735 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;tfoot&gt;&lt;tr&gt;&lt;td style="padding: 0; " colspan="100%"&gt;
+&lt;sup&gt;&lt;/sup&gt; + p &amp;lt; 0.1, * p &amp;lt; 0.05, ** p &amp;lt; 0.01, *** p &amp;lt; 0.001&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
+&lt;/table&gt;
+
+
+???
+
+Measurement error typically decreases the effect and this is also what
+happened in the assignment. For instance, the difference between the
+donation and no donation should be 3 but it is less. 
+
+---
+
+## Assignment: CSR report
+
+<div id="htmlwidget-1693bffdd30a3409415c" style="width:648px;height:288px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-1693bffdd30a3409415c">{"x":{"diagram":"\ndigraph measurement_error{\ngraph[layout = dot]\nnode [shape = box, fontname = Helvetica]\nsubgraph{rank = same; Performance; CSR_report; Return}\nPerformance -> {CSR_report; Scandals}\nCSR_report -> {Return; Observed_Report}\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+
+---
+
+class:center, middle
+
+# Confounders and control variables
+
+---
+
+## Causal Graph 
+
+&lt;center&gt;
+
+<div id="htmlwidget-d145f5e16af552a76442" style="width:648px;height:288px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-d145f5e16af552a76442">{"x":{"diagram":"\ndigraph confounder{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nsubgraph{rank = same; CorporateGovernance; TechIndustry}\n{CorporateGovernance, TechIndustry} -> Performance\nTechIndustry -> CorporateGovernance\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+
+&lt;/center&gt;
+
+---
+
+## Simulation
+
+
+```r
+set.seed(230383)
+N &lt;- 1000
+ds &lt;- tibble(TI = rbinom(N, 1, .25)) %&gt;%
+  mutate(Performance = rnorm(N, TI, 1),
+         CG = rnorm(N, .5 - TI), .2)
+```
+
+
+
+```r
+lm1 &lt;- lm(Performance ~ CG, data = ds)
+lm2 &lt;- lm(Performance ~ CG + TI, data = ds)
+```
+
+---
+
+&lt;small&gt;
+
+```r
+msummary(list(lm1, lm2), stars = TRUE,
+         gof_omit = gof_omit)
+```
+
+&lt;table style="NAborder-bottom: 0; width: auto !important; margin-left: auto; margin-right: auto;" class="table"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt;   &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Model 1 &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Model 2 &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; (Intercept) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.291*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.016 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.036) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.041) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; CG &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.127*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.040 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.033) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.034) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; TI &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1.001*** &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.085) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Num.Obs. &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1000 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1000 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.015 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.136 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; F &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 15.130 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 78.796 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;tfoot&gt;&lt;tr&gt;&lt;td style="padding: 0; " colspan="100%"&gt;
+&lt;sup&gt;&lt;/sup&gt; + p &amp;lt; 0.1, * p &amp;lt; 0.05, ** p &amp;lt; 0.01, *** p &amp;lt; 0.001&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
+&lt;/table&gt;
+&lt;/small&gt;
+
+---
+
+## Fixed effects as a special case
+
+&gt; Effects that are the same for an industry, year, firm, individual
+&gt; can be adjusted for by using fixed effects.
+
+--
+
+&gt; We do not need to measure the specific variables and can just use
+&gt; indicators variables for each category (e.g. for each different
+&gt; industry).
+
+---
+
+## [A Gif by Nick Huntington-Klein](https://nickchk.com/causalgraphs.html)
+
+.pull-left[
+
+![Nick C. Huntington-Klein - Fixed Effects](https://nickchk.com/anim/Animation%20of%20Fixed%20Effects.gif)
+
+]
+
+.pull-right[
+
+&lt;center&gt;
+
+<div id="htmlwidget-c95e43cc6ab175bd6455" style="width:432px;height:288px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-c95e43cc6ab175bd6455">{"x":{"diagram":"\ndigraph fixed{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nsubgraph{rank = same; X; Individual}\n{X, Individual} -> Y \nIndividual -> X\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+
+&lt;/center&gt;
+
+]
+
+---
+
+## Speedboat Racing Example ([Booth and Yamamura, 2018](https://doi.org/10.1162/rest_a_00715))
+
+.pull-left[
+
+- Mixed-sex and single-sex races determined by lottery (*Randomisation*)
+- 7 race courses
+- Multiple races in the same month and location
+
+]
+
+--
+
+.pull-right[
+
+&lt;center&gt;
+
+<div id="htmlwidget-8437c07524df6df5798d" style="width:504px;height:432px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-8437c07524df6df5798d">{"x":{"diagram":"\n  digraph speedboat{\n  graph[layout = dot]\n  node [shape = box]\n  ave_ability; ltime; mixed_race; female; course;\n  month_location; circumstances;\n  circumstances -> female\n  {mixed_race, female, ave_ability, circumstances} -> ltime\n  female -> {ave_ability}\n  {course month_location} -> circumstances\n  }\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+
+&lt;/center&gt;
+
+]
+
+---
+
+## Implementation with `fixest`
+
+```r
+library(fixest)
+load(here("data", "booth_yamamura.Rdata"))
+table &lt;- as_tibble(table) %&gt;%
+  select(p_id, women_dat, time, ltime, mix_ra, course,
+         race_id, yrmt_locid)
+table_clean &lt;- filter(table, complete.cases(table)) %&gt;%
+  select(ltime, women_dat, mix_ra, course, p_id,
+         yrmt_locid)
+ltime_reg &lt;- feols(ltime ~ women_dat : mix_ra + mix_ra
+                   | course + p_id + yrmt_locid,
+                   data = table_clean)
+```
+
+---
+
+## Results of Boat Races
+
+&lt;small&gt;
+
+
+```r
+msummary(ltime_reg, gof_omit = gof_omit, stars = TRUE)
+```
+
+&lt;table style="NAborder-bottom: 0; width: auto !important; margin-left: auto; margin-right: auto;" class="table"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt;   &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Model 1 &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; mix_ra &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.002** &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.000) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; women_dat × mix_ra &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.007*** &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.001) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Num.Obs. &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 142346 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.361 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 Within &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.001 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 Pseudo &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Std.Errors &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; by: course &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; FE: course &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; X &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; FE: p_id &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; X &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; FE: yrmt_locid &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; X &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;tfoot&gt;&lt;tr&gt;&lt;td style="padding: 0; " colspan="100%"&gt;
+&lt;sup&gt;&lt;/sup&gt; + p &amp;lt; 0.1, * p &amp;lt; 0.05, ** p &amp;lt; 0.01, *** p &amp;lt; 0.001&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
+&lt;/table&gt;
+
+&lt;/small&gt;
+
+---
+
+class:center, middle
+
+# Colliders 
+## Bad Controls, Survival Bias, Selection Bias, Self-Selection Bias 
+
+---
+
+## Causal Diagram 
+
+&lt;center&gt;
+
+<div id="htmlwidget-6431331203232a574b06" style="width:648px;height:108px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-6431331203232a574b06">{"x":{"diagram":"\ndigraph confounder{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nCorporateGovernance -> Performance\nPerformance -> StockPrice \n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+
+--
+
+<div id="htmlwidget-176bdef1afaa8cf6eb77" style="width:648px;height:108px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-176bdef1afaa8cf6eb77">{"x":{"diagram":"\ndigraph confounder{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nCorporateGovernance -> Performance\nPerformance -> Survival\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+
+--
+
+<div id="htmlwidget-d02e207d598f49cc1ee9" style="width:648px;height:108px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-d02e207d598f49cc1ee9">{"x":{"diagram":"\ndigraph confounder{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nCorporateGovernance -> Performance\nPerformance -> SP500\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+
+--
+
+<div id="htmlwidget-ab6ae4c5ee9e8ef843d4" style="width:648px;height:108px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-ab6ae4c5ee9e8ef843d4">{"x":{"diagram":"\ndigraph confounder{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nCorporateGovernance -> Performance\nPerformance -> IPO\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+
+&lt;/center&gt;
+
+---
+
+
+## Example in the assignment
+
+<div id="htmlwidget-81301f257027b7647b08" style="width:648px;height:288px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-81301f257027b7647b08">{"x":{"diagram":"\ndigraph measurement_error{\ngraph[layout = dot]\nnode [shape = box, fontname = Helvetica]\nsubgraph{rank = same; Performance; CSR_report; Return}\nPerformance -> {CSR_report; Scandals}\nCSR_report -> {Return; Observed_Report}\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+
+## Simulation Bad Control
+
+
+```r
+d &lt;- tibble(corp_gov = rnorm(N, 0, 1)) %&gt;%
+  mutate(acc_profit = rnorm(N, corp_gov, sd = 3),
+         market_return = rnorm(N, 2 * corp_gov + acc_profit,
+                               sd = 3))
+lm1 &lt;- lm(acc_profit ~ corp_gov, data = d)
+lm2 &lt;- lm(acc_profit ~ corp_gov + market_return, data = d)
+```
+
+---
+
+## Results Bad Control 
+
+&lt;small&gt;&lt;small&gt;
+
+```r
+msummary(list(lm1, lm2),
+         gof_omit = gof_omit, stars = TRUE)
+```
+
+&lt;table style="NAborder-bottom: 0; width: auto !important; margin-left: auto; margin-right: auto;" class="table"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt;   &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Model 1 &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Model 2 &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; (Intercept) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.045 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.023 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.094) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.067) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; corp_gov &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.951*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.512*** &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.095) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.083) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; market_return &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.486*** &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.016) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Num.Obs. &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1000 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1000 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.091 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.536 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; F &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 99.708 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 575.320 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;tfoot&gt;&lt;tr&gt;&lt;td style="padding: 0; " colspan="100%"&gt;
+&lt;sup&gt;&lt;/sup&gt; + p &amp;lt; 0.1, * p &amp;lt; 0.05, ** p &amp;lt; 0.01, *** p &amp;lt; 0.001&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
+&lt;/table&gt;
+&lt;/small&gt;&lt;/small&gt;
+
+---
+
+## Simulation Survival Bias
+
+
+```r
+d &lt;- mutate(d, survival = if_else(market_return &gt; 5, 1, 0))
+lm1 &lt;- lm(acc_profit ~ corp_gov, data = filter(d, survival == 1))
+lm2 &lt;- lm(acc_profit ~ corp_gov * survival, data = d)
+```
+
+---
+
+## Results Survival Bias
+
+&lt;small&gt;&lt;small&gt;
+
+```r
+msummary(list(lm1, lm2),
+         gof_omit = gof_omit, stars = TRUE)
+```
+
+&lt;table style="NAborder-bottom: 0; width: auto !important; margin-left: auto; margin-right: auto;" class="table"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt;   &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Model 1 &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Model 2 &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; (Intercept) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 3.512*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.677*** &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.249) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.094) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; corp_gov &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.174 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.510*** &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.218) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.099) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; survival &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 4.189*** &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.301) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; corp_gov × survival &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.684* &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.270) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Num.Obs. &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 175 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1000 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.004 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.272 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; F &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.633 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 124.277 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;tfoot&gt;&lt;tr&gt;&lt;td style="padding: 0; " colspan="100%"&gt;
+&lt;sup&gt;&lt;/sup&gt; + p &amp;lt; 0.1, * p &amp;lt; 0.05, ** p &amp;lt; 0.01, *** p &amp;lt; 0.001&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
+&lt;/table&gt;
+&lt;/small&gt;&lt;/small&gt;
+
+?? One interpretation is that a firm can survive by being lucky (and having high returns) and by having good corporate governance (which translates in high returns). The survivors all are more likely to be having good corporate governance and there is little that can be explained further.
+
+---
+
+## Visualisation of colliders 
+
+&lt;img src="slides3_files/figure-html/unnamed-chunk-23-1.svg" style="display: block; margin: auto;" /&gt;
+
+
+
+---
+
+class:center, middle
+
+# Instrumental Variable
+
+---
+
+## Causal Diagram
+
+
+.pull-left[
+
+&lt;center&gt;
+<div id="htmlwidget-c8cf77e664bd03a9ca49" style="width:648px;height:432px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-c8cf77e664bd03a9ca49">{"x":{"diagram":"\n    digraph randomisation{\n    node [shape = box]\n    subgraph{\n      rank = same; x; y;\n    }\n    confounder; collider;\n    confounder -> {x, y};\n\n    {x, y} -> collider\n    edge [color = blue]\n    x -> y\n    }\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+&lt;/center&gt;
+
+]
+
+--
+
+.pull-right[
+
+&lt;center&gt;
+<div id="htmlwidget-be6a57e5079f6abf47bc" style="width:648px;height:432px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-be6a57e5079f6abf47bc">{"x":{"diagram":"\n    digraph randomisation{\n    node [shape = box]\n    subgraph{\n      rank = same; x; y; iv;\n    }\n    random; confounder; collider;\n    confounder -> {x, y};\n\n    random -> iv;\n    {x, y} -> collider\n    edge [color = blue]\n    x -> y\n    iv -> x;\n    }\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+&lt;/center&gt;
+]
+
+---
+
+## Simulation and Implementation with `fixest`
+
+
+```r
+d &lt;- tibble(
+  iv = rnorm(N, 0, 1),
+  confounder = rnorm(N, 0, 1)) %&gt;%
+  mutate(
+    x = rnorm(N, .6 * iv - .6 * confounder, .6),
+    y = rnorm(N, .6 * x + .6 * confounder, .6),
+    survival = if_else(y + x &gt; 0, 1, 0)
+  )
+surv &lt;- filter(d, survival == 1)
+lm1 &lt;- lm(y ~ x, d)
+lm2 &lt;- lm(y ~ x + confounder, d)
+lm3 &lt;- lm(y ~ x, surv)
+lm4 &lt;- lm(y ~ x + confounder, surv)
+iv1 &lt;- feols(y ~ 1 | 0 | x ~ iv, data = d)
+iv2 &lt;- feols(y ~ 1 | 0 | x ~ iv, data = surv)
+```
+
+?? All the exogenous variable are in the tibble statement, all the endogenous variables are in the mutate statement. That is not a coincidence. 
+It also highlights the value and tight link between being able to simulate your theory and understanding it.
+
+---
+
+## Simulation results with no effect
+
+&lt;small&gt;&lt;small&gt;&lt;small&gt;
+
+```r
+msummary(list(lm1, lm2, lm3, lm4, iv1, iv2),
+         gof_omit = gof_omit, stars = TRUE)
+```
+
+&lt;table style="NAborder-bottom: 0; width: auto !important; margin-left: auto; margin-right: auto;" class="table"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt;   &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Model 1 &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Model 2 &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Model 3 &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Model 4 &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Model 5 &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Model 6 &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; (Intercept) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.030 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.022 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.604*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.409*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.032 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.341*** &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.024) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.018) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.037) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.034) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.025) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.082) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; x &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.295*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.625*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.122*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.269*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.023) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.021) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.036) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.041) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; confounder &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.597*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.457*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.022) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.032) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; fit_x &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.557*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.255* &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.042) &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.109) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Num.Obs. &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1000 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1000 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 509 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 509 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1000 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 509 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.142 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.505 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.022 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.307 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.029 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.191 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 Within &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 Pseudo &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; F &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 165.786 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 507.934 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 11.520 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 112.040 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Std.Errors &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; IID &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; IID &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;tfoot&gt;&lt;tr&gt;&lt;td style="padding: 0; " colspan="100%"&gt;
+&lt;sup&gt;&lt;/sup&gt; + p &amp;lt; 0.1, * p &amp;lt; 0.05, ** p &amp;lt; 0.01, *** p &amp;lt; 0.001&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
+&lt;/table&gt;
+&lt;/small&gt;&lt;/small&gt;&lt;/small&gt;
+
+
+## Simulation and Implementation with `fixest`
+
+
+```r
+d &lt;- tibble(
+  iv = rnorm(N, 0, 1),
+  confounder = rnorm(N, 0, 1)) %&gt;%
+  mutate(
+    x = rnorm(N, .6 * iv - .6 * confounder, .6),
+    y = rnorm(N, .6 * confounder, .6),
+    survival = if_else(y + x &gt; 0, 1, 0)
+  )
+surv &lt;- filter(d, survival == 1)
+lm1 &lt;- lm(y ~ x, d)
+lm2 &lt;- lm(y ~ x + confounder, d)
+lm3 &lt;- lm(y ~ x, surv)
+lm4 &lt;- lm(y ~ x + confounder, surv)
+iv1 &lt;- feols(y ~ 1 | 0 | x ~ iv, data = d)
+iv2 &lt;- feols(y ~ 1 | 0 | x ~ iv, data = surv)
+```
+---
+
+## Simulation results with no effect
+
+&lt;small&gt;&lt;small&gt;&lt;small&gt;
+
+```r
+msummary(list(lm1, lm2, lm3, lm4, iv1, iv2),
+         gof_omit = gof_omit, stars = TRUE)
+```
+
+&lt;table style="NAborder-bottom: 0; width: auto !important; margin-left: auto; margin-right: auto;" class="table"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt;   &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Model 1 &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Model 2 &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Model 3 &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Model 4 &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Model 5 &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Model 6 &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; (Intercept) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.000 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.005 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.655*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.481*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.000 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.491*** &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.024) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.018) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.030) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.028) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.026) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.050) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; x &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.310*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.013 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.634*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.344*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.023) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.021) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.028) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.031) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; confounder &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.611*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.400*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.023) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.029) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; fit_x &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.014 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.355*** &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.044) &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.072) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Num.Obs. &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1000 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1000 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 486 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 486 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1000 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 486 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.150 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.511 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.513 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.654 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.014 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.414 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 Within &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 Pseudo &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; F &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 176.674 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 521.482 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 510.787 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 457.099 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Std.Errors &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; IID &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; IID &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;tfoot&gt;&lt;tr&gt;&lt;td style="padding: 0; " colspan="100%"&gt;
+&lt;sup&gt;&lt;/sup&gt; + p &amp;lt; 0.1, * p &amp;lt; 0.05, ** p &amp;lt; 0.01, *** p &amp;lt; 0.001&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
+&lt;/table&gt;
+&lt;/small&gt;&lt;/small&gt;&lt;/small&gt;
+
+---
+
+## Example:Sitting Duck Governors [(Falk and Shelton, 2018)](https://pubs.aeaweb.org/doi/pdfplus/10.1257/pol.20160365)
+
+
+- Research Question: Does political uncertainty effect investment?
+- More uncertainty in a state when governor does not come up for
+  reelection.
+- State level laws with term limits (~ Random)
+
+---
+
+## Data
+
+
+```r
+library(readit)
+duck &lt;- readit(here("data", "LameDuckData.dta")) %&gt;%
+  select(-starts_with("nstate"), -starts_with("stdum"),
+         -starts_with("yd_alt")) %&gt;%
+  group_by(statename) %&gt;%
+  arrange(year) %&gt;%
+  mutate(log_I_1 = lag(log_I), log_I_2 = lag(log_I, 2),
+         log_Y_1 = lag(log_Y), log_Y_2 = lag(log_Y, 2),
+         log_real_GDP_1 = lag(log_real_GDP),
+         log_real_GDP_2 = lag(log_real_GDP, 2)) %&gt;%
+  ungroup() %&gt;%
+  arrange(statename) %&gt;%
+  filter(year &gt;= 1967, year &lt;= 2004)
+```
+
+```
+## File guessed to be DTA (Stata) (here("data", "LameDuckData.dta"))
+```
+
+---
+
+## Reduced Form
+
+
+```r
+form_red &lt;- formula(
+  log_I ~ gov_exogenous_middling + log_I_1 + log_I_2 +
+  log_Y + log_Y_1 + log_Y_2 + log_real_GDP + log_real_GDP_1 +
+  log_real_GDP_2 | statename
+  )
+red_reg &lt;- feols(form_red, data = duck)
+```
+
+```
+## NOTE: 250 observations removed because of NA values (RHS: 250).
+```
+
+---
+
+## 2 Stage Least Squares (2SLS)
+
+
+```r
+form_iv &lt;- formula(log_I ~ log_I_1 + log_I_2 +
+  log_Y + log_Y_1 + log_Y_2 + log_real_GDP + log_real_GDP_1 +
+  log_real_GDP_2
+  # fixed effects
+  | statename
+  # 1st regression
+  | uncertainty_continuous ~ gov_exogenous_middling
+  )
+iv_reg &lt;- feols(form_iv, data = duck)
+```
+
+```
+## NOTE: 250 observations removed because of NA values (RHS: 250).
+```
+
+---
+
+## Results
+
+
+&lt;small&gt;&lt;small&gt;
+
+```r
+coef_map = c("gov_exogenous_middling" = "lame duck governor",
+             "fit_uncertainty_continuous" = "uncertainty")
+msummary(list("reduced" = red_reg,
+              "first stage iv" = summary(iv_reg, stage = 1),
+              "second stage iv" = iv_reg),
+         gof_omit = gof_omit, stars = TRUE,
+         coef_map = coef_map)
+```
+
+&lt;table style="NAborder-bottom: 0; width: auto !important; margin-left: auto; margin-right: auto;" class="table"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt;   &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; reduced &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; first stage iv &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; second stage iv &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; lame duck governor &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.049* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1.801*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.021) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.112) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; uncertainty &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.027* &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.012) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Num.Obs. &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1650 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1650 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1650 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.979 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.194 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.978 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 Within &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.846 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.175 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.844 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 Pseudo &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Std.Errors &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; by: statename &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; by: statename &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; by: statename &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; FE: statename &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; X &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; X &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; X &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;tfoot&gt;&lt;tr&gt;&lt;td style="padding: 0; " colspan="100%"&gt;
+&lt;sup&gt;&lt;/sup&gt; + p &amp;lt; 0.1, * p &amp;lt; 0.05, ** p &amp;lt; 0.01, *** p &amp;lt; 0.001&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
+&lt;/table&gt;
+&lt;/small&gt;&lt;/small&gt;
+
+---
+
+## Diagnostics
+
+### Test for weak instrument
+
+
+```r
+# Weak Instruments
+summ_1st &lt;- summary(iv_reg$stage1)
+summ_iv &lt;- summary(iv_reg)
+weak_instruments &lt;- summ_1st$iv1fstat
+prettyNum(weak_instruments, dig = 2)[4:6]
+```
+
+---
+
+### Sargan Test (Needs more instruments than endogenous variables)
+
+
+```r
+sargan(iv_reg)
+```
+
+---
+
+### Test for endogeneity (Durbin Watson)
+
+
+```r
+# Endogeneity Test - Durbin Watson (by hand)
+uncert_iv_beta &lt;- coefficients(summ_iv)[9,1]
+uncert_iv_se &lt;- coefficients(summ_iv)[9,2]
+# Regression assuming no iv needed
+form_lm &lt;- formula(log_I ~ uncertainty_continuous +
+  log_I_1 + log_I_2 + log_Y + log_Y_1 + log_Y_2 +
+    log_real_GDP + log_real_GDP_1 + log_real_GDP_2
+  # fixed effects
+  | statename | 0 | statename
+  )
+
+lm_reg &lt;- felm(formula = form_lm, data = duck)
+coef_lm_reg &lt;- coefficients(summary(lm_reg))
+uncert_lm_beta &lt;- coef_lm_reg[1,1]
+uncert_lm_se &lt;- coef_lm_reg[1,2]
+duwa &lt;- (uncert_iv_beta - uncert_lm_beta) /
+  sqrt(uncert_iv_se^2 - uncert_lm_se^2)
+print(duwa)
+```
+
+---
+
+class: center, middle
+
+# Pitching Template
+
+---
+
+## Pitching Format
+
+1. Description (Important)
+    - Title
+    - Research Question
+    - Key Paper
+    - Motivation
+2. THREE (IDioT) (Important)
+    - Idea 
+    - Data 
+    - Tools 
+3. TWO 
+    - What's new?
+    - So what?
+4. ONE contribution
+5. Other considerations.
+
+
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"countIncrementalSlides": false,
+"ratio": "16:9"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

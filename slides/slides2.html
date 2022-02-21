@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Simulations, Regressions, and Significance</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Stijn Masschelein" />
+    <script src="slides2_files/header-attrs-2.11/header-attrs.js"></script>
+    <link rel="stylesheet" href="xaringan-themer.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Simulations, Regressions, and Significance
+### Stijn Masschelein
+### February, 2022
+
+---
+
+
+
+
+
+class: center, middle
+
+# Simulations
+
+---
+
+## Why simulate data?
+
+- Visualising your theory
+- Experimenting with and understanding statistical tests 
+- Experimenting with statistical approaches without peaking at your data.
+
+See also [Chapter 15, The Effect](https://theeffectbook.net/ch-Simulation.html)
+
+???
+
+- Visualising can help you sharpen your intuition for your theory and for which values are reasonable and which are not.
+- You can simulate variables and causal structures that you cannot observe. See also this week's homework
+- You don't want to just decide on which statistical test to use because it gives you the "right" answer. If you want to experiment with different statistical models, you can do that with simulated data.
+
+---
+
+## Simulations in `R`
+
+
+
+```r
+N &lt;- 1000
+random &lt;- tibble(
+  normal = rnorm(N, 2, 5),
+  uniform = runif(N, 1, 5),
+  binomial = rbinom(N, 1, .25),
+  sample = sample(1:10, N, replace = T)
+)
+glimpse(random)
+```
+
+```
+## Rows: 1,000
+## Columns: 4
+## $ normal   &lt;dbl&gt; 3.7522709, 1.2230280, 5.8995260, 3.907138…
+## $ uniform  &lt;dbl&gt; 3.029750, 3.789954, 4.654102, 2.259348, 3…
+## $ binomial &lt;int&gt; 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0,…
+## $ sample   &lt;int&gt; 1, 7, 4, 6, 10, 2, 1, 2, 5, 10, 5, 3, 5, …
+```
+
+---
+
+
+```r
+p1 &lt;- ggplot(random, aes(x = normal)) + geom_density() + ggtitle("normal density")
+plot_grid(p1, ncol = 4)
+```
+
+![](slides2_files/figure-html/random-plot1-1.svg)&lt;!-- --&gt;
+
+---
+
+
+```r
+p1 &lt;- ggplot(random, aes(x = normal)) + geom_density() + ggtitle("normal density")
+p2 &lt;- ggplot(random, aes(x = uniform)) + geom_histogram(bins = 50) + ggtitle("uniform histogram")
+plot_grid(p1, p2, ncol = 4)
+```
+
+![](slides2_files/figure-html/random-plot2-1.svg)&lt;!-- --&gt;
+
+---
+
+
+```r
+p1 &lt;- ggplot(random, aes(x = normal)) + geom_density() + ggtitle("normal density")
+p2 &lt;- ggplot(random, aes(x = uniform)) + geom_histogram(bins = 50) + ggtitle("uniform histogram")
+p3 &lt;- ggplot(random, aes(x = binomial, y = normal)) + geom_point() + ggtitle("binomal-normal")
+plot_grid(p1, p2, p3, ncol = 4)
+```
+
+![](slides2_files/figure-html/random-plot3-1.svg)&lt;!-- --&gt;
+
+---
+
+
+```r
+p1 &lt;- ggplot(random, aes(x = normal)) + geom_density() + ggtitle("normal density")
+p2 &lt;- ggplot(random, aes(x = uniform)) + geom_histogram(bins = 50) + ggtitle("uniform histogram")
+p3 &lt;- ggplot(random, aes(x = binomial, y = normal)) + geom_point() + ggtitle("binomal-normal")
+p4 &lt;- ggplot(random, aes(x = as.factor(sample), y = uniform)) + geom_jitter(width = .2) +
+    ggtitle("sample-uniform") + labs(x = "sample")
+plot_grid(p1, p2, p3, p4, ncol = 4)
+```
+
+![](slides2_files/figure-html/random-plot4-1.svg)&lt;!-- --&gt;
+
+---
+
+class: center, middle
+
+# CEO-firm matching
+
+---
+
+## New theory
+
+ - Firms have different size and CEOs have different talent.
+ - More talented CEOs work for bigger firms.
+ - Firms pay just enough so that the CEO is not tempted to work for a
+ smaller firm.
+
+The model is the second one presented in Edmans and Gabraix
+(2016). A more rigorous proof is shown in
+[Tervio (2008)](https://www.aeaweb.org/articles?id=10.1257/aer.98.3.642)
+
+A simplified explanation is in [Chapter 5 of the lecture notes](https://stijn-masschelein.netlify.app/teaching/just_enough/maths-sim.htm)
+
+---
+
+## Visualisation of matching theory
+
+.pull-left[
+
+![](slides2_files/figure-html/matching-viz-1.svg)&lt;!-- --&gt;
+
+]
+
+.pull-right[
+
+![](slides2_files/figure-html/matching-log-1.svg)&lt;!-- --&gt;
+
+]
+
+---
+
+## CEO compensation data
+
+
+```r
+us_comp &lt;- readRDS(here("data", "us-compensation-new.RDS")) %&gt;%
+  rename(total_comp = tdc1)
+us_value &lt;- readRDS(here("data", "us-value-new.RDS")) %&gt;%
+  rename(year = fyear, market_value = mkvalt)
+summary(us_value$market_value)
+```
+
+```
+##      Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+##       0.0     910.9    2466.6   12969.3    8124.1 2324390.2 
+##      NA's 
+##      3282
+```
+
+---
+
+## Putting it all together
+
+
+```r
+us_comp_value &lt;-
+    select(us_comp, gvkey, year, total_comp) %&gt;% 
+    left_join(
+        us_value,
+        by = c("year", "gvkey"))
+glimpse(us_comp_value)
+```
+
+```
+## Rows: 25,426
+## Columns: 5
+## $ gvkey        &lt;chr&gt; "001004", "001004", "001004", "001004…
+## $ year         &lt;dbl&gt; 2011, 2011, 2012, 2013, 2014, 2015, 2…
+## $ total_comp   &lt;dbl&gt; 5786.400, 5786.400, 4182.832, 5247.77…
+## $ market_value &lt;dbl&gt; 485.2897, 485.2897, 790.0029, 961.308…
+## $ ni           &lt;dbl&gt; 67.723, NA, 55.000, 72.900, 10.200, 4…
+```
+
+---
+
+## First plot - The basics
+
+.pull-left[
+
+
+```r
+plot_comp_value &lt;- ggplot(
+    us_comp_value,
+    aes(y = total_comp, x = market_value)) +
+    geom_point(alpha = .10) +
+    ylab("compensation ($ 000)") +
+    xlab("market value ($ million)")
+```
+
+]
+
+.pull-right[
+
+
+```r
+print(plot_comp_value)
+```
+
+```
+## Warning: Removed 2560 rows containing missing values
+## (geom_point).
+```
+
+![](slides2_files/figure-html/unnamed-chunk-4-1.svg)&lt;!-- --&gt;
+    
+]
+
+---
+
+## First plot - The scales 
+
+.pull-left[
+
+
+```r
+plot_log &lt;- plot_comp_value +
+    scale_x_continuous(
+        trans = "log1p",
+        breaks = c(1e2, 1e3, 1e4, 1e5, 1e6),
+        labels = function(x)
+            prettyNum(x/1000, digits = 2)) +
+    scale_y_continuous(
+        trans = "log1p",
+        breaks = c(1e1, 1e2, 1e3, 1e4, 1e5),
+        labels = function(x)
+            prettyNum(x/1000, digits = 2)) +
+    ylab("compensation ($ million)") +
+    xlab("market value ($ billion)")
+```
+
+]
+
+.pull-right[
+
+
+```r
+print(plot_log)
+```
+
+```
+## Warning: Removed 2560 rows containing missing values
+## (geom_point).
+```
+
+![](slides2_files/figure-html/unnamed-chunk-6-1.svg)&lt;!-- --&gt;
+    
+]
+---
+
+## First plot - Zoom in
+
+.pull-left[
+
+
+```r
+plot_zoom &lt;- plot_log +
+    coord_cartesian(
+        xlim = c(1e1, NA), ylim = c(1e2, NA))
+```
+
+]
+
+.pull-right[
+
+
+```r
+print(plot_zoom)
+```
+
+```
+## Warning: Removed 2560 rows containing missing values
+## (geom_point).
+```
+
+![](slides2_files/figure-html/unnamed-chunk-8-1.svg)&lt;!-- --&gt;
+
+]
+
+---
+
+class: middle, center
+
+# Linear regression in `R`
+
+See [Chapter 6 of the lecture notes](https://stijn-masschelein.netlify.app/teaching/just_enough/linear-regression.html)
+
+---
+
+## Notation 
+
+.pull-left[
+
+`\begin{equation}
+y_i = a + b_1 x_{1i} + ... + b_n x_{ni} + \epsilon_i
+\end{equation}`
+
+`\begin{equation}
+\vec{y} = a + b_1 \vec{x_1} + ... b_n \vec{x_n} + \vec{\epsilon}
+\end{equation}`
+
+`\begin{equation}
+\vec{y} = a + \vec{b} X + \vec{\epsilon}
+\end{equation}`
+
+`\begin{equation}
+\vec{y} = \mathcal{N}(a + \vec{b} X, \sigma)
+\end{equation}`
+
+See also [Chapter 13, The Effect](https://theeffectbook.net/ch-StatisticalAdjustment.html)
+
+]
+
+--
+
+.pull-right[
+
+
+```r
+reg &lt;- lm(y ~ x1 + x2, data = my_data_set)
+summary(reg)
+```
+
+]
+
+
+---
+
+### Finally, the regression
+
+
+```r
+reg = lm(log(total_comp + 1) ~ log(market_value + 1), 
+         data = us_comp_value)
+# summary(reg)
+print(summary(reg)$coefficients, digits = 2)
+```
+
+```
+##                       Estimate Std. Error t value Pr(&gt;|t|)
+## (Intercept)               5.28     0.0285     185        0
+## log(market_value + 1)     0.38     0.0035     108        0
+```
+---
+
+class: center, middle
+
+# CEO Incentives and Size
+
+See [Chapter 7 of the lecture notes](https://stijn-masschelein.netlify.app/teaching/just_enough/measurement.html)
+
+---
+
+## Historical Discussion
+
+&gt; Our estimates of the pay-performance relation (including pay, options, stockholdings, and dismissal) for chief executive officers indicate that CEO wealth changes $3.25 for every $1,000 change in shareholder wealth. [(Jensen and Murphy, 1990)](https://www.journals.uchicago.edu/doi/10.1086/261677)
+
+--
+
+&gt; [...] The statistic in isolation can present a misleading picture of pay to performance relationships because the denominator - the change in firm value - is so large. [(Hall and Liebman, 1998)](https://doi.org/10.1162/003355398555702)
+
+--
+
+&gt; This article addresses four major concerns about the pay of U.S. CEOs: (1) failure to pay for performance; [...]. The authors' main message is that most if not all of these concerns are exaggerated by the popular tendency to focus on the annual income of CEOs (consisting of salary, bonus, and stock and option grants) while ignoring their existing holdings of company equity. [(Core, Guay, and Thomas , 2005)](https://doi.org/10.1111/j.1745-6622.2005.00063.x)
+
+---
+
+## Stock holding data
+
+
+```r
+us_comp &lt;- readRDS(here("data", "us-compensation-new.RDS")) %&gt;%
+    rename(total_comp = tdc1, shares = shrown_tot_pct) %&gt;%
+    select(gvkey, execid, year, shares, total_comp)
+us_value &lt;- readRDS(here("data", "us-value-new.RDS")) %&gt;%
+    rename(year = fyear, market_value = mkvalt) %&gt;%
+    select(-ni) 
+us_comp_value &lt;- left_join(
+    us_comp, us_value, by = c("year", "gvkey")) %&gt;%
+    filter(!is.na(market_value) &amp; !(is.na(shares))) %&gt;%
+    mutate(wealth = shares * market_value / 100)
+glimpse(us_comp_value)
+```
+
+```
+## Rows: 21,879
+## Columns: 7
+## $ gvkey        &lt;chr&gt; "001004", "001004", "001004", "001004…
+## $ execid       &lt;chr&gt; "09249", "09249", "09249", "09249", "…
+## $ year         &lt;dbl&gt; 2011, 2011, 2012, 2013, 2014, 2015, 2…
+## $ shares       &lt;dbl&gt; 2.964, 2.964, 2.893, 3.444, 3.877, 4.…
+## $ total_comp   &lt;dbl&gt; 5786.400, 5786.400, 4182.832, 5247.77…
+## $ market_value &lt;dbl&gt; 485.2897, 485.2897, 790.0029, 961.308…
+## $ wealth       &lt;dbl&gt; 14.383987, 14.383987, 22.854784, 33.1…
+```
+
+---
+
+## Shares to Market Value
+
+.pull-left[
+
+
+```r
+plot_shares &lt;- ggplot(
+    data = us_comp_value,
+    aes(x = market_value/1000, y = shares)) +
+    geom_point(alpha = .10) +
+    ylab("CEO Ownership") +
+    xlab("Firm Market Value (in Billions)") +
+    scale_x_continuous(
+        trans = "log",
+        labels = function(x)
+            prettyNum(x, digits = 2),
+        breaks =
+            scales::log_breaks(n = 5,
+                               base = 10)) +
+    scale_y_continuous(
+        trans = "log",
+        labels =
+            function(x)
+                prettyNum(x, digits = 2),
+        breaks =
+            scales::log_breaks(n = 5,
+                               base = 10))
+```
+]
+
+.pull-right[
+
+```r
+print(plot_shares)
+```
+
+![](slides2_files/figure-html/unnamed-chunk-13-1.svg)&lt;!-- --&gt;
+]
+
+---
+
+## Pay to Performance Sensitivity
+
+
+```r
+us_sens &lt;- us_comp_value %&gt;%
+    group_by(gvkey, execid) %&gt;%
+    arrange(year) %&gt;%
+    mutate(prev_market_value = lag(market_value),
+            prev_wealth = lag(wealth)) %&gt;%
+    ungroup() %&gt;%
+    mutate(change_log_value = log(market_value) - log(prev_market_value),
+           change_log_wealth = log(wealth) - log(prev_wealth)) %&gt;%
+    filter(!is.infinite(change_log_wealth)) %&gt;%
+    arrange(gvkey)
+```
+
+```
+## Warning in log(wealth): NaNs produced
+```
+
+```
+## Warning in log(prev_wealth): NaNs produced
+```
+
+???
+
+- The assumption for pay-for-performance and incentives is that we
+  want to measure whether a CEO has taken the correct decisions. In a
+  bigger firm, the impact of a CEOs decisions are larger. If you
+  improve management of employees, then the effects will be bigger for
+  a firm with more employees. 
+- The other assumption is that CEOs do not care about dollar increases
+  in dollars but in increases in percentages. Partly
+
+$$
+`\begin{align}
+\frac{\partial W}{W} \frac{V}{\partial V}  \\
+  &amp;= \frac{ln(W)}{ln(V)}
+\end{align}`
+$$
+
+---
+
+.pull-left[
+
+
+```r
+plot_hypothesis = ggplot(
+    us_sens,
+    aes(y = change_log_wealth / change_log_value,
+        x = market_value/1000)) +
+  geom_point(alpha = .1) +
+  scale_x_continuous(
+    trans = "log", 
+    breaks = scales::log_breaks(n = 5, base = 10),
+    labels = function(x) prettyNum(x, dig = 2)) +
+  coord_cartesian(
+    ylim = c(-10, 10)) +
+  xlab("market value") +
+  ylab("sensitivity")
+```
+
+]
+
+.pull-right[
+
+
+```r
+print(plot_hypothesis)
+```
+
+```
+## Warning: Removed 8716 rows containing missing values
+## (geom_point).
+```
+
+![](slides2_files/figure-html/unnamed-chunk-16-1.svg)&lt;!-- --&gt;
+
+]
+
+---
+
+class: center, middle
+
+# p-values
+
+---
+
+## Randomisation or Permutation Test (1)
+
+
+```r
+data_hypo &lt;- us_sens %&gt;%
+    mutate(
+      sensitivity = change_log_wealth / change_log_value) %&gt;%
+  select(sensitivity, market_value) %&gt;%
+  filter(complete.cases(.))
+
+observed_cor &lt;- cor(
+  data_hypo$sensitivity, data_hypo$market_value)
+
+random_cor &lt;- cor(
+  data_hypo$sensitivity, sample(data_hypo$market_value))
+
+print(prettyNum(c(observed_cor, random_cor), dig = 3))
+```
+
+```
+## [1] "-0.0047"  "-0.00263"
+```
+
+---
+
+## Randomisation or Permutation Test (2)
+
+.pull-left[
+
+
+```r
+simulate_cor &lt;- function(data){
+    return(cor(data$sensitivity,
+               sample(data$market_value)))}
+rand_cor &lt;- replicate(1e4,
+                      simulate_cor(data_hypo))
+```
+
+
+```r
+hist_sim &lt;- ggplot(
+    mapping = aes(
+        x = rand_cor,
+        fill = abs(rand_cor) &lt; abs(observed_cor))) +
+    geom_histogram(bins = 1000) +
+    xlab("Random Correlations") +
+    scale_fill_manual(values = c(uwa_blue, uwa_gold)) +
+    theme(legend.position = "none") +
+    coord_cartesian(
+        xlim = c(-0.1, 0.1))
+```
+
+]
+
+--
+
+.pull-right[
+
+
+```r
+plot(hist_sim)
+```
+
+![](slides2_files/figure-html/unnamed-chunk-20-1.svg)&lt;!-- --&gt;
+
+]
+
+---
+
+## Bootstrap
+
+.pull-left[
+
+
+```r
+calc_corr &lt;- function(d){
+  n &lt;- nrow(d)
+  id_sample &lt;- sample(1:n, size = n,
+                      replace = TRUE)
+  sample &lt;- d[id_sample, ]
+  corr &lt;- cor(sample$sensitivity,
+              sample$market_value)
+  return(corr)
+}
+boot_corr &lt;- replicate(
+    2000, calc_corr(data_hypo))
+```
+
+
+```r
+plot_boot &lt;- ggplot(
+    mapping = aes(x = boot_corr)) +
+  geom_histogram(bins = 100, colour = uwa_blue,
+                 fill = uwa_blue) +
+    geom_vline(aes(xintercept = 0),
+               colour = uwa_gold) +
+    xlab("Bootstrapped Correlation")
+```
+
+]
+
+--
+
+.pull-right[
+
+```r
+print(plot_boot)
+```
+
+![](slides2_files/figure-html/unnamed-chunk-23-1.svg)&lt;!-- --&gt;
+]
+
+---
+
+## Comparison
+
+.pull-left[
+
+### Permutation Test
+- Calculate the observed statistic
+- Randomly resample the data by breaking the relation you want to test
+  (= Null Hypothesis)
+- Calculate the statistic for each random sample
+- Is the observed statistic more extreme than the randomly resampled
+  statistic?
+
+See also [Chapter 4.2, Causal Mixtape](https://mixtape.scunning.com/potential-outcomes.html#randomization-inference)
+
+]
+
+--
+
+.pull-right[
+
+### Bootstrap
+
+- Randomly sample observed observations with replacement. 
+- Calculate the statistic you are interested in.
+- Is the distribution of resampled statistics unlikely to be 0 (= Null
+  Hypothesis)?
+
+See also [Chapter 15, The Effect](https://theeffectbook.net/ch-Simulation.html#simulation-with-existing-data-the-bootstrap)
+
+]
+
+---
+
+## Formula Based P-value
+
+
+```r
+cor &lt;- cor.test(data_hypo$sensitivity, data_hypo$market_value)
+pvalue_cor &lt;- cor$p.value
+print(prettyNum(pvalue_cor, dig = 2))
+```
+
+```
+## [1] "0.59"
+```
+
+--
+
+
+```r
+regr_sens &lt;- lm(sensitivity ~ I(market_value/1e3), data = data_hypo)
+coefficients(summary(regr_sens)) %&gt;% print(dig = 2)
+```
+
+```
+##                      Estimate Std. Error t value Pr(&gt;|t|)
+## (Intercept)             1.464      1.221    1.20     0.23
+## I(market_value/1000)   -0.012      0.023   -0.54     0.59
+```
+
+---
+
+class: center, middle
+
+# Pitching Template
+
+---
+
+## Pitching Format
+
+1. Description (Important)
+    - Title
+    - Research Question
+    - Key Paper
+    - Motivation
+2. THREE (IDioT) (Important)
+    - Idea 
+    - Data 
+    - Tools 
+3. TWO 
+    - What's new?
+    - So what?
+4. ONE contribution
+5. Other considerations.
+
+---
+
+class: center, middle
+
+# Assignment 1: Plots and regressions
+
+---
+
+class: center
+
+## Models
+
+.pull-left[
+
+
+#### Signalling Model 
+
+![Peacock](https://www.arts.uwa.edu.au/__data/assets/image/0010/117973/Peacock-165px.jpg)
+
+]
+
+--
+
+.pull-right[
+
+#### Cheap Talk Model
+
+![Assumptions](https://www.dlsweb.rmit.edu.au/lsu/content/B_DSC/gsssp/graphics/iceberg.jpg)
+
+]
+
+---
+
+## Answers
+
+
+```r
+N &lt;- 1000
+high_performance &lt;- rbinom(.x, .y, .z)
+donation &lt;- ifelse(.x, 1, 0)
+return &lt;- ifelse(donation == 1, .y, .z)
+observed_donation &lt;- ifelse(rbinom(N, 1, .9) == 1, donation, 1 - donation)
+observed_return &lt;- ... 
+sig &lt;- tibble(return = ...,
+              donation = ...) %&gt;%
+    mutate(donated = ...)
+glimpse(sig)
+```
+
+--
+
+
+```r
+sig_plot &lt;- ggplot(..., aes(x = .x, y = .y)) +
+    geom_jitter(width = .3)
+plot(sig_plot)
+```
+
+--
+
+
+```r
+sig_reg &lt;- lm(..., data = sig)
+summary(...)
+```
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"countIncrementalSlides": false,
+"ratio": "16:9"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
