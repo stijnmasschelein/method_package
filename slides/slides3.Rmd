@@ -7,6 +7,7 @@ output:
         css: "xaringan-themer.css"
         nature:
             countIncrementalSlides: false
+            highlightLines: true
             ratio: 16:9
 ---
 
@@ -134,7 +135,6 @@ subgraph{rank = same; CorporateGovernance; TechIndustry}
 
 ```{r, measurement}
 set.seed(230383)
-gof_omit <- "Adj|IC|Log"
 N <- 1000
 ds <- tibble(CG = runif(N, 0, 10),
              TI = rbinom(N, 1, .25)) %>%
@@ -148,10 +148,14 @@ lm2 <- lm(Performance ~ CG + TI, data = ds)
 
 ---
 
-```{r, warnings = FALSE}
-msummary(list(lm1, lm2), stars = TRUE,
-         gof_omit = gof_omit)
+<small>
+```{r, warnings = FALSE, output = "html"}
+gof_omit <- "Adj|IC|Log|Pseudo"
+stars <- c('\\*' = .1, '\\*\\*' = .05, '\\*\\*\\*' = .01)
+msummary(list(lm1, lm2), stars = stars,
+         gof_omit = gof_omit, output = "html")
 ```
+</small>
 
 
 ???
@@ -223,9 +227,9 @@ lm2 <- lm(Performance ~ CG + TI, data = ds)
 ---
 
 <small>
-```{r}
-msummary(list(lm1, lm2), stars = TRUE,
-         gof_omit = gof_omit)
+```{r, output = "html"}
+msummary(list(lm1, lm2), stars = stars,
+         gof_omit = gof_omit, output = "html")
 ```
 </small>
 
@@ -331,11 +335,9 @@ ltime_reg <- feols(ltime ~ women_dat : mix_ra + mix_ra
 ## Results of Boat Races
 
 <small>
-
 ```{r, results = 'asis'}
-msummary(ltime_reg, gof_omit = gof_omit, stars = TRUE)
+msummary(ltime_reg, gof_omit = gof_omit, stars = stars)
 ```
-
 </small>
 
 ---
@@ -347,7 +349,7 @@ class:center, middle
 
 ---
 
-## Causal Diagram 
+## Causal Diagram
 
 <center>
 
@@ -405,10 +407,11 @@ Performance -> IPO
 
 ---
 
+class: center
 
 ## Example in the assignment
 
-```{r,  echo = FALSE, fig.width = 9, fig.height = 4}
+```{r,  echo = FALSE, fig.width = 7, fig.height = 4}
 grViz("
 digraph measurement_error{
 graph[layout = dot]
@@ -419,6 +422,7 @@ CSR_report -> {Return; Observed_Report}
 }
 ")
 ```
+---
 
 ## Simulation Bad Control
 
@@ -435,12 +439,12 @@ lm2 <- lm(acc_profit ~ corp_gov + market_return, data = d)
 
 ## Results Bad Control 
 
-<small><small>
+<small>
 ```{r}
 msummary(list(lm1, lm2),
-         gof_omit = gof_omit, stars = TRUE)
+         gof_omit = gof_omit, stars = stars)
 ```
-</small></small>
+</small>
 
 ---
 
@@ -456,14 +460,16 @@ lm2 <- lm(acc_profit ~ corp_gov * survival, data = d)
 
 ## Results Survival Bias
 
-<small><small>
+<small>
 ```{r}
 msummary(list(lm1, lm2),
-         gof_omit = gof_omit, stars = TRUE)
+         gof_omit = gof_omit, stars = stars)
 ```
-</small></small>
+</small>
 
-?? One interpretation is that a firm can survive by being lucky (and having high returns) and by having good corporate governance (which translates in high returns). The survivors all are more likely to be having good corporate governance and there is little that can be explained further.
+??? 
+
+One interpretation is that a firm can survive by being lucky (and having high returns) and by having good corporate governance (which translates in high returns). The survivors all are more likely to be having good corporate governance and there is little that can be explained further.
 
 ---
 
@@ -563,7 +569,7 @@ d <- tibble(
   mutate(
     x = rnorm(N, .6 * iv - .6 * confounder, .6),
     y = rnorm(N, .6 * x + .6 * confounder, .6),
-    survival = if_else(y + x > 0, 1, 0)
+    survival = if_else(y > 0, 1, 0)
   )
 surv <- filter(d, survival == 1)
 lm1 <- lm(y ~ x, d)
@@ -574,20 +580,24 @@ iv1 <- feols(y ~ 1 | 0 | x ~ iv, data = d)
 iv2 <- feols(y ~ 1 | 0 | x ~ iv, data = surv)
 ```
 
-?? All the exogenous variable are in the tibble statement, all the endogenous variables are in the mutate statement. That is not a coincidence. 
-It also highlights the value and tight link between being able to simulate your theory and understanding it.
+???
+All the exogenous variable are in the tibble statement, all the endogenous variables are in the mutate statement. That is not a coincidence. It also highlights the value and tight link between being able to simulate your theory and understanding it.
+
+Note, the collider bias is the biggest problem if the selection bias is on both `x` and `y` because then the collider bias effects the first stage regressions.
 
 ---
 
-## Simulation results with no effect
+## Simulation results with a real effect of `x` on `y`
 
 <small><small><small>
 ```{r, results-iv}
-msummary(list(lm1, lm2, lm3, lm4, iv1, iv2),
-         gof_omit = gof_omit, stars = TRUE)
+msummary(list(confounded = lm1, "with control" = lm2, collider = lm3, collider = lm4,
+              "iv no collider" = iv1, "iv with collider" = iv2),
+         gof_omit = gof_omit, stars = stars)
 ```
 </small></small></small>
 
+---
 
 ## Simulation and Implementation with `fixest`
 
@@ -598,7 +608,7 @@ d <- tibble(
   mutate(
     x = rnorm(N, .6 * iv - .6 * confounder, .6),
     y = rnorm(N, .6 * confounder, .6),
-    survival = if_else(y + x > 0, 1, 0)
+    survival = if_else(y > 0, 1, 0)
   )
 surv <- filter(d, survival == 1)
 lm1 <- lm(y ~ x, d)
@@ -614,8 +624,9 @@ iv2 <- feols(y ~ 1 | 0 | x ~ iv, data = surv)
 
 <small><small><small>
 ```{r, results-iv2}
-msummary(list(lm1, lm2, lm3, lm4, iv1, iv2),
-         gof_omit = gof_omit, stars = TRUE)
+msummary(list(confounded = lm1, "with control" = lm2, collider = lm3, collider = lm4,
+              "iv no collider" = iv1, "iv with collider" = iv2),
+         gof_omit = gof_omit, stars = stars)
 ```
 </small></small></small>
 
@@ -683,7 +694,6 @@ iv_reg <- feols(form_iv, data = duck)
 
 ## Results
 
-
 <small><small>
 ```{r}
 coef_map = c("gov_exogenous_middling" = "lame duck governor",
@@ -691,7 +701,7 @@ coef_map = c("gov_exogenous_middling" = "lame duck governor",
 msummary(list("reduced" = red_reg,
               "first stage iv" = summary(iv_reg, stage = 1),
               "second stage iv" = iv_reg),
-         gof_omit = gof_omit, stars = TRUE,
+         gof_omit = gof_omit, stars = stars,
          coef_map = coef_map)
 ```
 </small></small>
@@ -700,52 +710,32 @@ msummary(list("reduced" = red_reg,
 
 ## Diagnostics
 
+[Instrumental Variables, Chapter 19, The Effect](https://theeffectbook.net/ch-InstrumentalVariables.html#how-is-it-performed-3)
+
+### Test for endogeneity (Durbin-Wu-Hausmann)
+
+> Is the IV result different from the OLS result?
+
+```{r dwh}
+summ_iv <- summary(iv_reg)
+summ_1st <- summary(iv_reg, stage = 1)
+summ_iv$iv_wh$stat  # iv wu hausmann
+summ_iv$iv_wh$p     # iv wu hausmann
+```
+
+---
+
 ### Test for weak instrument
 
-```{r iv-diagnostics, eval = FALSE}
-# Weak Instruments
-summ_1st <- summary(iv_reg$stage1)
-summ_iv <- summary(iv_reg)
-weak_instruments <- summ_1st$iv1fstat
-prettyNum(weak_instruments, dig = 2)[4:6]
+> Is the instrument predicting the variable we want it to predict?
+
+[Instrumental Variables, Chapter 19, The Effect](https://theeffectbook.net/ch-InstrumentalVariables.html#how-is-it-performed-3)
+
+```{r iv-diagnostics}
+fitstat(iv_reg, type = "ivf")
 ```
 
 ---
-
-### Sargan Test (Needs more instruments than endogenous variables)
-
-```{r, eval = FALSE}
-sargan(iv_reg)
-```
-
----
-
-### Test for endogeneity (Durbin Watson)
-
-```{r, eval = FALSE}
-# Endogeneity Test - Durbin Watson (by hand)
-uncert_iv_beta <- coefficients(summ_iv)[9,1]
-uncert_iv_se <- coefficients(summ_iv)[9,2]
-# Regression assuming no iv needed
-form_lm <- formula(log_I ~ uncertainty_continuous +
-  log_I_1 + log_I_2 + log_Y + log_Y_1 + log_Y_2 +
-    log_real_GDP + log_real_GDP_1 + log_real_GDP_2
-  # fixed effects
-  | statename | 0 | statename
-  )
-
-lm_reg <- felm(formula = form_lm, data = duck)
-coef_lm_reg <- coefficients(summary(lm_reg))
-uncert_lm_beta <- coef_lm_reg[1,1]
-uncert_lm_se <- coef_lm_reg[1,2]
-duwa <- (uncert_iv_beta - uncert_lm_beta) /
-  sqrt(uncert_iv_se^2 - uncert_lm_se^2)
-print(duwa)
-```
-
----
-
-class: center, middle
 
 # Pitching Template
 
@@ -768,4 +758,66 @@ class: center, middle
 4. ONE contribution
 5. Other considerations.
 
+---
 
+class: middle, center
+
+# Appendix
+
+---
+
+## Why can the $R^2$ be negative with 2SLS?
+
+.pull-left[
+```{r, rsq_iv}
+iv <- tibble(
+  e1 = rnorm(N, 0, 1),
+  e2 = rnorm(N, 0, 1),
+  z = rnorm(N, 0, 1)) %>%
+  mutate(
+    x = .5 * z + e1, #<<
+    y = - 0.4 * x + e1 + e2) #<<
+iv2sls <- feols(y ~ 1 | x ~ z, data  = iv)
+first_stage <- summary(iv2sls, stage = 1)
+```
+]
+
+.pull-right[
+<small>
+```{r}
+msummary(list(first_stage, iv2sls),
+         gof_omit = gof_omit, stars = stars)
+```
+</small>
+]
+
+---
+
+class: center
+
+## Why can the $R^2$ be negative with 2SLS?
+
+```{r, echo = FALSE, warning = FALSE, fig.width = 9, fig.height = 3}
+ivplot <- mutate(iv,
+  xfit = first_stage$fitted.values)
+raw <- ggplot(ivplot, aes(y = y, x = x)) +
+  geom_point() + geom_smooth(method = "lm", formula = y ~ x, se = FALSE) +
+  xlab("x") + ylab("y")
+residualised <- ggplot(ivplot, aes(y = y - e1, x = x - e1)) +
+  geom_point() + geom_smooth(method = "lm", formula = y ~ x, se = FALSE) +
+  xlab("x - endogeneity") + ylab("y - endogeneity")
+ivfit <- ggplot(ivplot,  aes(y = y, x = xfit)) +
+  geom_point() + geom_smooth(method = "lm", formula = y ~ x, se = FALSE) +
+  xlab("first_stage_fit_x") + ylab("y")
+plot_grid(raw, residualised, ivfit, ncol = 3)
+```
+
+---
+
+## Why can the $R^2$ be negative with 2SLS?
+
+- The $R^2$ picks up the correlation between $y$ and $x$
+
+- We are interested in the causal relation between $y$ and $x$.
+
+- If the causal relation has the opposite sign as the correlation, $R^2$ will be negative with a correctly specified 2SLS.

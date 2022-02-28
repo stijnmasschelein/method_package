@@ -26,18 +26,12 @@ class: center, middle, inverse, title-slide
 
 
 
-&lt;style type="text/css"&gt;
-.remark-slide tr:nth-child(even) {
-    background: #FFFFFF;
-}
-&lt;/style&gt;
-
 class: middle
 
 ## Did we not cover that already?
 
 - Yes, but briefly
-&lt;br&gt;
+
 - Yes, but starting from the perspective of a regression (and the code)
 
 ???
@@ -102,8 +96,8 @@ $$
 
 &lt;center&gt;
 
-<div id="htmlwidget-512f7e84520aec421180" style="width:400px;height:300px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-512f7e84520aec421180">{"x":{"diagram":"\n  digraph speedboat{\n  graph[layout = dot]\n  node [shape = box]\n  ave_ability; ltime; mixed_race; female; course;\n  month_location; circumstances;\n  circumstances -> female\n  {mixed_race, female, ave_ability, circumstances} -> ltime\n  female -> {ave_ability}\n  {course month_location} -> circumstances\n  }\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-232ac468f94deff8eb9f" style="width:400px;height:300px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-232ac468f94deff8eb9f">{"x":{"diagram":"\n  digraph speedboat{\n  graph[layout = dot]\n  node [shape = box]\n  ave_ability; ltime; mixed_race; female; course;\n  month_location; circumstances;\n  circumstances -> female\n  {mixed_race, female, ave_ability, circumstances} -> ltime\n  female -> {ave_ability}\n  {course month_location} -> circumstances\n  }\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 
 &lt;/center&gt;
 
@@ -151,7 +145,7 @@ class: middle
 ## Look for these designs!
 
 - Based on your understanding of the industry and setting or the *Data Generating Process*
-- When you read (good** papers for this unit and other units.
+- When you read **good** papers for this unit and other units.
 
 
 ???
@@ -259,13 +253,13 @@ glimpse(rd1)
 ```
 ## Rows: 1,000
 ## Columns: 7
-## $ firm               &lt;int&gt; 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, …
-## $ high_performance   &lt;int&gt; 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, …
-## $ noise              &lt;dbl&gt; -1.7635937, -0.1413254, 0.4727844, -7.8123538, -1.0…
-## $ donation           &lt;int&gt; 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, …
-## $ performance        &lt;dbl&gt; 1, 4, 1, 1, 4, 1, 4, 1, 1, 4, 4, 4, 4, 4, 1, 4, 4, …
-## $ payoff_donation    &lt;dbl&gt; -5.7635937, 1.8586746, -3.5272156, -11.8123538, 0.9…
-## $ payoff_no_donation &lt;dbl&gt; -0.76359367, 0.85867459, 1.47278437, -6.81235383, -…
+## $ firm               [3m[90m&lt;int&gt;[39m[23m 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, …
+## $ high_performance   [3m[90m&lt;int&gt;[39m[23m 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0…
+## $ noise              [3m[90m&lt;dbl&gt;[39m[23m 0.6584382, -2.1427088, 1.795782…
+## $ donation           [3m[90m&lt;int&gt;[39m[23m 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0…
+## $ performance        [3m[90m&lt;dbl&gt;[39m[23m 1, 1, 4, 1, 1, 4, 4, 4, 4, 1, 1…
+## $ payoff_donation    [3m[90m&lt;dbl&gt;[39m[23m -3.34156178, -6.14270877, 3.795…
+## $ payoff_no_donation [3m[90m&lt;dbl&gt;[39m[23m 1.6584382, -1.1427088, 2.795782…
 ```
 
 ???
@@ -336,7 +330,7 @@ rd1 %&gt;%
 
 | M_causal| sd_causal|    N|
 |--------:|---------:|----:|
-|    -2.06|         3| 1000|
+|    -2.04|         3| 1000|
 
 
 
@@ -347,7 +341,7 @@ rd1 %&gt;%
 
 | M_causal| sd_causal|    N|
 |--------:|---------:|----:|
-|    -2.06|         3| 1000|
+|    -2.04|         3| 1000|
 
 
 ```r
@@ -364,8 +358,8 @@ rd1 %&gt;%
 
 | donation| M_causal| sd_causal|   N|
 |--------:|--------:|---------:|---:|
-|        0|       -5|         0| 510|
-|        1|        1|         0| 490|
+|        0|       -5|         0| 506|
+|        1|        1|         0| 494|
 
 ---
 
@@ -384,8 +378,8 @@ knitr::kable(summary_data, format = "markdown", digits = 2)
 
 | donation| M_payoff_donation| M_payoff_no_donation|
 |--------:|-----------------:|--------------------:|
-|        0|             -3.99|                 1.01|
-|        1|              1.97|                 0.97|
+|        0|             -4.02|                 0.98|
+|        1|              1.87|                 0.87|
 
 ```r
 causal_effect_true &lt;-
@@ -397,7 +391,7 @@ causal_effect_reg &lt;-
 ```
 
 - The true ATT is 1
-- The effect estimated by the regression is 0.966
+- The effect estimated by the regression is 0.893
 
 ---
 
@@ -413,7 +407,7 @@ ols &lt;- feols(actual_payoff ~ donation, data = rd1)
 ]
 
 .left-column[
-&lt;table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;"&gt;
+&lt;table style="NAborder-bottom: 0; width: auto !important; margin-left: auto; margin-right: auto;" class="table"&gt;
  &lt;thead&gt;
   &lt;tr&gt;
    &lt;th style="text-align:left;"&gt;   &lt;/th&gt;
@@ -423,41 +417,23 @@ ols &lt;- feols(actual_payoff ~ donation, data = rd1)
 &lt;tbody&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; (Intercept) &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 1.008 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.980*** &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; (0.126) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.132) &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; donation &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.966 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.893*** &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
-   &lt;td style="text-align:left;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.180) &lt;/td&gt;
-  &lt;/tr&gt;
-  &lt;tr&gt;
-   &lt;td style="text-align:left;"&gt; Num.Obs. &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 1000 &lt;/td&gt;
-  &lt;/tr&gt;
-  &lt;tr&gt;
-   &lt;td style="text-align:left;"&gt; R2 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.028 &lt;/td&gt;
-  &lt;/tr&gt;
-  &lt;tr&gt;
-   &lt;td style="text-align:left;"&gt; R2 Within &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-  &lt;/tr&gt;
-  &lt;tr&gt;
-   &lt;td style="text-align:left;"&gt; R2 Pseudo &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-  &lt;/tr&gt;
-  &lt;tr&gt;
-   &lt;td style="text-align:left;"&gt; Std.Errors &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; IID &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.188) &lt;/td&gt;
   &lt;/tr&gt;
 &lt;/tbody&gt;
+&lt;tfoot&gt;&lt;tr&gt;&lt;td style="padding: 0; " colspan="100%"&gt;
+&lt;sup&gt;&lt;/sup&gt; * p &amp;lt; 0.1, ** p &amp;lt; 0.05, *** p &amp;lt; 0.01&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
 &lt;/table&gt;
 ]
 
@@ -495,8 +471,8 @@ knitr::kable(summary_data, format = "markdown", digits = 2)
 
 | donation| M_payoff_donation| M_payoff_no_donation|
 |--------:|-----------------:|--------------------:|
-|        0|             -4.05|                 1.95|
-|        1|              2.03|                 1.03|
+|        0|             -4.01|                 1.99|
+|        1|              2.26|                 1.26|
 
 ```r
 causal_effect_true &lt;-
@@ -508,7 +484,7 @@ causal_effect_reg &lt;-
 ```
 
 - The true ATT is 1
-- The effect estimated by the regression is 0.08
+- The effect estimated by the regression is 0.268
 
 ---
 
@@ -574,13 +550,13 @@ knitr::kable(summary_data, digits = 1)
 &lt;tbody&gt;
   &lt;tr&gt;
    &lt;td style="text-align:right;"&gt; 0 &lt;/td&gt;
-   &lt;td style="text-align:right;"&gt; -4.4 &lt;/td&gt;
-   &lt;td style="text-align:right;"&gt; 1.6 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -3.8 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2.2 &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:right;"&gt; 1 &lt;/td&gt;
-   &lt;td style="text-align:right;"&gt; 2.4 &lt;/td&gt;
-   &lt;td style="text-align:right;"&gt; 1.4 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2.2 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.2 &lt;/td&gt;
   &lt;/tr&gt;
 &lt;/tbody&gt;
 &lt;/table&gt;
@@ -684,8 +660,8 @@ It's not necessarily advantageous to have too many hypotheses. You want to answe
 ## Do increases in option grants increase risk taking?
 
 &lt;center&gt;
-<div id="htmlwidget-66c89d015cd32695c5d4" style="width:800px;height:400px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-66c89d015cd32695c5d4">{"x":{"diagram":"\n   digraph options{\n   node [shape = box]\n   subgraph{\n     rank = same; \"Option Grants\"; \"Risk Taking\"\n   }\n   Annoyances;\n   Annoyances -> {\"Option Grants\", \"Risk Taking\"}\n   edge [color = \"#DAAA00\"]\n   \"Option Grants\" -> \"Risk Taking\"\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-0feded852709fca9112e" style="width:800px;height:400px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-0feded852709fca9112e">{"x":{"diagram":"\n   digraph options{\n   node [shape = box]\n   subgraph{\n     rank = same; \"Option Grants\"; \"Risk Taking\"\n   }\n   Annoyances;\n   Annoyances -> {\"Option Grants\", \"Risk Taking\"}\n   edge [color = \"#DAAA00\"]\n   \"Option Grants\" -> \"Risk Taking\"\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 &lt;/center&gt;
 
 ???
@@ -698,8 +674,8 @@ Examples of annoyances:
 ## IV 1: Scheduled Discrete Increases in Fixed-Value Option Grants
 
 &lt;center&gt;
-<div id="htmlwidget-3acc45159748a27fadd0" style="width:800px;height:200px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-3acc45159748a27fadd0">{"x":{"diagram":"\n   digraph options{\n   node [shape = box]\n   subgraph{\n     rank = same; \"Predicted New Grant Cycle\", \"Option Grants\"; \"Risk Taking\"\n   }\n   Annoyances;\n   Annoyances -> {\"Option Grants\", \"Risk Taking\"}\n   \"Predicted New Grant Cycle\" -> \"Option Grants\"\n   edge [color = \"#DAAA00\"]\n   \"Option Grants\" -> \"Risk Taking\"\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-8cccaa4c3f45ac5930e0" style="width:800px;height:200px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-8cccaa4c3f45ac5930e0">{"x":{"diagram":"\n   digraph options{\n   node [shape = box]\n   subgraph{\n     rank = same; \"Predicted New Grant Cycle\", \"Option Grants\"; \"Risk Taking\"\n   }\n   Annoyances;\n   Annoyances -> {\"Option Grants\", \"Risk Taking\"}\n   \"Predicted New Grant Cycle\" -> \"Option Grants\"\n   edge [color = \"#DAAA00\"]\n   \"Option Grants\" -> \"Risk Taking\"\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 &lt;/center&gt;
 
 &gt; For our first instrument, we use fixed-value firms, for which option grants can increase only at regularly prescheduled intervals (i.e., when new cycles start). For example, consider a fixed-value firm on regular three-year cycles. Other time-varying factors may drive trends in risk for this firm. However, these trends are unlikely to coincide exactly with the timing of when new cycles are scheduled to start.
@@ -714,8 +690,8 @@ Basically saying the beginning of a cycle effect on option grants is not affecte
 ## IV 2: Within Cycle Grant Increases due to Industry Shocks in Fixed-Number Option Grants
 
 &lt;center&gt;
-<div id="htmlwidget-f114ef120c38807082ad" style="width:800px;height:200px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-f114ef120c38807082ad">{"x":{"diagram":"\n   digraph options{\n   node [shape = box]\n   subgraph{\n     rank = same; \"Industry Shocks (Fixed Number)\", \"Option Grants\"; \"Risk Taking\"\n   }\n   Annoyances;\n   Annoyances -> {\"Option Grants\", \"Risk Taking\"}\n   \"Industry Shocks (Fixed Number)\" -> \"Option Grants\"\n   edge [color = \"#DAAA00\"]\n   \"Option Grants\" -> \"Risk Taking\"\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-4e67e39199525249ed7b" style="width:800px;height:200px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-4e67e39199525249ed7b">{"x":{"diagram":"\n   digraph options{\n   node [shape = box]\n   subgraph{\n     rank = same; \"Industry Shocks (Fixed Number)\", \"Option Grants\"; \"Risk Taking\"\n   }\n   Annoyances;\n   Annoyances -> {\"Option Grants\", \"Risk Taking\"}\n   \"Industry Shocks (Fixed Number)\" -> \"Option Grants\"\n   edge [color = \"#DAAA00\"]\n   \"Option Grants\" -> \"Risk Taking\"\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 &lt;/center&gt;
 
 &gt; For our second instrument, we focus on fixed-number firms. The value of options granted in any particular year varies with aggregate returns within a fixed-number cycle. This means that the timing of increases in option pay within a cycle will be random in the sense that the increases are driven in part by industry shocks that are beyond the control of the firm and are largely unpredictable. To account for the possibility that aggregate returns can directly affect risk, we use fixed-value firms as a control group because their option compensation must remain fixed despite changes in aggregate returns.

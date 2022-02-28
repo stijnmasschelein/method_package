@@ -21,13 +21,8 @@ library(modelsummary)
 uwa_blue = "#003087"
 uwa_gold = "#DAAA00"
 knitr::opts_chunk$set(dpi = 200, dev = "svg")
-gof_omit = "Adj|IC|Log"
-```
-
-```{css, echo = FALSE, run = FALSE}
-.remark-slide tr:nth-child(even) {
-    background: #FFFFFF;
-}
+gof_omit = "Adj|IC|Log|"
+stars <- c("*" = .1, "**" = .05, "***" = .01)
 ```
 
 class: middle
@@ -35,7 +30,7 @@ class: middle
 ## Did we not cover that already?
 
 - Yes, but briefly
-<br>
+
 - Yes, but starting from the perspective of a regression (and the code)
 
 ???
@@ -393,7 +388,7 @@ ols <- feols(actual_payoff ~ donation, data = rd1)
 
 .left-column[
 ```{r, echo = FALSE, results = "asis"}
-msummary(ols, gof_omit = gof_omit)
+msummary(ols, gof_omit = gof_omit, stars = stars)
 ```
 ]
 

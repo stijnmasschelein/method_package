@@ -1,820 +1,199 @@
 ---
-title: "Introduction to Research Methods"
+title: "Research Design 2: Event Studies and Difference-in-Difference Designs"
 author: "Stijn Masschelein"
 date: "`r format(Sys.Date(), '%B, %Y')`"
 output:
-  slidy_presentation:
-    css: styles_presentation.css
-    font_adjustment: +1
-    highlight: kate
-    fig.width: 6
-    fig.height: 4
+    xaringan::moon_reader:
+        css: "xaringan-themer.css"
+        nature:
+            highlightLines: true
+            countIncrementalSlides: false
+            ratio: 16:9
 ---
 
-# Introduction
-
-## Packages
-
-```{r}
+```{r, setup, include = FALSE}
 library(tidyverse)
-library(lubridate)
 library(cowplot)
+theme_set(theme_cowplot(font_size = 18))
 library(DiagrammeR)
-library(viridis)
-# Reads in a lot of text files
-library(readr)
-# Reads in a lot of other data files 
-library(readit)
-# Sample selection and Heckman Tests
-library(sampleSelection)
-# Fixed Effects, IV, and Clusters 
-library(lfe)
-# Adjustment of Covariance Estimates
-library(sandwich)
-library(lmtest)
+library(fixest)
+library(modelsummary)
+library(here)
+i_am("slides/slides5.Rmd")
+uwa_blue = "#003087"
+uwa_gold = "#DAAA00"
+knitr::opts_chunk$set(dpi = 200, dev = "svg")
+gof_omit = "Adj|IC|Log"
 ```
 
-# Introduction
+class: middle, center
 
-## Control Variables are Complicated
+# Event Studies
 
-<div class="content_slide">
-```{r, fig.width=6, fig.height=4, fig.align="left", echo=FALSE}
+---
+
+## A basic before event - after event comparison
+
+<center>
+```{r, fig.width=4, fig.height=1.5, fig.align="left", echo=FALSE}
 grViz("
-    digraph confounding_collider{
-    node [shape = box]
-    subgraph{
-      rank = same; x; y;
-    } 
-    collider; confounder
-    confounder -> {x, y};
-    {x, y} -> collider 
-    edge [color = blue]
-    x -> y 
-    }
-")
-```
-</div>
-
-## Randomisation 
-
-<div class="content_slide">
-```{r, fig.width=6, fig.height=4, fig.align="left", echo=FALSE}
-grViz("
-    digraph randomisation{
-    node [shape = box]
-    subgraph{
-      rank = same; x; y;
-    } 
-    random; U; collider;
-    U -> {y};
-   
-    random -> x 
-    {x, y} -> collider 
-    edge [color = blue]
-    x -> y 
-    }
-")
-```
-</div>
-
-## No self-selection or survival
-
-<div class="content_slide">
-```{r, fig.width=6, fig.height=4, fig.align="left", echo=FALSE}
-grViz("
-    digraph randomisation{
-    node [shape = box]
-    subgraph{
-      rank = same; x; y;
-    } 
-    randomness; U; prob_in_sample;
-    U -> {y};
-   
-    randomness -> x 
-    {x} -> prob_in_sample
-    edge [color = blue]
-    x -> y 
-    }
-")
-```
-</div>
-
-# Selection bias
-
-## Lab auction
-
-<div class="content_slide">
-### [Casari, Ham, and Kagel, AER 2007 ](https://pubs.aeaweb.org/doi/pdfplus/10.1257/aer.97.4.1278)
-- Object has unkown value between $V \sim [\$50, \$950]$
-- Bidders get private signal between $S \sim [V - \$15, V + \$15]$
-- How much do you bid?
-</div>
-
-## Introduction: Winner's curse
-
-<div class="content_slide">
-### [Casari, Ham, and Kagel, AER 2007 ](https://pubs.aeaweb.org/doi/pdfplus/10.1257/aer.97.4.1278)
-
-- Winning means you had the highest signal
-- Bidders should adjust and bid lower than the signal
-- Auction markets learn over time.
-- Bidders who make mistakes go banktrupt and have to leave the
-  experiment.
-</div>
-
-## Research question
-
-<div class="content_slide">
-### [Casari, Ham, and Kagel, AER 2007 ](https://pubs.aeaweb.org/doi/pdfplus/10.1257/aer.97.4.1278)
-- Do bidders learn over time?
-- Do markets improve because bad bidders go banktrupt? i.e.
-  is there a selection effect?
-- Do bad bidders learn faster?
-</div>
-
-## DAG
-
-<div class="content_slide">
-### [Casari, Ham, and Kagel, AER 2007 ](https://pubs.aeaweb.org/doi/pdfplus/10.1257/aer.97.4.1278)
-```{r, fig.width=4, fig.height=4, fig.align="left", echo=FALSE}
-grViz("
-    digraph selection{
-    node [shape = box]
-    subgraph{
-      rank = same; test_score; over_bid;
-    }
-    bankrupt;
-    test_score -> over_bid;
-    over_bid -> bankrupt
-    edge [color = blue]
-    }
-")
-```
-
-- Path: `over_bid -> bankrupt`
-- Path: `test_score -> over_bid -> bankrupt`
-</div>
-
-## Random cash treatment
-
-<div class="content_slide">
-### [Casari, Ham, and Kagel, AER 2007 ](https://pubs.aeaweb.org/doi/pdfplus/10.1257/aer.97.4.1278)
-1. $10 Starting fund
-2. $10 Starting fund + random lottery gains
-3. $15 Starting fund + random lottery gains
-</div>
-
-## Random cash to identify bankruptcy risk
-
-<div class="content_slide">
-```{r, fig.width=4, fig.height=4, fig.align="left", echo=FALSE}
-grViz("
-    digraph selection{
-    node [shape = box]
-    subgraph{
-      rank = same; test_score; over_bid;
-    }
-    subgraph{
-      rank = same; cash_treatment; bankrupt;
-    }
-    bankrupt;
-    over_bid -> bankrupt;
-    cash_treatment -> bankrupt;
-
-    edge [color = blue]
-    test_score -> over_bid;
-    }
-")
-```
-</div>
-
-## Data
-
-<div class="content_slide_wide">
-```{r}
-wcurse <- read_tsv("data/econ_data/CHK_maindataset.txt") %>%
-  select(expno, month, day, experienced,
-         period, market, treatment, cashtreatment, id, stid,
-         outofsample, cumlottery, female,
-         signal, bid, high = hs, high2 = hss, optimalbid,
-         areyoubkt, no_bkt,
-         num_high_lag = num_hs_lag, num_high2_lag = num_hss_lag,
-         sat = satcombination, act = actcomposite) %>%
-  mutate(act_abs = if_else(is.na(act), 1, 0),
-         act = if_else(is.na(act), mean(act, na.rm = T), act),
-         optimalbid = 0.01 * optimalbid) %>%
-  filter(outofsample == 0, experienced == 0)
-```
-</div>
-
-## Data per participant
-
-<div class="content_slide">
-```{r}
-selection_curse <-
-  filter(wcurse, experienced == 0, outofsample == 0) %>%
-  group_by(stid) %>%
-  summarise(
-    bkt = max(areyoubkt),
-    max_period = max(period),
-    cashtreatment = cashtreatment[period == max_period],
-    high = (high[period == max_period]),
-    high2 = (high2[period == max_period]),
-    lottery = cumlottery[period == max_period]/max_period,
-    act = act[period == max_period],
-    act_abs = act_abs[period == max_period],
-    female = female[period == max_period],
-    bid_learning =
-      mean((signal - bid)[period > 24]) -
-      mean((signal - bid)[period <= 8])) %>%
-  ungroup()
-group_by(selection_curse, cashtreatment) %>%
-  summarise(
-    bkt = mean(bkt),
-    bid_med = median(bid_learning, na.rm = T),
-    bid_mean = mean(bid_learning, na.rm = T), N = n()) %>%
-  knitr::kable(format = "markdown", digits = 2)
-```
-</div>
-
-## Uncorrected Effect of Demographics
-
-<div class="content_slide">
-```{r}
-learn_form <- bid_learning ~ scale(act) + female
-learn_lm <- lm(learn_form,
-               data = filter(selection_curse, bkt == 0))
-round(coefficients(summary(learn_lm)), 2) %>%
-  knitr::kable(format = "markdown", digits = 2)
-```
-</div>
-
-## Selection Model
-
-<div class="content_slide">
-```{r}
-select_form <- I(!is.na(bid_learning)) ~
-  factor(cashtreatment) + female + scale(act) +
-  scale(high) + scale(high2)
-select_probit <- glm(
-  select_form, data = selection_curse,
-  family = binomial(link = "probit"))
-round(coefficients(summary(select_probit)), 2) %>%
-  knitr::kable(format = "markdown", dig = 2)
-```
-</div>
-
-## Probit
-
-<div class="content_slide">
-```{r probit, fig.width=6, fig.height=4}
-obs <- 1e4; m <- 3; sd <- 5;
-linear_part <- rnorm(obs, m, sd)
-probability_inclusion <- pnorm(scale(linear_part))
-cumulative <- qplot(linear_part, probability_inclusion,
-                    geom = "line")
-density <- ggplot(mapping = aes(x = linear_part)) +
-  geom_histogram(aes(color = I(linear_part < 10),
-                     fill = I(linear_part < 10)),
-                 bins = 100) +
-  theme(legend.position = 'none') +
-  scale_color_viridis(discrete = TRUE) +
-  scale_fill_viridis(discrete = TRUE)
-plot_grid(density, cumulative, nrow = 2)
-```
-</div>
-
-## Heckman correction
-
-<div class="content_slide">
-```{r, fig.width=6, fig.height=6}
-density <- qplot(linear_part, geom="density")
-density_survival <- qplot(
-  geom = "line", x = linear_part,
-  y = dnorm(scale(linear_part)) / pnorm(scale(linear_part)),
-  ylab = "dropout density")
-plot_grid(density, cumulative, density_survival, nrow = 3)
-```
-</div>
-
-<div class="notes">
-The idea is that we need to correct for the correlation of not
-being in the sample. So the correction is stronger for not being
-in the sample.
-</div>
-
-## Heckman correction
-
-<div class="content_slide">
-```{r}
-selection_curse <- mutate(
-  selection_curse,
-  predicted = select_probit$linear.predictors,
-  inv_mills_ratio = dnorm(predicted)/pnorm(predicted))
-group_by(selection_curse, cashtreatment) %>%
-  summarise(pred = mean(predicted), N = n())
-
-learn_lm_mills <- lm(
-  update(learn_form, . ~ . + inv_mills_ratio),
-  data = selection_curse)
-round(coefficients(summary(learn_lm_mills)), 2) %>%
-  knitr::kable(format = "markdown")
-```
-</div>
-
-## Heckman adjustment to standard errors
-
-<div class="content_slide">
-```{r heckman}
-full_heckman <- selection(
-  select_form, learn_form,
-  data = selection_curse,
-  method = '2step')
-coefficients(summary(full_heckman$probit)) %>%
-  knitr::kable(format='markdown', dig = 2)
-coefficients(summary(full_heckman$lm)) %>%
-  knitr::kable(format='markdown', dig = 2)
-full_heckman_ml <- selection(
-  select_form, learn_form,
-  data = selection_curse,
-  method = 'ml')
-print(summary(full_heckman_ml), dig = 2)
-```
-</div>
-
-## Or just test treatments
-
-<div class="content_slide">
-```{r}
-learn_lm_exp1 <- lm(
-  update(learn_form,
-         . ~ . + female*factor(cashtreatment)),
-  data = selection_curse)
-round(coefficients(summary(learn_lm_exp1)), 2) %>%
-  knitr::kable(format = "markdown", digits = 2)
-```
-</div>
-
-# Research Design
-
-## Use Randomisation: Sports
-
-<div class="content_slide">
-- Use of lottery draw
-- Clear rules
-- Clear outcome measures
-</div>
-
-## DAG
-
-<div class="content_slide">
-```{r, fig.width=6, fig.height=4, fig.align="left", echo=FALSE}
-grViz("
-    digraph randomisation{
-    node [shape = box]
-    subgraph{
-      rank = same; x; y;
-    }
-    random; U; collider;
-    U -> {y};
-
-    random -> x
-    {x, y} -> collider
-    edge [color = blue]
-    x -> y
-    }
-")
-```
-</div>
-
-## Speedboot Races
-
-<div class="content_slide">
-### [Booth and Yamamura, 2018](https://doi.org/10.1162/rest_a_00715)
-
-- Mixed-sex and single-sex races determined by lottery
-- 7 race courses
-- Multiple races in the same month and location
-</div>
-
-## DAG
-
-<div class="content_slide">
-```{r, fig.width=6, fig.height=4, fig.align="left", echo=FALSE}
-grViz("
-  digraph speedboat{
+  digraph event{
   node [shape = box]
-  ave_ability; ltime; mixed_race; female; course;
-  month_location; circumstances;
-
-  circumstances -> female
-  {mixed_race, female, ave_ability, circumstances} -> ltime
-  female -> {ave_ability}
-  {course month_location} -> circumstances
+  subgraph{
+    rank = same; 'Event Happened', Treatment, Outcome
+  }
+  'Event Happened' -> Treatment -> Outcome
+  Time -> {'Event Happened', Outcome}
   }
 ")
 ```
-</div>
+</center>
 
-## (Biggish) Data
+[Chapter 17 Event Studies in The Effect]()
 
-### [Booth and Yamamura, 2018](https://doi.org/10.1162/rest_a_00715)
+???
 
-<div class="content_slide">
-```{r speedrace}
-load("data/econ_data/booth_yamamura.RData")
-table <- as_tibble(table) %>%
-  select(p_id, women_dat, time, ltime, mix_ra, course,
-         race_id, yrmt_locid)
-table_clean <- filter(table, complete.cases(table))
-# this takes too much memory.
-# time_reg <- lm(ltime ~ -1 + mix_ra + women_dat : mix_ra +
-#                  as.factor(course) + as.factor(yrmt_locid),
-#                data = table)
-ltime_reg <- felm(I(ltime * 1000) ~
-                   women_dat : mix_ra + mix_ra
-                 | course + p_id + yrmt_locid,
-                 data = table_clean)
-round(coefficients(summary(ltime_reg)), digits = 2) %>%
-  knitr::kable(format = 'markdown')
+Where Time could be standing in for a lot of other annoying things that might happen. 
+
+---
+
+## Use Data Before The Event to Infer The Counterfactual Outcome (in Yellow)
+
+```{r, warning = FALSE, echo = FALSE}
+days <- -60:60
+log_return_prior <- rnorm(60, 1.15, .3)
+log_return_control <- rnorm(61, 1.15, .3)
+log_return_treatment <- c(rnorm(61, 1.85, .3))
+no_time_trend <-
+  ggplot(mapping = aes(x = days,
+                       y = c(log_return_prior,log_return_treatment))) +
+  geom_line(colour = uwa_blue) +
+  geom_line(aes(y = c(rep(NA, 60), log_return_control)), colour = uwa_gold) +
+  ylab("log(return)") +
+  ggtitle("No Time Trend") +
+  geom_vline(xintercept = 0,  linetype = "longdash", colour = uwa_blue)
 ```
-</div>
 
-## Multiple Fixed Effect != Demeaning
-
-<div class="content_slide">
-```{r}
-time_reg <- felm(time ~
-                   women_dat : mix_ra + mix_ra
-                 | course + p_id + yrmt_locid,
-                 data = table_clean)
-round(coefficients(summary(time_reg)), digits = 2) %>%
-  knitr::kable(format = 'markdown')
-table_demean <- table_clean %>%
-  group_by(p_id) %>%
-  mutate(time_p_id = mean(time, na.rm = T)) %>%
-  group_by(yrmt_locid) %>%
-  mutate(time_yrmt_locid = mean(time, na.rm = T)) %>%
-  group_by(course) %>%
-  mutate(time_course = mean(time, na.rm = T)) %>%
-  ungroup() %>%
-  mutate(time_demean =
-           time - time_p_id - time_yrmt_locid - time_course +
-           2 * mean(time, na.rm = T))
-
-table_demean %>%
-  group_by(women_dat, mix_ra) %>%
-  summarise(time_demean = mean(time_demean, na.rm = T),
-            n = n()) %>%
-  knitr::kable(format='markdown', dig = 2)
+```{r, warning = FALSE, echo = FALSE}
+log_return_prior_time <- rnorm(60, days * 0.01 + 1.15, .3)
+log_return_control_time <- rnorm(61, (61 + days) * 0.01 + 1.15, .3)
+log_return_treatment_time <- c(rnorm(61, (61 + days) * 0.01 + 0.6, .3))
+time_trend <-
+  ggplot(mapping = aes(x = days,
+                       y = c(log_return_prior_time,
+                             log_return_treatment_time))) +
+  geom_line(colour = uwa_blue) +
+  geom_line(aes(y = c(rep(NA, 60), log_return_control_time)),
+            colour = uwa_gold) +
+  ylab("log(return)") +
+  ggtitle("With a Time Trend") +
+  geom_vline(xintercept = 0,  linetype = "longdash", colour = uwa_blue)
 ```
-</div>
 
-# Instrumental Variables
+.pull-left[
+```{r, warning = FALSE, echo = FALSE, fig.height = 5}
+print(no_time_trend)
+```
+]
 
-## DAG
+--
 
-<div class="content_slide">
-```{r, fig.width=6, fig.height=4, fig.align="left", echo=FALSE}
+.pull-right[
+```{r, warning = FALSE, echo = FALSE, fig.height = 5}
+print(time_trend)
+```
+]
+
+???
+
+We do not observe the yellow/gold returns. We have to estimate them or convince the reader that there are no trends to be expected for theoretical/institutional reasons. I will not go into the details of the estimation. Dirk will spend considerable time on the actual implementation. 
+
+---
+
+## Front-running, information leaking, and anticipation are all very annoying.
+
+<center>
+```{r, fig.width=4, fig.height=1, fig.align="left", echo=FALSE}
 grViz("
-    digraph randomisation{
-    node [shape = box]
-    subgraph{
-      rank = same; x; y; iv;
-    }
-    random; U; collider;
-    U -> {x, y};
-
-    random -> iv;
-    {x, y} -> collider
-    edge [color = blue]
-    x -> y
-    iv -> x;
-    }
+  digraph event{
+  node [shape = box]
+  subgraph{
+    rank = same; 'Before Block Trade', 'Large Block Trade', 'Price Impact'
+  }
+  'Before Block Trade' -> 'Large Block Trade' -> 'Price Impact'
+  Time -> {'Before Block Trade', 'Price Impact'}
+  }
 ")
 ```
-</div>
+</center>
 
-## Example: Sitting Duck Governors
+--
 
-<div class="content_slide">
-### [Falk and Shelton 2018](https://pubs.aeaweb.org/doi/pdfplus/10.1257/pol.20160365)
+> To gauge demand from buyers and potentially gin up interest from sellers, bankers send out lists of shares with upcoming lockup expirations, according to market participants. [(Money Stuff, Matt Levine)](https://www.bloomberg.com/opinion/articles/2022-02-16/people-are-worried-about-block-trades)
 
-- Research Question: Does political uncertainty effect investment?
-- More uncertainty in a state when governor does not come up for
-  reelection.
-- State level laws with term limits (~ Random)
-</div>
+> Sometimes, bankers also engage in hypothetical conversations with buyers before they have a mandate. Asking prospective buyers whether they might be interested in certain stocks is one thing. But if there are indeed plans afoot for block sales, such conversations, even phrased hypothetically, can tip off savvy money managers. [(Money Stuff, Matt Levine)](https://www.bloomberg.com/opinion/articles/2022-02-16/people-are-worried-about-block-trades)
 
-## Data
+--
 
-<div class="content_slide">
-```{r }
-duck <- readit("data/econ_data/LameDuckData.dta") %>%
-  select(-starts_with("nstate"), -starts_with("stdum"),
-         -starts_with("yd_alt")) %>%
-  mutate(log_I_1 = lag(log_I), log_I_2 = lag(log_I, 2),
-         log_Y_1 = lag(log_Y), log_Y_2 = lag(log_Y, 2),
-         log_real_GDP_1 = lag(log_real_GDP),
-         log_real_GDP_2 = lag(log_real_GDP, 2)) %>%
-  filter(year >= 1967, year <= 2004)
+???
+
+Go also back to Assignment 2 where we modeled the same problem when investors anticipate a donation.
+---
+
+
+## Mergers and Acquisitions and event study
+
+TODO
+
+
+---
+
+class: middle, center
+
+# Difference-in-Difference
+---
+
+## What if we had an additional control group to estimate the counterfactual?
+
+.pull-left[
+```{r, warning = FALSE, echo = FALSE, fig.height = 5}
+did <- tibble(
+  days = rep(-60:60),
+  log_return_treatment = c(rnorm(60, 1.15, .15), rnorm(61, 1.85, .15)),
+  log_return_counterfactual = c(rep(NA, 60), rnorm(61, 1.15, .15)),
+  log_return_control = c(rnorm(121, .5, .15))
+)
+
+event_study <- ggplot(
+  did, aes(x = days, y = log_return_treatment)) +
+  geom_line(colour = uwa_blue) +
+  geom_line(aes(y = log_return_counterfactual), colour = uwa_gold) +
+  ylab("log(return)") +
+  ggtitle("Event Study") +
+  geom_vline(xintercept = 0,  linetype = "longdash", colour = uwa_blue)
+print(event_study)
 ```
-</div>
+]
 
-## Reduced Form
+--
 
-<div class="content_slide">
-```{r reduced}
-form_red <- formula(
-  log_I ~ gov_exogenous_middling + log_I_1 + log_I_2 +
-  log_Y + log_Y_1 + log_Y_2 + log_real_GDP + log_real_GDP_1 +
-  log_real_GDP_2
-  # fixed effects
-  | statename
-  )
-form_red <- felm(
-  formula = form_red,
-  data = duck)
-coefficients(summary(form_red)) %>%
-  knitr::kable(format = 'markdown', dig = 2)
+.pull-right[
+```{r, warning = FALSE, echo = FALSE, fig.height = 5}
+event_study +
+  geom_line(aes(y = log_return_control), colour = uwa_blue) + 
+  ggtitle("Difference in Difference")
 ```
-</div>
+]
 
-## Correct implementation
+---
 
-<div class="content_slide">
-```{r iv}
-form_iv <- formula(log_I ~ log_I_1 + log_I_2 +
-  log_Y + log_Y_1 + log_Y_2 + log_real_GDP + log_real_GDP_1 +
-  log_real_GDP_2
-  # fixed effects
-  | statename
-  # 1st regression
-  | (uncertainty_continuous ~ gov_exogenous_middling)
-  )
-iv_reg <- felm(
-  formula = form_iv,
-  data = duck)
+# When should you cluster?
 
-summ_iv <- summary(iv_reg)
-summ_1st <- summary(iv_reg$stage1)
-
-coefficients(summ_1st) %>%
-  knitr::kable(format = 'markdown', dig = 2)
-coefficients(summ_iv) %>%
-  knitr::kable(format = 'markdown', dig = 3)
-```
-</div>
-
-## Diagnostics
-
-<div class="content_slide">
-```{r iv-diagnostics}
-# Weak Instruments
-weak_instruments <- summ_1st$iv1fstat
-prettyNum(weak_instruments, dig = 2)[4:6]
-
-# Endogeneity Test - Durbin Watson (by hand)
-uncert_iv_beta <- coefficients(summ_iv)[9,1]
-uncert_iv_se <- coefficients(summ_iv)[9,2]
-
-# Regression assuming no iv needed
-form_lm <- formula(log_I ~ uncertainty_continuous +
-  log_I_1 + log_I_2 + log_Y + log_Y_1 + log_Y_2 +
-    log_real_GDP + log_real_GDP_1 + log_real_GDP_2
-  # fixed effects
-  | statename
-  )
-
-lm_reg <- felm(
-  formula = form_lm,
-  data = duck)
-coef_lm_reg <- coefficients(summary(lm_reg))
-uncert_lm_beta <- coef_lm_reg[1,1]
-uncert_lm_se <- coef_lm_reg[1,2]
-duwa <- (uncert_iv_beta - uncert_lm_beta) /
-  sqrt(uncert_iv_se^2 - uncert_lm_se^2)
-print(duwa)
-
-# Sargan Test (Needs more instruments than endogenous variables)
-sargan(iv_reg)
-```
-</div>
-
-# Event Study
-
-## Swedish Lottery Parliament
-
-<div class="content_slide">
-### [Siming 2018](https://www.mitpressjournals.org/doi/abs/10.1162/rest_a_00702)
-- Parliament with no majority
-- Some votes decided by lottery
-- Proposal to dramatically increase government involvement in
-  the banking sector
-</div>
-
-## Event Study - Market Reaction
-
-<div class="content_slide">
-- Market reacts to *unexpected* news
-- Outcome of lottery is unexpected
-</div>
-
-## Data
-
-<div class="content_slide">
-### [Siming 2018](https://www.mitpressjournals.org/doi/abs/10.1162/rest_a_00702)
-- Parliament with no majority
-```{r siming}
-load("data/econ_data/siming.RData")
-returns <- as_tibble(table)
-event_date <- ymd("1976-03-19")
-begin_date <- ymd("1975-03-15")
-banks <- filter(returns, sector_id == 5,
-                trading_date <= event_date,
-                trading_date >= begin_date)
-```
-</div>
-
-## Table 1
-
-### [Siming 2018](https://www.mitpressjournals.org/doi/abs/10.1162/rest_a_00702)
-<div class="content_slide_wide">
-```{r}
-table11 <- lm(ln_return ~ I(trading_date == event_date),
-              data = banks)
-round(coefficients(summary(table11)), 3)
-vcv <- vcovHC(table11, "HC1")
-round(coeftest(table11, vcv), 3)
-table12 <- lm(ln_return ~ I(trading_date == event_date) +
-                ln_market_return,
-              data = banks)
-# Heterogenous and correlated error term
-vcv <- vcovHC(table12, "HC1")
-round(coeftest(table12, vcv), 3)
-```
-</div>
-
-## Abnormal Returns
-
-<div class="content_slide">
-```{r}
-cutoff_date <- ymd("1976-02-27")
-eq3 <- lm(ln_return ~ ln_market_return,
-          data = filter(banks,
-                        trading_date <= cutoff_date))
-coefs <- coefficients(eq3)
-ar <-
-  filter(returns, sector_id == 5,
-         trading_date >= ymd("1976-03-11")) %>%
-  select(trading_date, ln_return, ln_market_return) %>%
-  mutate(ar = ln_return - coefs[1] - coefs[2] * ln_market_return,
-         day = row_number(trading_date)) %>%
-  mutate(day = day - day[trading_date == event_date])
-select(ar, day, ar) %>% knitr::kable(format = 'markdown', dig = 3)
-```
-</div>
-
-## Cumulative Abnormal Returns before lottery
-
-<div class="content_slide">
-```{r}
-car_before <- filter(ar, day < 0) %>%
-  mutate(ct = 1) %>%
-  arrange(-day) %>%
-  mutate(car = cumsum(ar), n = cumsum(ct), m = car/n)
-n_row = nrow(car_before)
-ses = rep(NA, n_row)
-for (r in 2:n_row){
-  ses[r] = sd(car_before$ar[1:r]) * sqrt(r)
-}
-car_before <- mutate(car_before, se = ses)
-
-select(car_before, day, car, se) %>%
-  filter(day != max(day)) %>%
-  arrange(day) %>%
-  knitr::kable(format='markdown', dig = 2)
-```
-</div>
-
-## Cumulative Abnormal Returns before lottery
-<div class="content_slide">
-```{r}
-car_after <- filter(ar, day >= 0) %>%
-  arrange(day) %>%
-  mutate(car = cumsum(ar))
-n_row = nrow(car_after)
-for (r in 2:n_row){
-  ses[r] = sd(car_after$ar[1:r]) * sqrt(r)
-}
-car_after <- mutate(car_after, se = ses, stat = car/se)
-select(car_after, day, car, se, stat) %>%
-  knitr::kable(format='markdown', dig = 2)
-```
-</div>
-
-# Standard Errors
-
-## Time correlations
-
-<div class="content_slide_wide">
-```{r time-series, fig.width=8, fig.height=3, fig.align='center'}
-obs <- 200; time = 1:obs; noise = rnorm(obs); y = rep(NA, obs)
-y[1] = 1
-for (t in 2:obs){
-   y[t] = 0.8 * y[t-1] + noise[t]
-}
-p_noise <- qplot(time, noise) +
-  geom_hline(yintercept = mean(noise))
-p_y <- qplot(time, y) +
-  geom_hline(yintercept = mean(y)) +
-  geom_line()
-plot_grid(p_noise, p_y)
-```
-</div>
-
-## Implementation with `lfe`
-
-<div class="content_slide">
-```{r robust}
-siming <- felm(ln_return ~ I(trading_date == event_date) +
-               ln_market_return, data = banks)
-coefficients(summary(siming, robust = TRUE)) %>%
-  knitr::kable(format = 'markdown', dig = 2)
-```
-</div>
-
-## Cluster correlations
-
-<div class="content_slide">
-```{r cluster, fig.width=6, fig.height=4, fig.align='center'}
-groups <- 1:20
-x <- rep(groups, 5)
-noise <- rnorm(100, 0, groups)
-y <- x + noise
-qplot(x, y) + 
-  stat_summary(fun.y = 'mean', geom = 'line', colour = 'orange') + 
-  theme(legend.position = 'none')
-```
-</div>
-
-## Implementation with `lfe`
-
-<div class="content_slide">
-```{r cluster-implementation}
-ltime_reg_cluster <- felm(
-  I(ltime * 1000) ~ women_dat : mix_ra + mix_ra
-  # fixed effects
-  | course + p_id + yrmt_locid
-  # iv 
-  | 0
-  # clusters
-  | race_id, data = table_clean)
-coefficients(summary(ltime_reg_cluster)) %>%
-  knitr::kable(format = 'markdown', dig = 2)
-```
-</div>
-
-## When should you cluster?
-
-<div class="content_slide">
 ### [Abadie, Athey, Imbens, and Wooldridge (2017)](http://economics.mit.edu/files/13927)
 
-What is the level of the treatment variable?
+> What is the level of the treatment variable? What is the comparison?
 
 - Mixed *race* or same sex *race*
 - *State* legislation
 - *Country* legislation
 - *Firm* corporate governance changes 
-</div>
-
-# Addendum
-
-## Causal inference is hard
-
-<div class="content_slide">
-- Colliders and Confounders
-- Randomisation
-- Self selection
-</div>
-
-## Self selection and equilbrium theories
-
-### Theory of compensation and size
-
-<div class="content_slide">
-$$
-\begin{align}
-V^* &= \frac{T}{r^{\frac{\alpha_K}{\alpha_T}}
-               w_L^{\frac{\alpha_L}{\alpha_T}}}
-\\
-W^* &= \alpha_T V^*
-\end{align}
-$$
-
-- In speedboat race paper, talent is controlled for by fixed 
-  effects.
-- In compensation theory, talent is taken into account in 
-  prediction.
-</div>

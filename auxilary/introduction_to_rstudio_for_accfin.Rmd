@@ -3,14 +3,17 @@ author: Stijn Masschelein
 title: introduction to Rstudio for Accounting and Finance
 ---
 
+```{r, setup}
+library(here) # To better deal with the directory structure
+i_am("auxilary/introduction_to_rstudio_for_accfin.Rmd")
+```
+
 
 # Get the data
 
 We establish a connection with the WRDS databases with my account.
 
 ```{r wrds_connection, eval = FALSE}
-library(here) # To better deal with the directory structure
-i_am("auxilary/introduction_to_rstudio_for_accfin.Rmd")
 library(RPostgres)
 wrds <- dbConnect(Postgres(),
               host='wrds-pgdata.wharton.upenn.edu',

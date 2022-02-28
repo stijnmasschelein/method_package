@@ -8,7 +8,7 @@
     <script src="slides3_files/htmlwidgets-1.5.4/htmlwidgets.js"></script>
     <script src="slides3_files/viz-1.8.2/viz.js"></script>
     <link href="slides3_files/DiagrammeR-styles-0.2/styles.css" rel="stylesheet" />
-    <script src="slides3_files/grViz-binding-1.0.7/grViz.js"></script>
+    <script src="slides3_files/grViz-binding-1.0.8/grViz.js"></script>
     <script src="slides3_files/kePrint-0.0.1/kePrint.js"></script>
     <link href="slides3_files/lightable-0.0.1/lightable.css" rel="stylesheet" />
     <link rel="stylesheet" href="xaringan-themer.css" type="text/css" />
@@ -38,8 +38,8 @@ class:center, middle
 
 &lt;center&gt;
 
-<div id="htmlwidget-f773a0190d3d491f413d" style="width:720px;height:504px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-f773a0190d3d491f413d">{"x":{"diagram":"\ndigraph brand_capital{\ngraph[ rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nBrandCapital; CreditRating\nsubgraph {\nrank = same; InfoEnvironment; FutureCashFlow;\n}\n{BrandCapital} -> {InfoEnvironment, FutureCashFlow};\n{InfoEnvironment, FutureCashFlow} -> CreditRating;\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-df61ec983107291cfecb" style="width:720px;height:504px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-df61ec983107291cfecb">{"x":{"diagram":"\ndigraph brand_capital{\ngraph[ rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nBrandCapital; CreditRating\nsubgraph {\nrank = same; InfoEnvironment; FutureCashFlow;\n}\n{BrandCapital} -> {InfoEnvironment, FutureCashFlow};\n{InfoEnvironment, FutureCashFlow} -> CreditRating;\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 &lt;/center&gt;
 
 ---
@@ -48,8 +48,8 @@ class:center, middle
 
 &lt;center&gt;
 
-<div id="htmlwidget-5e77efb712f3c2db8b8b" style="width:864px;height:432px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-5e77efb712f3c2db8b8b">{"x":{"diagram":"\ndigraph brand_capital_complication{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nCumulAds; BrandCapital; CreditRating\nsubgraph {\nrank = same; OtherVars; InfoEnvironment; FutureCashFlow;\n}\nOtherVars -> {CumulAds, CreditRating}\n{CumulAds} -> {BrandCapital}\n{BrandCapital} -> {InfoEnvironment, FutureCashFlow};\n{InfoEnvironment, FutureCashFlow} -> CreditRating;\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-2f927d523494265cddc7" style="width:864px;height:432px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-2f927d523494265cddc7">{"x":{"diagram":"\ndigraph brand_capital_complication{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nCumulAds; BrandCapital; CreditRating\nsubgraph {\nrank = same; OtherVars; InfoEnvironment; FutureCashFlow;\n}\nOtherVars -> {CumulAds, CreditRating}\n{CumulAds} -> {BrandCapital}\n{BrandCapital} -> {InfoEnvironment, FutureCashFlow};\n{InfoEnvironment, FutureCashFlow} -> CreditRating;\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 &lt;/center&gt;
 
 ---
@@ -65,8 +65,8 @@ class:center, middle
 
 &lt;center&gt;
 
-<div id="htmlwidget-7eff58fdf115a04b1fb7" style="width:648px;height:288px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-7eff58fdf115a04b1fb7">{"x":{"diagram":"\ndigraph brand_capital{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nPerformance; Donation; Return;\nPerformance -> Donation;\nDonation -> Return;\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-b87842db2a18c9e131e2" style="width:648px;height:288px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-b87842db2a18c9e131e2">{"x":{"diagram":"\ndigraph brand_capital{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nPerformance; Donation; Return;\nPerformance -> Donation;\nDonation -> Return;\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 &lt;/center&gt;
 
 ---
@@ -79,8 +79,8 @@ class:center, middle
 
 ## Causal Graph 
 
-<div id="htmlwidget-f94099500be4beb91d2e" style="width:648px;height:288px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-f94099500be4beb91d2e">{"x":{"diagram":"\ndigraph measurement_error{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nsubgraph{rank = same; CorporateGovernance; TechIndustry}\n{CorporateGovernance, TechIndustry} -> Performance\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-f4f2cd1f982e23dda65a" style="width:648px;height:288px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-f4f2cd1f982e23dda65a">{"x":{"diagram":"\ndigraph measurement_error{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nsubgraph{rank = same; CorporateGovernance; TechIndustry}\n{CorporateGovernance, TechIndustry} -> Performance\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 
 ---
 
@@ -89,7 +89,6 @@ class:center, middle
 
 ```r
 set.seed(230383)
-gof_omit &lt;- "Adj|IC|Log"
 N &lt;- 1000
 ds &lt;- tibble(CG = runif(N, 0, 10),
              TI = rbinom(N, 1, .25)) %&gt;%
@@ -104,15 +103,13 @@ lm2 &lt;- lm(Performance ~ CG + TI, data = ds)
 
 ---
 
+&lt;small&gt;
 
 ```r
-msummary(list(lm1, lm2), stars = TRUE,
-         gof_omit = gof_omit)
-```
-
-```
-## Warning: In version 0.8.0 of the `modelsummary` package, the default significance markers produced by the `stars=TRUE` argument were changed to be consistent with R's defaults.
-## This warning is displayed once per session.
+gof_omit &lt;- "Adj|IC|Log|Pseudo"
+stars &lt;- c('\\*' = .1, '\\*\\*' = .05, '\\*\\*\\*' = .01)
+msummary(list(lm1, lm2), stars = stars,
+         gof_omit = gof_omit, output = "html")
 ```
 
 &lt;table style="NAborder-bottom: 0; width: auto !important; margin-left: auto; margin-right: auto;" class="table"&gt;
@@ -126,7 +123,7 @@ msummary(list(lm1, lm2), stars = TRUE,
 &lt;tbody&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; (Intercept) &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 2.976*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 2.976\*\*\* &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; 0.036 &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
@@ -137,7 +134,7 @@ msummary(list(lm1, lm2), stars = TRUE,
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; CG &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; 0.081 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.130* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.130\*\* &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
@@ -147,7 +144,7 @@ msummary(list(lm1, lm2), stars = TRUE,
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; TI &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 10.433*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 10.433\*\*\* &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
@@ -171,8 +168,9 @@ msummary(list(lm1, lm2), stars = TRUE,
   &lt;/tr&gt;
 &lt;/tbody&gt;
 &lt;tfoot&gt;&lt;tr&gt;&lt;td style="padding: 0; " colspan="100%"&gt;
-&lt;sup&gt;&lt;/sup&gt; + p &amp;lt; 0.1, * p &amp;lt; 0.05, ** p &amp;lt; 0.01, *** p &amp;lt; 0.001&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
+&lt;sup&gt;&lt;/sup&gt; \* p &amp;lt; 0.1, \*\* p &amp;lt; 0.05, \*\*\* p &amp;lt; 0.01&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
 &lt;/table&gt;
+&lt;/small&gt;
 
 
 ???
@@ -185,8 +183,8 @@ donation and no donation should be 3 but it is less.
 
 ## Assignment: CSR report
 
-<div id="htmlwidget-1693bffdd30a3409415c" style="width:648px;height:288px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-1693bffdd30a3409415c">{"x":{"diagram":"\ndigraph measurement_error{\ngraph[layout = dot]\nnode [shape = box, fontname = Helvetica]\nsubgraph{rank = same; Performance; CSR_report; Return}\nPerformance -> {CSR_report; Scandals}\nCSR_report -> {Return; Observed_Report}\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-5bb8ad77b4e2820f4568" style="width:648px;height:288px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-5bb8ad77b4e2820f4568">{"x":{"diagram":"\ndigraph measurement_error{\ngraph[layout = dot]\nnode [shape = box, fontname = Helvetica]\nsubgraph{rank = same; Performance; CSR_report; Return}\nPerformance -> {CSR_report; Scandals}\nCSR_report -> {Return; Observed_Report}\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 
 ---
 
@@ -200,8 +198,8 @@ class:center, middle
 
 &lt;center&gt;
 
-<div id="htmlwidget-d145f5e16af552a76442" style="width:648px;height:288px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-d145f5e16af552a76442">{"x":{"diagram":"\ndigraph confounder{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nsubgraph{rank = same; CorporateGovernance; TechIndustry}\n{CorporateGovernance, TechIndustry} -> Performance\nTechIndustry -> CorporateGovernance\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-8929edc9aaec0c5e910e" style="width:648px;height:288px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-8929edc9aaec0c5e910e">{"x":{"diagram":"\ndigraph confounder{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nsubgraph{rank = same; CorporateGovernance; TechIndustry}\n{CorporateGovernance, TechIndustry} -> Performance\nTechIndustry -> CorporateGovernance\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 
 &lt;/center&gt;
 
@@ -230,8 +228,8 @@ lm2 &lt;- lm(Performance ~ CG + TI, data = ds)
 &lt;small&gt;
 
 ```r
-msummary(list(lm1, lm2), stars = TRUE,
-         gof_omit = gof_omit)
+msummary(list(lm1, lm2), stars = stars,
+         gof_omit = gof_omit, output = "html")
 ```
 
 &lt;table style="NAborder-bottom: 0; width: auto !important; margin-left: auto; margin-right: auto;" class="table"&gt;
@@ -245,7 +243,7 @@ msummary(list(lm1, lm2), stars = TRUE,
 &lt;tbody&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; (Intercept) &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.291*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.291\*\*\* &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; 0.016 &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
@@ -255,7 +253,7 @@ msummary(list(lm1, lm2), stars = TRUE,
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; CG &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; −0.127*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.127\*\*\* &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; 0.040 &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
@@ -266,7 +264,7 @@ msummary(list(lm1, lm2), stars = TRUE,
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; TI &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 1.001*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1.001\*\*\* &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
@@ -290,7 +288,7 @@ msummary(list(lm1, lm2), stars = TRUE,
   &lt;/tr&gt;
 &lt;/tbody&gt;
 &lt;tfoot&gt;&lt;tr&gt;&lt;td style="padding: 0; " colspan="100%"&gt;
-&lt;sup&gt;&lt;/sup&gt; + p &amp;lt; 0.1, * p &amp;lt; 0.05, ** p &amp;lt; 0.01, *** p &amp;lt; 0.001&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
+&lt;sup&gt;&lt;/sup&gt; \* p &amp;lt; 0.1, \*\* p &amp;lt; 0.05, \*\*\* p &amp;lt; 0.01&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
 &lt;/table&gt;
 &lt;/small&gt;
 
@@ -321,8 +319,8 @@ msummary(list(lm1, lm2), stars = TRUE,
 
 &lt;center&gt;
 
-<div id="htmlwidget-c95e43cc6ab175bd6455" style="width:432px;height:288px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-c95e43cc6ab175bd6455">{"x":{"diagram":"\ndigraph fixed{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nsubgraph{rank = same; X; Individual}\n{X, Individual} -> Y \nIndividual -> X\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-160b93c17100e2d71b2f" style="width:432px;height:288px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-160b93c17100e2d71b2f">{"x":{"diagram":"\ndigraph fixed{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nsubgraph{rank = same; X; Individual}\n{X, Individual} -> Y \nIndividual -> X\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 
 &lt;/center&gt;
 
@@ -346,8 +344,8 @@ msummary(list(lm1, lm2), stars = TRUE,
 
 &lt;center&gt;
 
-<div id="htmlwidget-8437c07524df6df5798d" style="width:504px;height:432px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-8437c07524df6df5798d">{"x":{"diagram":"\n  digraph speedboat{\n  graph[layout = dot]\n  node [shape = box]\n  ave_ability; ltime; mixed_race; female; course;\n  month_location; circumstances;\n  circumstances -> female\n  {mixed_race, female, ave_ability, circumstances} -> ltime\n  female -> {ave_ability}\n  {course month_location} -> circumstances\n  }\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-d19e190546f2878b8bda" style="width:504px;height:432px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-d19e190546f2878b8bda">{"x":{"diagram":"\n  digraph speedboat{\n  graph[layout = dot]\n  node [shape = box]\n  ave_ability; ltime; mixed_race; female; course;\n  month_location; circumstances;\n  circumstances -> female\n  {mixed_race, female, ave_ability, circumstances} -> ltime\n  female -> {ave_ability}\n  {course month_location} -> circumstances\n  }\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 
 &lt;/center&gt;
 
@@ -377,9 +375,8 @@ ltime_reg &lt;- feols(ltime ~ women_dat : mix_ra + mix_ra
 
 &lt;small&gt;
 
-
 ```r
-msummary(ltime_reg, gof_omit = gof_omit, stars = TRUE)
+msummary(ltime_reg, gof_omit = gof_omit, stars = stars)
 ```
 
 &lt;table style="NAborder-bottom: 0; width: auto !important; margin-left: auto; margin-right: auto;" class="table"&gt;
@@ -392,7 +389,7 @@ msummary(ltime_reg, gof_omit = gof_omit, stars = TRUE)
 &lt;tbody&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; mix_ra &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; −0.002** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.002\*\*\* &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
@@ -400,7 +397,7 @@ msummary(ltime_reg, gof_omit = gof_omit, stars = TRUE)
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; women_dat × mix_ra &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.007*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.007\*\*\* &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
@@ -417,10 +414,6 @@ msummary(ltime_reg, gof_omit = gof_omit, stars = TRUE)
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; R2 Within &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; 0.001 &lt;/td&gt;
-  &lt;/tr&gt;
-  &lt;tr&gt;
-   &lt;td style="text-align:left;"&gt; R2 Pseudo &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; Std.Errors &lt;/td&gt;
@@ -440,9 +433,8 @@ msummary(ltime_reg, gof_omit = gof_omit, stars = TRUE)
   &lt;/tr&gt;
 &lt;/tbody&gt;
 &lt;tfoot&gt;&lt;tr&gt;&lt;td style="padding: 0; " colspan="100%"&gt;
-&lt;sup&gt;&lt;/sup&gt; + p &amp;lt; 0.1, * p &amp;lt; 0.05, ** p &amp;lt; 0.01, *** p &amp;lt; 0.001&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
+&lt;sup&gt;&lt;/sup&gt; \* p &amp;lt; 0.1, \*\* p &amp;lt; 0.05, \*\*\* p &amp;lt; 0.01&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
 &lt;/table&gt;
-
 &lt;/small&gt;
 
 ---
@@ -454,37 +446,39 @@ class:center, middle
 
 ---
 
-## Causal Diagram 
+## Causal Diagram
 
 &lt;center&gt;
 
-<div id="htmlwidget-6431331203232a574b06" style="width:648px;height:108px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-6431331203232a574b06">{"x":{"diagram":"\ndigraph confounder{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nCorporateGovernance -> Performance\nPerformance -> StockPrice \n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-6c87cbd6f71bbb807df9" style="width:648px;height:108px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-6c87cbd6f71bbb807df9">{"x":{"diagram":"\ndigraph confounder{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nCorporateGovernance -> Performance\nPerformance -> StockPrice \n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 
 --
 
-<div id="htmlwidget-176bdef1afaa8cf6eb77" style="width:648px;height:108px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-176bdef1afaa8cf6eb77">{"x":{"diagram":"\ndigraph confounder{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nCorporateGovernance -> Performance\nPerformance -> Survival\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-501ff5ac8ba1c1da7504" style="width:648px;height:108px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-501ff5ac8ba1c1da7504">{"x":{"diagram":"\ndigraph confounder{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nCorporateGovernance -> Performance\nPerformance -> Survival\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 
 --
 
-<div id="htmlwidget-d02e207d598f49cc1ee9" style="width:648px;height:108px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-d02e207d598f49cc1ee9">{"x":{"diagram":"\ndigraph confounder{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nCorporateGovernance -> Performance\nPerformance -> SP500\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-0aad616d59aa6a4ced0a" style="width:648px;height:108px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-0aad616d59aa6a4ced0a">{"x":{"diagram":"\ndigraph confounder{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nCorporateGovernance -> Performance\nPerformance -> SP500\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 
 --
 
-<div id="htmlwidget-ab6ae4c5ee9e8ef843d4" style="width:648px;height:108px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-ab6ae4c5ee9e8ef843d4">{"x":{"diagram":"\ndigraph confounder{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nCorporateGovernance -> Performance\nPerformance -> IPO\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-55648537cd6dac863a35" style="width:648px;height:108px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-55648537cd6dac863a35">{"x":{"diagram":"\ndigraph confounder{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nCorporateGovernance -> Performance\nPerformance -> IPO\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 
 &lt;/center&gt;
 
 ---
 
+class: center
 
 ## Example in the assignment
 
-<div id="htmlwidget-81301f257027b7647b08" style="width:648px;height:288px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-81301f257027b7647b08">{"x":{"diagram":"\ndigraph measurement_error{\ngraph[layout = dot]\nnode [shape = box, fontname = Helvetica]\nsubgraph{rank = same; Performance; CSR_report; Return}\nPerformance -> {CSR_report; Scandals}\nCSR_report -> {Return; Observed_Report}\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-6ae8d4b0aa04f97c5641" style="width:504px;height:288px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-6ae8d4b0aa04f97c5641">{"x":{"diagram":"\ndigraph measurement_error{\ngraph[layout = dot]\nnode [shape = box, fontname = Helvetica]\nsubgraph{rank = same; Performance; CSR_report; Return}\nPerformance -> {CSR_report; Scandals}\nCSR_report -> {Return; Observed_Report}\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+---
 
 ## Simulation Bad Control
 
@@ -502,11 +496,11 @@ lm2 &lt;- lm(acc_profit ~ corp_gov + market_return, data = d)
 
 ## Results Bad Control 
 
-&lt;small&gt;&lt;small&gt;
+&lt;small&gt;
 
 ```r
 msummary(list(lm1, lm2),
-         gof_omit = gof_omit, stars = TRUE)
+         gof_omit = gof_omit, stars = stars)
 ```
 
 &lt;table style="NAborder-bottom: 0; width: auto !important; margin-left: auto; margin-right: auto;" class="table"&gt;
@@ -530,8 +524,8 @@ msummary(list(lm1, lm2),
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; corp_gov &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.951*** &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; −0.512*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.951\*\*\* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.512\*\*\* &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
@@ -541,7 +535,7 @@ msummary(list(lm1, lm2),
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; market_return &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.486*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.486\*\*\* &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
@@ -565,9 +559,9 @@ msummary(list(lm1, lm2),
   &lt;/tr&gt;
 &lt;/tbody&gt;
 &lt;tfoot&gt;&lt;tr&gt;&lt;td style="padding: 0; " colspan="100%"&gt;
-&lt;sup&gt;&lt;/sup&gt; + p &amp;lt; 0.1, * p &amp;lt; 0.05, ** p &amp;lt; 0.01, *** p &amp;lt; 0.001&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
+&lt;sup&gt;&lt;/sup&gt; \* p &amp;lt; 0.1, \*\* p &amp;lt; 0.05, \*\*\* p &amp;lt; 0.01&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
 &lt;/table&gt;
-&lt;/small&gt;&lt;/small&gt;
+&lt;/small&gt;
 
 ---
 
@@ -584,11 +578,11 @@ lm2 &lt;- lm(acc_profit ~ corp_gov * survival, data = d)
 
 ## Results Survival Bias
 
-&lt;small&gt;&lt;small&gt;
+&lt;small&gt;
 
 ```r
 msummary(list(lm1, lm2),
-         gof_omit = gof_omit, stars = TRUE)
+         gof_omit = gof_omit, stars = stars)
 ```
 
 &lt;table style="NAborder-bottom: 0; width: auto !important; margin-left: auto; margin-right: auto;" class="table"&gt;
@@ -602,8 +596,8 @@ msummary(list(lm1, lm2),
 &lt;tbody&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; (Intercept) &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 3.512*** &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; −0.677*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 3.512\*\*\* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.677\*\*\* &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
@@ -613,7 +607,7 @@ msummary(list(lm1, lm2),
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; corp_gov &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; −0.174 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.510*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.510\*\*\* &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
@@ -623,7 +617,7 @@ msummary(list(lm1, lm2),
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; survival &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 4.189*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 4.189\*\*\* &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
@@ -633,7 +627,7 @@ msummary(list(lm1, lm2),
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; corp_gov × survival &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; −0.684* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.684\*\* &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
@@ -657,11 +651,13 @@ msummary(list(lm1, lm2),
   &lt;/tr&gt;
 &lt;/tbody&gt;
 &lt;tfoot&gt;&lt;tr&gt;&lt;td style="padding: 0; " colspan="100%"&gt;
-&lt;sup&gt;&lt;/sup&gt; + p &amp;lt; 0.1, * p &amp;lt; 0.05, ** p &amp;lt; 0.01, *** p &amp;lt; 0.001&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
+&lt;sup&gt;&lt;/sup&gt; \* p &amp;lt; 0.1, \*\* p &amp;lt; 0.05, \*\*\* p &amp;lt; 0.01&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
 &lt;/table&gt;
-&lt;/small&gt;&lt;/small&gt;
+&lt;/small&gt;
 
-?? One interpretation is that a firm can survive by being lucky (and having high returns) and by having good corporate governance (which translates in high returns). The survivors all are more likely to be having good corporate governance and there is little that can be explained further.
+??? 
+
+One interpretation is that a firm can survive by being lucky (and having high returns) and by having good corporate governance (which translates in high returns). The survivors all are more likely to be having good corporate governance and there is little that can be explained further.
 
 ---
 
@@ -685,8 +681,8 @@ class:center, middle
 .pull-left[
 
 &lt;center&gt;
-<div id="htmlwidget-c8cf77e664bd03a9ca49" style="width:648px;height:432px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-c8cf77e664bd03a9ca49">{"x":{"diagram":"\n    digraph randomisation{\n    node [shape = box]\n    subgraph{\n      rank = same; x; y;\n    }\n    confounder; collider;\n    confounder -> {x, y};\n\n    {x, y} -> collider\n    edge [color = blue]\n    x -> y\n    }\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-558295c5d421172276c2" style="width:648px;height:432px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-558295c5d421172276c2">{"x":{"diagram":"\n    digraph randomisation{\n    node [shape = box]\n    subgraph{\n      rank = same; x; y;\n    }\n    confounder; collider;\n    confounder -> {x, y};\n\n    {x, y} -> collider\n    edge [color = blue]\n    x -> y\n    }\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 &lt;/center&gt;
 
 ]
@@ -696,8 +692,8 @@ class:center, middle
 .pull-right[
 
 &lt;center&gt;
-<div id="htmlwidget-be6a57e5079f6abf47bc" style="width:648px;height:432px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-be6a57e5079f6abf47bc">{"x":{"diagram":"\n    digraph randomisation{\n    node [shape = box]\n    subgraph{\n      rank = same; x; y; iv;\n    }\n    random; confounder; collider;\n    confounder -> {x, y};\n\n    random -> iv;\n    {x, y} -> collider\n    edge [color = blue]\n    x -> y\n    iv -> x;\n    }\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-d683cbbcb2a544b9f170" style="width:648px;height:432px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-d683cbbcb2a544b9f170">{"x":{"diagram":"\n    digraph randomisation{\n    node [shape = box]\n    subgraph{\n      rank = same; x; y; iv;\n    }\n    random; confounder; collider;\n    confounder -> {x, y};\n\n    random -> iv;\n    {x, y} -> collider\n    edge [color = blue]\n    x -> y\n    iv -> x;\n    }\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 &lt;/center&gt;
 ]
 
@@ -713,7 +709,7 @@ d &lt;- tibble(
   mutate(
     x = rnorm(N, .6 * iv - .6 * confounder, .6),
     y = rnorm(N, .6 * x + .6 * confounder, .6),
-    survival = if_else(y + x &gt; 0, 1, 0)
+    survival = if_else(y &gt; 0, 1, 0)
   )
 surv &lt;- filter(d, survival == 1)
 lm1 &lt;- lm(y ~ x, d)
@@ -724,30 +720,33 @@ iv1 &lt;- feols(y ~ 1 | 0 | x ~ iv, data = d)
 iv2 &lt;- feols(y ~ 1 | 0 | x ~ iv, data = surv)
 ```
 
-?? All the exogenous variable are in the tibble statement, all the endogenous variables are in the mutate statement. That is not a coincidence. 
-It also highlights the value and tight link between being able to simulate your theory and understanding it.
+???
+All the exogenous variable are in the tibble statement, all the endogenous variables are in the mutate statement. That is not a coincidence. It also highlights the value and tight link between being able to simulate your theory and understanding it.
+
+Note, the collider bias is the biggest problem if the selection bias is on both `x` and `y` because then the collider bias effects the first stage regressions.
 
 ---
 
-## Simulation results with no effect
+## Simulation results with a real effect of `x` on `y`
 
 &lt;small&gt;&lt;small&gt;&lt;small&gt;
 
 ```r
-msummary(list(lm1, lm2, lm3, lm4, iv1, iv2),
-         gof_omit = gof_omit, stars = TRUE)
+msummary(list(confounded = lm1, "with control" = lm2, collider = lm3, collider = lm4,
+              "iv no collider" = iv1, "iv with collider" = iv2),
+         gof_omit = gof_omit, stars = stars)
 ```
 
 &lt;table style="NAborder-bottom: 0; width: auto !important; margin-left: auto; margin-right: auto;" class="table"&gt;
  &lt;thead&gt;
   &lt;tr&gt;
    &lt;th style="text-align:left;"&gt;   &lt;/th&gt;
-   &lt;th style="text-align:center;"&gt; Model 1 &lt;/th&gt;
-   &lt;th style="text-align:center;"&gt; Model 2 &lt;/th&gt;
-   &lt;th style="text-align:center;"&gt; Model 3 &lt;/th&gt;
-   &lt;th style="text-align:center;"&gt; Model 4 &lt;/th&gt;
-   &lt;th style="text-align:center;"&gt; Model 5 &lt;/th&gt;
-   &lt;th style="text-align:center;"&gt; Model 6 &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; confounded &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; with control &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; collider &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; collider  &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; iv no collider &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; iv with collider &lt;/th&gt;
   &lt;/tr&gt;
  &lt;/thead&gt;
 &lt;tbody&gt;
@@ -755,26 +754,26 @@ msummary(list(lm1, lm2, lm3, lm4, iv1, iv2),
    &lt;td style="text-align:left;"&gt; (Intercept) &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; 0.030 &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; 0.022 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.604*** &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.409*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.613\*\*\* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.488\*\*\* &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; 0.032 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.341*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.578\*\*\* &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; (0.024) &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; (0.018) &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; (0.037) &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; (0.034) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.021) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.022) &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; (0.025) &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; (0.082) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.024) &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; x &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.295*** &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.625*** &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; −0.122*** &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.269*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.295\*\*\* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.625\*\*\* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.103\*\*\* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.313\*\*\* &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
   &lt;/tr&gt;
@@ -782,17 +781,17 @@ msummary(list(lm1, lm2, lm3, lm4, iv1, iv2),
    &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; (0.023) &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; (0.021) &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; (0.036) &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; (0.041) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.021) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.027) &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; confounder &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.597*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.597\*\*\* &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.457*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.299\*\*\* &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
   &lt;/tr&gt;
@@ -801,7 +800,7 @@ msummary(list(lm1, lm2, lm3, lm4, iv1, iv2),
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; (0.022) &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; (0.032) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.027) &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
   &lt;/tr&gt;
@@ -811,8 +810,8 @@ msummary(list(lm1, lm2, lm3, lm4, iv1, iv2),
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.557*** &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.255* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.557\*\*\* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.230\*\*\* &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
@@ -821,37 +820,28 @@ msummary(list(lm1, lm2, lm3, lm4, iv1, iv2),
    &lt;td style="text-align:center;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.042) &lt;/td&gt;
-   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.109) &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.043) &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; Num.Obs. &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; 1000 &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; 1000 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 509 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 509 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 523 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 523 &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; 1000 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 509 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 523 &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; R2 &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; 0.142 &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; 0.505 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.022 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.307 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.044 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.224 &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; 0.029 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; −0.191 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.023 &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; R2 Within &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-  &lt;/tr&gt;
-  &lt;tr&gt;
-   &lt;td style="text-align:left;"&gt; R2 Pseudo &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
@@ -863,8 +853,8 @@ msummary(list(lm1, lm2, lm3, lm4, iv1, iv2),
    &lt;td style="text-align:left;"&gt; F &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; 165.786 &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; 507.934 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 11.520 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 112.040 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 24.053 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 75.066 &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
   &lt;/tr&gt;
@@ -879,10 +869,11 @@ msummary(list(lm1, lm2, lm3, lm4, iv1, iv2),
   &lt;/tr&gt;
 &lt;/tbody&gt;
 &lt;tfoot&gt;&lt;tr&gt;&lt;td style="padding: 0; " colspan="100%"&gt;
-&lt;sup&gt;&lt;/sup&gt; + p &amp;lt; 0.1, * p &amp;lt; 0.05, ** p &amp;lt; 0.01, *** p &amp;lt; 0.001&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
+&lt;sup&gt;&lt;/sup&gt; \* p &amp;lt; 0.1, \*\* p &amp;lt; 0.05, \*\*\* p &amp;lt; 0.01&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
 &lt;/table&gt;
 &lt;/small&gt;&lt;/small&gt;&lt;/small&gt;
 
+---
 
 ## Simulation and Implementation with `fixest`
 
@@ -894,7 +885,7 @@ d &lt;- tibble(
   mutate(
     x = rnorm(N, .6 * iv - .6 * confounder, .6),
     y = rnorm(N, .6 * confounder, .6),
-    survival = if_else(y + x &gt; 0, 1, 0)
+    survival = if_else(y &gt; 0, 1, 0)
   )
 surv &lt;- filter(d, survival == 1)
 lm1 &lt;- lm(y ~ x, d)
@@ -911,20 +902,21 @@ iv2 &lt;- feols(y ~ 1 | 0 | x ~ iv, data = surv)
 &lt;small&gt;&lt;small&gt;&lt;small&gt;
 
 ```r
-msummary(list(lm1, lm2, lm3, lm4, iv1, iv2),
-         gof_omit = gof_omit, stars = TRUE)
+msummary(list(confounded = lm1, "with control" = lm2, collider = lm3, collider = lm4,
+              "iv no collider" = iv1, "iv with collider" = iv2),
+         gof_omit = gof_omit, stars = stars)
 ```
 
 &lt;table style="NAborder-bottom: 0; width: auto !important; margin-left: auto; margin-right: auto;" class="table"&gt;
  &lt;thead&gt;
   &lt;tr&gt;
    &lt;th style="text-align:left;"&gt;   &lt;/th&gt;
-   &lt;th style="text-align:center;"&gt; Model 1 &lt;/th&gt;
-   &lt;th style="text-align:center;"&gt; Model 2 &lt;/th&gt;
-   &lt;th style="text-align:center;"&gt; Model 3 &lt;/th&gt;
-   &lt;th style="text-align:center;"&gt; Model 4 &lt;/th&gt;
-   &lt;th style="text-align:center;"&gt; Model 5 &lt;/th&gt;
-   &lt;th style="text-align:center;"&gt; Model 6 &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; confounded &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; with control &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; collider &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; collider  &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; iv no collider &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; iv with collider &lt;/th&gt;
   &lt;/tr&gt;
  &lt;/thead&gt;
 &lt;tbody&gt;
@@ -932,26 +924,26 @@ msummary(list(lm1, lm2, lm3, lm4, iv1, iv2),
    &lt;td style="text-align:left;"&gt; (Intercept) &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; 0.000 &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; −0.005 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.655*** &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.481*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.619\*\*\* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.475\*\*\* &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; 0.000 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.491*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.662\*\*\* &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; (0.024) &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; (0.018) &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; (0.030) &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; (0.028) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.022) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.023) &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; (0.026) &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; (0.050) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.025) &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; x &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; −0.310*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.310\*\*\* &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; 0.013 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; −0.634*** &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; −0.344*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.109\*\*\* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.020 &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
   &lt;/tr&gt;
@@ -959,17 +951,17 @@ msummary(list(lm1, lm2, lm3, lm4, iv1, iv2),
    &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; (0.023) &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; (0.021) &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; (0.028) &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; (0.031) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.021) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.022) &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; confounder &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.611*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.611\*\*\* &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.400*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.322\*\*\* &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
   &lt;/tr&gt;
@@ -978,7 +970,7 @@ msummary(list(lm1, lm2, lm3, lm4, iv1, iv2),
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; (0.023) &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; (0.029) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.027) &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
   &lt;/tr&gt;
@@ -989,7 +981,7 @@ msummary(list(lm1, lm2, lm3, lm4, iv1, iv2),
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; 0.014 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; −0.355*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.024 &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
@@ -998,25 +990,25 @@ msummary(list(lm1, lm2, lm3, lm4, iv1, iv2),
    &lt;td style="text-align:center;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.044) &lt;/td&gt;
-   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.072) &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.037) &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; Num.Obs. &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; 1000 &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; 1000 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 486 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 486 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 508 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 508 &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; 1000 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 486 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 508 &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; R2 &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; 0.150 &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; 0.511 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.513 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.654 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.049 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.263 &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; −0.014 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.414 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.024 &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; R2 Within &lt;/td&gt;
@@ -1028,20 +1020,11 @@ msummary(list(lm1, lm2, lm3, lm4, iv1, iv2),
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
-   &lt;td style="text-align:left;"&gt; R2 Pseudo &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-  &lt;/tr&gt;
-  &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; F &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; 176.674 &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; 521.482 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 510.787 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 457.099 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 25.970 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 90.272 &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
   &lt;/tr&gt;
@@ -1056,7 +1039,7 @@ msummary(list(lm1, lm2, lm3, lm4, iv1, iv2),
   &lt;/tr&gt;
 &lt;/tbody&gt;
 &lt;tfoot&gt;&lt;tr&gt;&lt;td style="padding: 0; " colspan="100%"&gt;
-&lt;sup&gt;&lt;/sup&gt; + p &amp;lt; 0.1, * p &amp;lt; 0.05, ** p &amp;lt; 0.01, *** p &amp;lt; 0.001&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
+&lt;sup&gt;&lt;/sup&gt; \* p &amp;lt; 0.1, \*\* p &amp;lt; 0.05, \*\*\* p &amp;lt; 0.01&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
 &lt;/table&gt;
 &lt;/small&gt;&lt;/small&gt;&lt;/small&gt;
 
@@ -1138,7 +1121,6 @@ iv_reg &lt;- feols(form_iv, data = duck)
 
 ## Results
 
-
 &lt;small&gt;&lt;small&gt;
 
 ```r
@@ -1147,7 +1129,7 @@ coef_map = c("gov_exogenous_middling" = "lame duck governor",
 msummary(list("reduced" = red_reg,
               "first stage iv" = summary(iv_reg, stage = 1),
               "second stage iv" = iv_reg),
-         gof_omit = gof_omit, stars = TRUE,
+         gof_omit = gof_omit, stars = stars,
          coef_map = coef_map)
 ```
 
@@ -1163,8 +1145,8 @@ msummary(list("reduced" = red_reg,
 &lt;tbody&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; lame duck governor &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; −0.049* &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 1.801*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.049\*\* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1.801\*\*\* &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
@@ -1177,7 +1159,7 @@ msummary(list("reduced" = red_reg,
    &lt;td style="text-align:left;"&gt; uncertainty &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; −0.027* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.027\*\* &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
@@ -1204,12 +1186,6 @@ msummary(list("reduced" = red_reg,
    &lt;td style="text-align:center;"&gt; 0.844 &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
-   &lt;td style="text-align:left;"&gt; R2 Pseudo &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-  &lt;/tr&gt;
-  &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; Std.Errors &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; by: statename &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; by: statename &lt;/td&gt;
@@ -1223,7 +1199,7 @@ msummary(list("reduced" = red_reg,
   &lt;/tr&gt;
 &lt;/tbody&gt;
 &lt;tfoot&gt;&lt;tr&gt;&lt;td style="padding: 0; " colspan="100%"&gt;
-&lt;sup&gt;&lt;/sup&gt; + p &amp;lt; 0.1, * p &amp;lt; 0.05, ** p &amp;lt; 0.01, *** p &amp;lt; 0.001&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
+&lt;sup&gt;&lt;/sup&gt; \* p &amp;lt; 0.1, \*\* p &amp;lt; 0.05, \*\*\* p &amp;lt; 0.01&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
 &lt;/table&gt;
 &lt;/small&gt;&lt;/small&gt;
 
@@ -1231,55 +1207,49 @@ msummary(list("reduced" = red_reg,
 
 ## Diagnostics
 
+[Instrumental Variables, Chapter 19, The Effect](https://theeffectbook.net/ch-InstrumentalVariables.html#how-is-it-performed-3)
+
+### Test for endogeneity (Durbin-Wu-Hausmann)
+
+&gt; Is the IV result different from the OLS result?
+
+
+```r
+summ_iv &lt;- summary(iv_reg)
+summ_1st &lt;- summary(iv_reg, stage = 1)
+summ_iv$iv_wh$stat  # iv wu hausmann
+```
+
+```
+## [1] 3.829033
+```
+
+```r
+summ_iv$iv_wh$p     # iv wu hausmann
+```
+
+```
+## [1] 0.05054677
+```
+
+---
+
 ### Test for weak instrument
 
+&gt; Is the instrument predicting the variable we want it to predict?
 
-```r
-# Weak Instruments
-summ_1st &lt;- summary(iv_reg$stage1)
-summ_iv &lt;- summary(iv_reg)
-weak_instruments &lt;- summ_1st$iv1fstat
-prettyNum(weak_instruments, dig = 2)[4:6]
-```
-
----
-
-### Sargan Test (Needs more instruments than endogenous variables)
+[Instrumental Variables, Chapter 19, The Effect](https://theeffectbook.net/ch-InstrumentalVariables.html#how-is-it-performed-3)
 
 
 ```r
-sargan(iv_reg)
+fitstat(iv_reg, type = "ivf")
+```
+
+```
+## F-test (1st stage), uncertainty_continuous: stat = 331.0, p &lt; 2.2e-16, on 1 and 1,640 DoF.
 ```
 
 ---
-
-### Test for endogeneity (Durbin Watson)
-
-
-```r
-# Endogeneity Test - Durbin Watson (by hand)
-uncert_iv_beta &lt;- coefficients(summ_iv)[9,1]
-uncert_iv_se &lt;- coefficients(summ_iv)[9,2]
-# Regression assuming no iv needed
-form_lm &lt;- formula(log_I ~ uncertainty_continuous +
-  log_I_1 + log_I_2 + log_Y + log_Y_1 + log_Y_2 +
-    log_real_GDP + log_real_GDP_1 + log_real_GDP_2
-  # fixed effects
-  | statename | 0 | statename
-  )
-
-lm_reg &lt;- felm(formula = form_lm, data = duck)
-coef_lm_reg &lt;- coefficients(summary(lm_reg))
-uncert_lm_beta &lt;- coef_lm_reg[1,1]
-uncert_lm_se &lt;- coef_lm_reg[1,2]
-duwa &lt;- (uncert_iv_beta - uncert_lm_beta) /
-  sqrt(uncert_iv_se^2 - uncert_lm_se^2)
-print(duwa)
-```
-
----
-
-class: center, middle
 
 # Pitching Template
 
@@ -1302,12 +1272,128 @@ class: center, middle
 4. ONE contribution
 5. Other considerations.
 
+---
 
+class: middle, center
+
+# Appendix
+
+---
+
+## Why can the `\(R^2\)` be negative with 2SLS?
+
+.pull-left[
+
+```r
+iv &lt;- tibble(
+  e1 = rnorm(N, 0, 1),
+  e2 = rnorm(N, 0, 1),
+  z = rnorm(N, 0, 1)) %&gt;%
+  mutate(
+*   x = .5 * z + e1,
+*   y = - 0.4 * x + e1 + e2)
+iv2sls &lt;- feols(y ~ 1 | x ~ z, data  = iv)
+first_stage &lt;- summary(iv2sls, stage = 1)
+```
+]
+
+.pull-right[
+&lt;small&gt;
+
+```r
+msummary(list(first_stage, iv2sls),
+         gof_omit = gof_omit, stars = stars)
+```
+
+&lt;table style="NAborder-bottom: 0; width: auto !important; margin-left: auto; margin-right: auto;" class="table"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt;   &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Model 1 &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Model 2 &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; (Intercept) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.021 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.041 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.033) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.042) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; z &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.548\*\*\* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.033) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; fit_x &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.289\*\*\* &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.077) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Num.Obs. &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1000 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1000 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.220 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.311 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 Within &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Std.Errors &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; IID &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; IID &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;tfoot&gt;&lt;tr&gt;&lt;td style="padding: 0; " colspan="100%"&gt;
+&lt;sup&gt;&lt;/sup&gt; \* p &amp;lt; 0.1, \*\* p &amp;lt; 0.05, \*\*\* p &amp;lt; 0.01&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
+&lt;/table&gt;
+&lt;/small&gt;
+]
+
+---
+
+class: center
+
+## Why can the `\(R^2\)` be negative with 2SLS?
+
+![](slides3_files/figure-html/unnamed-chunk-31-1.svg)&lt;!-- --&gt;
+
+---
+
+## Why can the `\(R^2\)` be negative with 2SLS?
+
+- The `\(R^2\)` picks up the correlation between `\(y\)` and `\(x\)`
+
+- We are interested in the causal relation between `\(y\)` and `\(x\)`.
+
+- If the causal relation has the opposite sign as the correlation, `\(R^2\)` will be negative with a correctly specified 2SLS.
     </textarea>
 <style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
 <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
 <script>var slideshow = remark.create({
 "countIncrementalSlides": false,
+"highlightLines": true,
 "ratio": "16:9"
 });
 if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
@@ -1374,7 +1460,24 @@ if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
       links[i].target = '_blank';
     }
   }
-})();</script>
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
 
 <script>
 slideshow._releaseMath = function(el) {
