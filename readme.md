@@ -22,8 +22,8 @@ The section discusses variables we want to control for (confounders) and the spe
 ### TODO
 
 - [] Update the initial example for DAGs with an example from the seminar
-- [] Update IV diagnostics 
-- [] Explanation of negative Rsquared with IV
+- [x] Update IV diagnostics 
+- [x] Explanation of negative Rsquared with IV
 
 ## Lecture 4
 

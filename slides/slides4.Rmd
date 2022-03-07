@@ -493,7 +493,7 @@ rd_panel_forget <- tibble(
   firm = rep(1:N, each = T),
   year = rep(1:T, times = N)) %>%
   left_join(rd_firm, by = "firm") %>% #<<
-  mutate(forget_donation = rbinom(N * T, 1, plogis(other_payoff)), #<<
+  mutate(forget_donation = rbinom(N * T, 1, plogis(-other_payoff)), #<<
          actual_donation = (1 - forget_donation) * donation,
          actual_payoff = ifelse(actual_donation == 1,
                                 payoff_donation, payoff_no_donation))
@@ -513,7 +513,9 @@ class: middle
 ## The New Assignment
 
 - Run a fixed effect model and interpret the result
+
 - Create a new dataset where all firms make mistakes
+
 - Run a fixed effect model and interpret the result
 
 ---
