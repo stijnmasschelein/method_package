@@ -189,7 +189,7 @@ First, we can treat CSR activities as a signal of the underlying performance of 
 
    - `high_performance` is 1 with probability .5 for each of the observations. 
 
-   - `donation` is 1 when the firm is a high performing firm and 1 otherwise. The signalling model represents the donation by $a$.
+   - `donation` is 1 when the firm is a high performing firm and 0 otherwise. The signalling model represents the donation by $a$.
 
    - `return` or $b$ in the signalling model is 4 when the firm donates and 1 otherwise.
 
