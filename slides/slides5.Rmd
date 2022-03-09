@@ -20,10 +20,11 @@ library(fixest)
 library(modelsummary)
 library(here)
 i_am("slides/slides5.Rmd")
-uwa_blue = "#003087"
-uwa_gold = "#DAAA00"
+uwa_blue <- "#003087"
+uwa_gold <- "#DAAA00"
 knitr::opts_chunk$set(dpi = 200, dev = "svg")
-gof_omit = "Adj|IC|Log"
+gof_omit <- "Adj|IC|Log|Pseudo"
+stars <- c("\\*" = 0.1, "\\*\\*" = 0.05, "\\*\\*\\*" = 0.01)
 ```
 
 class: middle, center
@@ -143,14 +144,14 @@ Go also back to Assignment 2 where we modeled the same problem when investors an
 
 ## Mergers and Acquisitions and event study
 
-TODO
-
+   TODO
 
 ---
 
 class: middle, center
 
 # Difference-in-Difference
+
 ---
 
 ## What if we had an additional control group to estimate the counterfactual?
@@ -184,6 +185,162 @@ event_study +
   ggtitle("Difference in Difference")
 ```
 ]
+
+---
+
+## A Simulated Cheap Talk Example: Voluntary Disclosure in Time 2
+
+```{r}
+N <- 500
+T <- 2
+time_effect <- c(3.5, 0) #<<
+rd_did_firm <- tibble(
+  firm = 1:N,
+  performance = runif(N, 1, 10), #<<
+  firm_effect = rnorm(N, 0, 2) + ifelse(performance < 3, 3, 0) #<<
+)
+rd_did_panel <- tibble(
+  firm = rep(1:N, each = T),
+  time = rep(1:T, times = N)) %>%
+  left_join(rd_did_firm, by = "firm") %>%
+  mutate(
+    report = ifelse(time == 2, ifelse(performance > 3, 1, 0), 0), #<<
+    noise = rnorm(N*T, 0, 3),
+    profit_report = 6.5 + time_effect[time] + firm_effect + noise,
+    profit_no_report = 1.5 + time_effect[time] + firm_effect + noise,
+    actual_profit = ifelse(report == 1, profit_report, profit_no_report))
+```
+
+???
+
+The idea is that we have firms who perform well (performance > 3) and firms that perform bad (performance < 3). The firms that perform well will voluntarily disclose a report in time 2. We can see the effect as the difference between time 1 and time 2 for disclosers and non-disclosers. 
+
+Important: the cost of misreporting is not in calculated in the profit. The reasoning would be that this might be a litigation cost that would only emerge later on.
+
+---
+
+## The Causal Effects in Our Simulation
+
+```{r, causal_did_means, warning = FALSE}
+rd_did_panel %>%
+  mutate(causal_effect = profit_report - profit_no_report) %>%
+  group_by(time, report2 = performance > 3) %>%
+  summarise(profit_report = mean(profit_report),
+            profit_no_report = mean(profit_no_report),
+            causal_effect = mean(causal_effect))
+```
+
+---
+
+## A Summary of The Actual Profits 
+
+```{r visual-did, warning = FALSE}
+rd_did_panel %>%
+  group_by(time, report2 = performance > 3) %>%
+  summarise(actual_profit = mean(actual_profit)) %>%
+  pivot_wider(names_from = time, values_from = actual_profit)
+```
+
+---
+
+## Regressions
+
+<small>
+```{r}
+did_lm <- feols(actual_profit ~ report, data = rd_did_panel)
+did_sub <- feols(actual_profit ~ report, data = filter(rd_did_panel, time == 2))
+did_fixed <- feols(actual_profit ~ report | firm, data = rd_did_panel)
+did_did <- feols(actual_profit ~ report | firm + time, data = rd_did_panel)
+msummary(list(simple = did_lm, "time 2" = did_sub, "firm FE" = did_fixed, "two-way FE" = did_did),
+         gof_omit = gof_omit, stars = stars)
+
+```
+</small>
+
+---
+
+## What if we have three periods?
+
+> We assume that over time investors and regulators get better at detecting when firms exaggerate in their report.
+
+1. Time 1: Reports are not believable, nobody reports
+
+2. Time 2: The biggest exaggerations will be caught, only well performing firms will report and communicate that they are doing excellent.
+
+3. Time 3: More subtle exaggerations will be caught. The worst performers will not report at all, the moderate performers will report and say that they will do well, the good performers will report that they are doing excellent.
+
+> See the Appendix of the assignment.
+
+---
+
+## Setup of three period simulation
+
+```{r}
+N <- 1000
+T <- 3
+cutoff2 <- 3 # performance cutoff to report for time 1
+cutoff3 <- c(4/3, 4 + 2/3) # performance cutoff to report for time 2
+profit1 <- 5
+profit2 <- c(1.5, 6.5) #Profits for time 2 depending on report
+profit3 <- c(2/3, 3, 7 + 1/3) #Profits for time 2 depending on report
+rd_did3_firm <- tibble(
+  firm = 1:N,
+  performance = runif(N, 0, 10),
+  firm_effect = rnorm(N, 0, 2) + ifelse(performance < cutoff2, 3, 0)
+)
+```
+
+---
+
+```{r}
+rd_did3_panel <- tibble(
+  firm = rep(1:N, each = T),
+  time = rep(1:T, times = N)) %>%
+  left_join(rd_did3_firm, by = "firm") %>%
+  mutate(
+    # When will firms report?
+    report = case_when( #<<
+      time == 1 ~ 0,
+      time == 2 & performance < cutoff2 ~ 0,
+      time == 3 & performance < cutoff3[1] ~ 0,
+      TRUE ~ 1),
+    noise <- rnorm(T*N, 0, 5),
+    profit_no_report = firm_effect + noise + #<<
+      case_when(
+        time == 1 ~ profit1,
+        time == 2 ~ profit2[1],
+        time == 3 ~ profit3[1]
+    ),
+    profit_report = firm_effect + noise + #<<
+      case_when(
+        time == 1 ~ profit1,
+        time == 2 ~ profit2[2],
+        time == 3 & performance < cutoff3[2] ~ profit3[2],
+        TRUE ~ profit3[3]
+      ),
+    actual_profit = ifelse(report == 1, profit_report, profit_no_report)
+  )
+```
+
+---
+
+```{r}
+rd_did3_panel %>%
+  mutate(causal_effect = profit_report - profit_no_report,
+         group = case_when(
+           performance < cutoff3[1] ~ 1,
+           performance < cutoff2 ~ 2,
+           performance < cutoff3[2] ~ 3,
+           TRUE ~ 4
+         )) %>%
+  group_by(time, group) %>%
+  summarise(report = mean(report),
+            N = n(),
+            M_report = mean(profit_report),
+            M_no_no_report = mean(profit_no_report),
+            M_causal_effect = mean(causal_effect))
+```
+
 
 ---
 

@@ -1,0 +1,189 @@
+---
+author: "Stijn Masschelein"
+title: "Fast (?) Baker et al. simulation"
+---
+
+# R Setup
+
+```{r}
+library(here)
+library(tidyverse)
+library(collapse)
+library(data.table)
+library(RPostgres)
+library(fixest)
+i_am("auxilary/baker_simulation.Rmd")
+run_wrds <- FALSE
+file <- here("data", "roas.RDS")
+```
+
+# WRDS
+
+```{r wrds_connection, eval = run_wrds}
+wrds <- dbConnect(Postgres(),
+                  host='wrds-pgdata.wharton.upenn.edu',
+                  port=9737,
+                  dbname='wrds',
+                  user='stimas',
+                  sslmode='require')
+```
+
+See [Compustat/WRDS](https://wrds-www.wharton.upenn.edu/pages/support/research-wrds/research-guides/procedures-using-fama-and-french-48-industry-classification/)
+
+```{r wrds_query, eval = run_wrds}
+sql1 <- "SELECT fyear, gvkey, AT, IB, DPACT
+       FROM COMP.FUNDA
+       WHERE fyear > 1979 AND fyear < 2016 AND INDFMT <> 'FS' AND CURNCD = 'USD'"
+res <- dbSendQuery(wrds, sql1)
+dt <- as_tibble(dbFetch(res)) %>%
+  rename_all(tolower)
+dbClearResult(res)
+roas <- dt %>%
+  mutate(roa = ib / (at + dpact)) %>%
+  select(year = fyear, firm = gvkey, roa) %>%
+  filter(!is.na(roa), !is.infinite(roa)) %>%
+  group_by(firm) %>%
+  mutate(n = n()) %>%
+  filter(n >= 5)
+saveRDS(roas, file)
+```
+
+# Create Data
+
+The deletion of the tails is just to get to a reasonable standard deviation. 
+
+```{r}
+roas <- readRDS(file) %>% ungroup()
+roa_centiles <- quantile(roas$roa, c(0.01,.99))
+roas <- filter(roas, roa > roa_centiles[1], roa < roa_centiles[2])
+mtime <- file.info((file))$mtime
+```
+
+The data was last modified on `r mtime`
+
+# Decomposition
+
+```{r}
+decomp_dplyr <- function(){
+roas %>%
+  group_by(year) %>%
+  mutate(fey = mean(roa)) %>%
+  group_by(firm) %>%
+  mutate(fef = mean(roa)) %>%
+  ungroup() %>%
+  mutate(residual = roa - fey - fef)
+}
+decomp_fast <- function(){
+  roas %>%
+    fgroup_by(year) %>%
+    fmutate(fey = fmean(roa)) %>%
+    fgroup_by(firm) %>%
+    fmutate(fef = fmean(roa)) %>%
+    fungroup() %>%
+    fmutate(residual = roa - fef - fey) 
+}
+microbenchmark::microbenchmark(dplyr = decomp_dplyr(),
+                  collapse = decomp_fast(),
+                  times = 100)
+roas <- decomp_fast()
+```
+
+Holy smokes!
+
+# Sampling
+
+```{r, sampling-preparation}
+n <- fnrow(roas)
+sigma_roa <- sd(roas$roa)
+observations <- setDT(fselect(roas, year, firm))
+years <- fselect(roas, year, fey) %>% fgroup_by(year) %>% fmean() %>% setDT()
+firms <- fselect(roas, firm, fef) %>% fgroup_by(firm) %>% fmean() %>% setDT()
+residuals <- roas$residual
+treatment_groups <- c(1989, 1998, 2007)
+treatment_effects <- c(.05, .03, .01)
+states <- 1:50
+state_treatments <- sample(1:3, 50, TRUE)
+```
+
+The next step is to allow for different treatment effects
+
+```{r}
+nfirm <- 1000
+new_sample <- function(){
+  sample_firms <- firms[, .SD[sample(.N, nfirm, FALSE)]]
+  sample_firms[, state := sample(1:50, .N, TRUE)]
+  sample_firms[, state_treatment := state_treatments[state]]
+  sample_firms[, treatment_group := treatment_groups[state_treatment]]
+  sample_firms[, treatment_effect := treatment_effects[state_treatment]]
+  new <- observations[
+    sample_firms, on = .(firm = firm)][
+    years, on = .(year = year)]
+  new[, roa :=  treatment_effect * sigma_roa
+      * pmax(year - treatment_group + 1, 0)
+      + fef + fey + sample(residuals, .N, TRUE)]
+  new[, rel_year := year - treatment_group]
+  return(as.data.table(new))
+}
+new_sample()
+microbenchmark::microbenchmark(sample = new_sample(), times = 100)
+```
+
+TODO
+
+[] Read up on `.SD` function.
+
+# Analyse
+
+## Two-way Fixed Effects
+
+```{r twoway}
+new <- new_sample()
+twoway <- feols(roa ~ ifelse(year >= treatment_group, 1, 0)| year + firm,
+                cluster = "state", data = new)
+etable(twoway)
+coefficients(twoway)
+```
+
+## Sun and Abraham
+
+See [Andrew Baker's Github](https://github.com/andrewchbaker/JFE_DID/blob/main/Code/1e.%20Alternative%20Event%20Study%20Estimators.R)
+
+```{r sun}
+sa_new <- new_sample() %>%
+  filter(year < treatment_group | rel_year <= 5) %>%
+  filter(year < 2007)
+sun_ab <- feols(roa ~ 1 + sunab(treatment_group, year)
+                | firm + year, sa_new)
+etable(sun_ab)
+summary(sun_ab, agg = "ATT")
+ATT <- coeftable(summary(sun_ab, agg = "ATT"))[1,1]
+print(ATT)
+```
+
+# Simulation
+
+```{r simulation}
+nsim <- 500
+simulate <- function(sim = 1){
+  new <- new_sample()
+  twoway <- feols(roa ~ ifelse(year >= treatment_group, 1, 0)
+                  | year + firm, data = new)
+  twoway_coef = coefficients(twoway)[1]
+  sa_new <- new[(year < treatment_group | rel_year <= 5) & year < 2007]
+  sun_ab  <- feols(roa ~ 1 + sunab(treatment_group, year)
+                   | firm + year, sa_new)
+  sun_ab_att <- coeftable(summary(sun_ab, agg = "ATT"))[1,1]
+  results <- c(twoway_coef, sun_ab_att)
+  names(results) <- c("twoway", "sun_abraham")
+  return(results)
+}
+simulate()
+estimates <- parallel::mclapply(1:nsim, FUN = simulate, mc.cores = 4L) %>%
+  bind_rows()
+summary(estimates)
+hist(estimates$twoway, breaks = nsim/20)
+hist(estimates$sun_abraham, breaks = nsim/20)
+plot(estimates$twoway, estimates$sun_abraham)
+```
+
+

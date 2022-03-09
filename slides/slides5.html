@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Research Design 2: Event Studies and Difference-in-Difference Designs</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Stijn Masschelein" />
+    <script src="slides5_files/header-attrs-2.11/header-attrs.js"></script>
+    <script src="slides5_files/htmlwidgets-1.5.4/htmlwidgets.js"></script>
+    <script src="slides5_files/viz-1.8.2/viz.js"></script>
+    <link href="slides5_files/DiagrammeR-styles-0.2/styles.css" rel="stylesheet" />
+    <script src="slides5_files/grViz-binding-1.0.8/grViz.js"></script>
+    <script src="slides5_files/kePrint-0.0.1/kePrint.js"></script>
+    <link href="slides5_files/lightable-0.0.1/lightable.css" rel="stylesheet" />
+    <link rel="stylesheet" href="xaringan-themer.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Research Design 2: Event Studies and Difference-in-Difference Designs
+### Stijn Masschelein
+### March, 2022
+
+---
+
+
+
+
+class: middle, center
+
+# Event Studies
+
+---
+
+## A basic before event - after event comparison
+
+&lt;center&gt;
+<div id="htmlwidget-fa310e2e2486df3e7488" style="width:800px;height:300px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-fa310e2e2486df3e7488">{"x":{"diagram":"\n  digraph event{\n  node [shape = box]\n  subgraph{\n    rank = same; \"Event Happened\", Treatment, Outcome\n  }\n  \"Event Happened\" -> Treatment -> Outcome\n  Time -> {\"Event Happened\", Outcome}\n  }\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+&lt;/center&gt;
+
+[Chapter 17 Event Studies in The Effect]()
+
+???
+
+Where Time could be standing in for a lot of other annoying things that might happen. 
+
+---
+
+## Use Data Before The Event to Infer The Counterfactual Outcome (in Yellow)
+
+
+
+
+
+.pull-left[
+![](slides5_files/figure-html/unnamed-chunk-4-1.svg)&lt;!-- --&gt;
+]
+
+--
+
+.pull-right[
+![](slides5_files/figure-html/unnamed-chunk-5-1.svg)&lt;!-- --&gt;
+]
+
+???
+
+We do not observe the yellow/gold returns. We have to estimate them or convince the reader that there are no trends to be expected for theoretical/institutional reasons. I will not go into the details of the estimation. Dirk will spend considerable time on the actual implementation. 
+
+---
+
+## Front-running, information leaking, and anticipation are all very annoying.
+
+&lt;center&gt;
+<div id="htmlwidget-d8e6d74a8be9f57c6df9" style="width:800px;height:200px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-d8e6d74a8be9f57c6df9">{"x":{"diagram":"\n  digraph event{\n  node [shape = box]\n  subgraph{\n    rank = same; \"Before Block Trade\", \"Large Block Trade\", \"Price Impact\"\n  }\n  \"Before Block Trade\" -> \"Large Block Trade\" -> \"Price Impact\"\n  Time -> {\"Before Block Trade\", \"Price Impact\"}\n  }\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+&lt;/center&gt;
+
+--
+
+&gt; To gauge demand from buyers and potentially gin up interest from sellers, bankers send out lists of shares with upcoming lockup expirations, according to market participants. [(Money Stuff, Matt Levine)](https://www.bloomberg.com/opinion/articles/2022-02-16/people-are-worried-about-block-trades)
+
+&gt; Sometimes, bankers also engage in hypothetical conversations with buyers before they have a mandate. Asking prospective buyers whether they might be interested in certain stocks is one thing. But if there are indeed plans afoot for block sales, such conversations, even phrased hypothetically, can tip off savvy money managers. [(Money Stuff, Matt Levine)](https://www.bloomberg.com/opinion/articles/2022-02-16/people-are-worried-about-block-trades)
+
+--
+
+???
+
+Go also back to Assignment 2 where we modeled the same problem when investors anticipate a donation.
+---
+
+
+## Mergers and Acquisitions and event study
+
+   TODO
+
+---
+
+class: middle, center
+
+# Difference-in-Difference
+
+---
+
+## What if we had an additional control group to estimate the counterfactual?
+
+.pull-left[
+![](slides5_files/figure-html/unnamed-chunk-7-1.svg)&lt;!-- --&gt;
+]
+
+--
+
+.pull-right[
+![](slides5_files/figure-html/unnamed-chunk-8-1.svg)&lt;!-- --&gt;
+]
+
+---
+
+## A Simulated Cheap Talk Example: Voluntary Disclosure in Time 2
+
+
+```r
+N &lt;- 500
+T &lt;- 2
+*time_effect &lt;- c(3.5, 0)
+rd_did_firm &lt;- tibble(
+  firm = 1:N,
+* performance = runif(N, 1, 10),
+* firm_effect = rnorm(N, 0, 2) + ifelse(performance &lt; 3, 3, 0)
+)
+rd_did_panel &lt;- tibble(
+  firm = rep(1:N, each = T),
+  time = rep(1:T, times = N)) %&gt;%
+  left_join(rd_did_firm, by = "firm") %&gt;%
+  mutate(
+*   report = ifelse(time == 2, ifelse(performance &gt; 3, 1, 0), 0),
+    noise = rnorm(N*T, 0, 3),
+    profit_report = 6.5 + time_effect[time] + firm_effect + noise,
+    profit_no_report = 1.5 + time_effect[time] + firm_effect + noise,
+    actual_profit = ifelse(report == 1, profit_report, profit_no_report))
+```
+
+???
+
+The idea is that we have firms who perform well (performance &gt; 3) and firms that perform bad (performance &lt; 3). The firms that perform well will voluntarily disclose a report in time 2. We can see the effect as the difference between time 1 and time 2 for disclosers and non-disclosers. 
+
+Important: the cost of misreporting is not in calculated in the profit. The reasoning would be that this might be a litigation cost that would only emerge later on.
+
+---
+
+## The Causal Effects in Our Simulation
+
+
+```r
+rd_did_panel %&gt;%
+  mutate(causal_effect = profit_report - profit_no_report) %&gt;%
+  group_by(time, report2 = performance &gt; 3) %&gt;%
+  summarise(profit_report = mean(profit_report),
+            profit_no_report = mean(profit_no_report),
+            causal_effect = mean(causal_effect))
+```
+
+```
+## `summarise()` has grouped output by 'time'. You can override using the `.groups` argument.
+```
+
+```
+## # A tibble: 4 × 5
+## # Groups:   time [2]
+##    time report2 profit_report profit_no_report causal_effect
+##   &lt;int&gt; &lt;lgl&gt;           &lt;dbl&gt;            &lt;dbl&gt;         &lt;dbl&gt;
+## 1     1 FALSE           12.5              7.54             5
+## 2     1 TRUE            10.1              5.09             5
+## 3     2 FALSE            9.90             4.90             5
+## 4     2 TRUE             6.55             1.55             5
+```
+
+---
+
+## A Summary of The Actual Profits 
+
+
+```r
+rd_did_panel %&gt;%
+  group_by(time, report2 = performance &gt; 3) %&gt;%
+  summarise(actual_profit = mean(actual_profit)) %&gt;%
+  pivot_wider(names_from = time, values_from = actual_profit)
+```
+
+```
+## `summarise()` has grouped output by 'time'. You can override using the `.groups` argument.
+```
+
+```
+## # A tibble: 2 × 3
+##   report2   `1`   `2`
+##   &lt;lgl&gt;   &lt;dbl&gt; &lt;dbl&gt;
+## 1 FALSE    7.54  4.90
+## 2 TRUE     5.09  6.55
+```
+
+---
+
+## Regressions
+
+&lt;small&gt;
+
+```r
+did_lm &lt;- feols(actual_profit ~ report, data = rd_did_panel)
+did_sub &lt;- feols(actual_profit ~ report, data = filter(rd_did_panel, time == 2))
+did_fixed &lt;- feols(actual_profit ~ report | firm, data = rd_did_panel)
+did_did &lt;- feols(actual_profit ~ report | firm + time, data = rd_did_panel)
+msummary(list(simple = did_lm, "time 2" = did_sub, "firm FE" = did_fixed, "two-way FE" = did_did),
+         gof_omit = gof_omit, stars = stars)
+```
+
+&lt;table style="NAborder-bottom: 0; width: auto !important; margin-left: auto; margin-right: auto;" class="table"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt;   &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; simple &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; time 2 &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; firm FE &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; two-way FE &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; (Intercept) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 5.531\*\*\* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 4.904\*\*\* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.149) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.327) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; report &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1.020\*\*\* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1.647\*\*\* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1.463\*\*\* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 4.102\*\*\* &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.242) &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.376) &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.217) &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.430) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Num.Obs. &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1000 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 500 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1000 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1000 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.018 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.037 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.655 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.686 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 Within &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.078 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.150 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Std.Errors &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; IID &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; IID &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; by: firm &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; by: firm &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; FE: firm &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; X &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; X &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; FE: time &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; X &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;tfoot&gt;&lt;tr&gt;&lt;td style="padding: 0; " colspan="100%"&gt;
+&lt;sup&gt;&lt;/sup&gt; \* p &amp;lt; 0.1, \*\* p &amp;lt; 0.05, \*\*\* p &amp;lt; 0.01&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
+&lt;/table&gt;
+&lt;/small&gt;
+
+---
+
+## What if we have three periods?
+
+&gt; We assume that over time investors and regulators get better at detecting when firms exaggerate in their report.
+
+1. Time 1: Reports are not believable, nobody reports
+
+2. Time 2: The biggest exaggerations will be caught, only well performing firms will report and communicate that they are doing excellent.
+
+3. Time 3: More subtle exaggerations will be caught. The worst performers will not report at all, the moderate performers will report and say that they will do well, the good performers will report that they are doing excellent.
+
+&gt; See the Appendix of the assignment.
+
+---
+
+## Setup of three period simulation
+
+
+```r
+N &lt;- 1000
+T &lt;- 3
+cutoff2 &lt;- 3 # performance cutoff to report for time 1
+cutoff3 &lt;- c(4/3, 4 + 2/3) # performance cutoff to report for time 2
+profit1 &lt;- 5
+profit2 &lt;- c(1.5, 6.5) #Profits for time 2 depending on report
+profit3 &lt;- c(2/3, 3, 7 + 1/3) #Profits for time 2 depending on report
+rd_did3_firm &lt;- tibble(
+  firm = 1:N,
+  performance = runif(N, 0, 10),
+  firm_effect = rnorm(N, 0, 2) + ifelse(performance &lt; cutoff2, 3, 0)
+)
+```
+
+---
+
+
+```r
+rd_did3_panel &lt;- tibble(
+  firm = rep(1:N, each = T),
+  time = rep(1:T, times = N)) %&gt;%
+  left_join(rd_did3_firm, by = "firm") %&gt;%
+  mutate(
+    # When will firms report?
+*   report = case_when(
+      time == 1 ~ 0,
+      time == 2 &amp; performance &lt; cutoff2 ~ 0,
+      time == 3 &amp; performance &lt; cutoff3[1] ~ 0,
+      TRUE ~ 1),
+    noise &lt;- rnorm(T*N, 0, 5),
+*   profit_no_report = firm_effect + noise +
+      case_when(
+        time == 1 ~ profit1,
+        time == 2 ~ profit2[1],
+        time == 3 ~ profit3[1]
+    ),
+*   profit_report = firm_effect + noise +
+      case_when(
+        time == 1 ~ profit1,
+        time == 2 ~ profit2[2],
+        time == 3 &amp; performance &lt; cutoff3[2] ~ profit3[2],
+        TRUE ~ profit3[3]
+      ),
+    actual_profit = ifelse(report == 1, profit_report, profit_no_report)
+  )
+```
+
+---
+
+
+```r
+rd_did3_panel %&gt;%
+  mutate(causal_effect = profit_report - profit_no_report,
+         group = case_when(
+           performance &lt; cutoff3[1] ~ 1,
+           performance &lt; cutoff2 ~ 2,
+           performance &lt; cutoff3[2] ~ 3,
+           TRUE ~ 4
+         )) %&gt;%
+  group_by(time, group) %&gt;%
+  summarise(report = mean(report),
+            N = n(),
+            M_report = mean(profit_report),
+            M_no_no_report = mean(profit_no_report),
+            M_causal_effect = mean(causal_effect))
+```
+
+```
+## `summarise()` has grouped output by 'time'. You can override using the `.groups` argument.
+```
+
+```
+## # A tibble: 12 × 7
+## # Groups:   time [3]
+##     time group report     N M_report M_no_no_report M_causal_effect
+##    &lt;int&gt; &lt;dbl&gt;  &lt;dbl&gt; &lt;int&gt;    &lt;dbl&gt;          &lt;dbl&gt;           &lt;dbl&gt;
+##  1     1     1      0   134     7.72          7.72             0   
+##  2     1     2      0   155     7.92          7.92             0   
+##  3     1     3      0   170     5.58          5.58             0   
+##  4     1     4      0   541     5.26          5.26             0   
+##  5     2     1      0   134     8.20          3.20             5   
+##  6     2     2      0   155     9.49          4.49             5   
+##  7     2     3      1   170     7.15          2.15             5   
+##  8     2     4      1   541     6.64          1.64             5   
+##  9     3     1      0   134     6.27          3.93             2.33
+## 10     3     2      1   155     6.53          4.20             2.33
+## 11     3     3      1   170     3.23          0.894            2.33
+## 12     3     4      1   541     7.29          0.620            6.67
+```
+
+
+---
+
+# When should you cluster?
+
+### [Abadie, Athey, Imbens, and Wooldridge (2017)](http://economics.mit.edu/files/13927)
+
+&gt; What is the level of the treatment variable? What is the comparison?
+
+- Mixed *race* or same sex *race*
+- *State* legislation
+- *Country* legislation
+- *Firm* corporate governance changes 
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightLines": true,
+"countIncrementalSlides": false,
+"ratio": "16:9"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
