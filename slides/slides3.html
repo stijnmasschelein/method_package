@@ -19,7 +19,7 @@ class: center, middle, inverse, title-slide
 
 # Control Variables and Instrumental Variables
 ### Stijn Masschelein
-### February, 2022
+### March, 2022
 
 ---
 
@@ -38,8 +38,8 @@ class:center, middle
 
 &lt;center&gt;
 
-<div id="htmlwidget-df61ec983107291cfecb" style="width:720px;height:504px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-df61ec983107291cfecb">{"x":{"diagram":"\ndigraph brand_capital{\ngraph[ rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nBrandCapital; CreditRating\nsubgraph {\nrank = same; InfoEnvironment; FutureCashFlow;\n}\n{BrandCapital} -> {InfoEnvironment, FutureCashFlow};\n{InfoEnvironment, FutureCashFlow} -> CreditRating;\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-7aa1f16875ce55bc483e" style="width:720px;height:504px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-7aa1f16875ce55bc483e">{"x":{"diagram":"\ndigraph brand_capital{\ngraph[ rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nBrandCapital; CreditRating\nsubgraph {\nrank = same; InfoEnvironment; FutureCashFlow;\n}\n{BrandCapital} -> {InfoEnvironment, FutureCashFlow};\n{InfoEnvironment, FutureCashFlow} -> CreditRating;\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 &lt;/center&gt;
 
 ---
@@ -48,8 +48,8 @@ class:center, middle
 
 &lt;center&gt;
 
-<div id="htmlwidget-2f927d523494265cddc7" style="width:864px;height:432px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-2f927d523494265cddc7">{"x":{"diagram":"\ndigraph brand_capital_complication{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nCumulAds; BrandCapital; CreditRating\nsubgraph {\nrank = same; OtherVars; InfoEnvironment; FutureCashFlow;\n}\nOtherVars -> {CumulAds, CreditRating}\n{CumulAds} -> {BrandCapital}\n{BrandCapital} -> {InfoEnvironment, FutureCashFlow};\n{InfoEnvironment, FutureCashFlow} -> CreditRating;\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-3a0853888a4bdf2cad95" style="width:864px;height:432px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-3a0853888a4bdf2cad95">{"x":{"diagram":"\ndigraph brand_capital_complication{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nCumulAds; BrandCapital; CreditRating\nsubgraph {\nrank = same; OtherVars; InfoEnvironment; FutureCashFlow;\n}\nOtherVars -> {CumulAds, CreditRating}\n{CumulAds} -> {BrandCapital}\n{BrandCapital} -> {InfoEnvironment, FutureCashFlow};\n{InfoEnvironment, FutureCashFlow} -> CreditRating;\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 &lt;/center&gt;
 
 ---
@@ -65,9 +65,18 @@ class:center, middle
 
 &lt;center&gt;
 
-<div id="htmlwidget-b87842db2a18c9e131e2" style="width:648px;height:288px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-b87842db2a18c9e131e2">{"x":{"diagram":"\ndigraph brand_capital{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nPerformance; Donation; Return;\nPerformance -> Donation;\nDonation -> Return;\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-244ebbf2f0303bc076d1" style="width:648px;height:288px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-244ebbf2f0303bc076d1">{"x":{"diagram":"\ndigraph brand_capital{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nPerformance; Donation; Return;\nPerformance -> Donation;\nDonation -> Return;\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 &lt;/center&gt;
+
+---
+
+class:center, middle
+
+## Assignment: CSR report
+
+<div id="htmlwidget-bb48d828df67b28f1595" style="width:648px;height:288px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-bb48d828df67b28f1595">{"x":{"diagram":"\ndigraph measurement_error{\ngraph[layout = dot]\nnode [shape = box, fontname = Helvetica]\nsubgraph{rank = same; Performance; CSR_report; Return}\nPerformance -> {CSR_report; Scandals}\nCSR_report -> {Return; Observed_Report}\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 
 ---
 
@@ -79,8 +88,8 @@ class:center, middle
 
 ## Causal Graph 
 
-<div id="htmlwidget-f4f2cd1f982e23dda65a" style="width:648px;height:288px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-f4f2cd1f982e23dda65a">{"x":{"diagram":"\ndigraph measurement_error{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nsubgraph{rank = same; CorporateGovernance; TechIndustry}\n{CorporateGovernance, TechIndustry} -> Performance\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-10cbc1b21a5a83f25c07" style="width:648px;height:288px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-10cbc1b21a5a83f25c07">{"x":{"diagram":"\ndigraph measurement_error{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nsubgraph{rank = same; CorporateGovernance; TechIndustry}\n{CorporateGovernance, TechIndustry} -> Performance\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 
 ---
 
@@ -181,15 +190,6 @@ donation and no donation should be 3 but it is less.
 
 ---
 
-## Assignment: CSR report
-
-<div id="htmlwidget-5bb8ad77b4e2820f4568" style="width:648px;height:288px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-5bb8ad77b4e2820f4568">{"x":{"diagram":"\ndigraph measurement_error{\ngraph[layout = dot]\nnode [shape = box, fontname = Helvetica]\nsubgraph{rank = same; Performance; CSR_report; Return}\nPerformance -> {CSR_report; Scandals}\nCSR_report -> {Return; Observed_Report}\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
-
----
-
-class:center, middle
-
 # Confounders and control variables
 
 ---
@@ -198,8 +198,8 @@ class:center, middle
 
 &lt;center&gt;
 
-<div id="htmlwidget-8929edc9aaec0c5e910e" style="width:648px;height:288px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-8929edc9aaec0c5e910e">{"x":{"diagram":"\ndigraph confounder{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nsubgraph{rank = same; CorporateGovernance; TechIndustry}\n{CorporateGovernance, TechIndustry} -> Performance\nTechIndustry -> CorporateGovernance\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-eac413d9ce79614f5269" style="width:648px;height:288px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-eac413d9ce79614f5269">{"x":{"diagram":"\ndigraph confounder{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nsubgraph{rank = same; CorporateGovernance; TechIndustry}\n{CorporateGovernance, TechIndustry} -> Performance\nTechIndustry -> CorporateGovernance\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 
 &lt;/center&gt;
 
@@ -213,7 +213,7 @@ set.seed(230383)
 N &lt;- 1000
 ds &lt;- tibble(TI = rbinom(N, 1, .25)) %&gt;%
   mutate(Performance = rnorm(N, TI, 1),
-         CG = rnorm(N, .5 - TI), .2)
+         CG = rnorm(N, .5 - TI, .2))
 ```
 
 
@@ -243,33 +243,33 @@ msummary(list(lm1, lm2), stars = stars,
 &lt;tbody&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; (Intercept) &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.291\*\*\* &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.016 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.461\*\*\* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.063 &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; (0.036) &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; (0.041) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.038) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.092) &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; CG &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; −0.127\*\*\* &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.040 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.757\*\*\* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.198 &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; (0.033) &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; (0.034) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.071) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.169) &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; TI &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 1.001\*\*\* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1.159\*\*\* &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.085) &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.187) &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; Num.Obs. &lt;/td&gt;
@@ -278,12 +278,12 @@ msummary(list(lm1, lm2), stars = stars,
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; R2 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.015 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.103 &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; 0.136 &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; F &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 15.130 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 114.771 &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; 78.796 &lt;/td&gt;
   &lt;/tr&gt;
 &lt;/tbody&gt;
@@ -319,8 +319,8 @@ msummary(list(lm1, lm2), stars = stars,
 
 &lt;center&gt;
 
-<div id="htmlwidget-160b93c17100e2d71b2f" style="width:432px;height:288px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-160b93c17100e2d71b2f">{"x":{"diagram":"\ndigraph fixed{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nsubgraph{rank = same; X; Individual}\n{X, Individual} -> Y \nIndividual -> X\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-31413cba4bf454a9170d" style="width:432px;height:288px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-31413cba4bf454a9170d">{"x":{"diagram":"\ndigraph fixed{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nsubgraph{rank = same; X; Individual}\n{X, Individual} -> Y \nIndividual -> X\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 
 &lt;/center&gt;
 
@@ -344,8 +344,8 @@ msummary(list(lm1, lm2), stars = stars,
 
 &lt;center&gt;
 
-<div id="htmlwidget-d19e190546f2878b8bda" style="width:504px;height:432px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-d19e190546f2878b8bda">{"x":{"diagram":"\n  digraph speedboat{\n  graph[layout = dot]\n  node [shape = box]\n  ave_ability; ltime; mixed_race; female; course;\n  month_location; circumstances;\n  circumstances -> female\n  {mixed_race, female, ave_ability, circumstances} -> ltime\n  female -> {ave_ability}\n  {course month_location} -> circumstances\n  }\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-fd9048563928ba8ba951" style="width:504px;height:432px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-fd9048563928ba8ba951">{"x":{"diagram":"\n  digraph speedboat{\n  graph[layout = dot]\n  node [shape = box]\n  ave_ability; ltime; mixed_race; female; course;\n  month_location; circumstances;\n  circumstances -> female\n  {mixed_race, female, ave_ability, circumstances} -> ltime\n  female -> {ave_ability}\n  {course month_location} -> circumstances\n  }\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 
 &lt;/center&gt;
 
@@ -362,10 +362,11 @@ table &lt;- as_tibble(table) %&gt;%
   select(p_id, women_dat, time, ltime, mix_ra, course,
          race_id, yrmt_locid)
 table_clean &lt;- filter(table, complete.cases(table)) %&gt;%
-  select(ltime, women_dat, mix_ra, course, p_id,
+  select(ltime, women_dat, mix_ra, course, p_id, race_id,
          yrmt_locid)
 ltime_reg &lt;- feols(ltime ~ women_dat : mix_ra + mix_ra
                    | course + p_id + yrmt_locid,
+                   cluster = "race_id",
                    data = table_clean)
 ```
 
@@ -417,7 +418,7 @@ msummary(ltime_reg, gof_omit = gof_omit, stars = stars)
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; Std.Errors &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; by: course &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; by: race_id &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; FE: course &lt;/td&gt;
@@ -450,23 +451,23 @@ class:center, middle
 
 &lt;center&gt;
 
-<div id="htmlwidget-6c87cbd6f71bbb807df9" style="width:648px;height:108px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-6c87cbd6f71bbb807df9">{"x":{"diagram":"\ndigraph confounder{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nCorporateGovernance -> Performance\nPerformance -> StockPrice \n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-ecd192f44bba719f3ffc" style="width:648px;height:108px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-ecd192f44bba719f3ffc">{"x":{"diagram":"\ndigraph confounder{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nCorporateGovernance -> Performance\nPerformance -> StockPrice \n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 
 --
 
-<div id="htmlwidget-501ff5ac8ba1c1da7504" style="width:648px;height:108px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-501ff5ac8ba1c1da7504">{"x":{"diagram":"\ndigraph confounder{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nCorporateGovernance -> Performance\nPerformance -> Survival\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-88aeec1d869242e06bd8" style="width:648px;height:108px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-88aeec1d869242e06bd8">{"x":{"diagram":"\ndigraph confounder{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nCorporateGovernance -> Performance\nPerformance -> Survival\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 
 --
 
-<div id="htmlwidget-0aad616d59aa6a4ced0a" style="width:648px;height:108px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-0aad616d59aa6a4ced0a">{"x":{"diagram":"\ndigraph confounder{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nCorporateGovernance -> Performance\nPerformance -> SP500\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-05864ce0b11fc332a497" style="width:648px;height:108px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-05864ce0b11fc332a497">{"x":{"diagram":"\ndigraph confounder{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nCorporateGovernance -> Performance\nPerformance -> SP500\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 
 --
 
-<div id="htmlwidget-55648537cd6dac863a35" style="width:648px;height:108px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-55648537cd6dac863a35">{"x":{"diagram":"\ndigraph confounder{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nCorporateGovernance -> Performance\nPerformance -> IPO\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-60c9d409c338611449f0" style="width:648px;height:108px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-60c9d409c338611449f0">{"x":{"diagram":"\ndigraph confounder{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nCorporateGovernance -> Performance\nPerformance -> IPO\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 
 &lt;/center&gt;
 
@@ -476,11 +477,16 @@ class: center
 
 ## Example in the assignment
 
-<div id="htmlwidget-6ae8d4b0aa04f97c5641" style="width:504px;height:288px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-6ae8d4b0aa04f97c5641">{"x":{"diagram":"\ndigraph measurement_error{\ngraph[layout = dot]\nnode [shape = box, fontname = Helvetica]\nsubgraph{rank = same; Performance; CSR_report; Return}\nPerformance -> {CSR_report; Scandals}\nCSR_report -> {Return; Observed_Report}\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-89ac4de5e66079e7da2d" style="width:504px;height:288px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-89ac4de5e66079e7da2d">{"x":{"diagram":"\ndigraph measurement_error{\ngraph[layout = dot]\nnode [shape = box, fontname = Helvetica]\nsubgraph{rank = same; Performance; CSR_report; Return}\nPerformance -> {CSR_report; Scandals}\nCSR_report -> {Return; Observed_Report}\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 ---
 
 ## Simulation Bad Control
+
+.center[
+<div id="htmlwidget-5b480dd888b9a0d2f8ae" style="width:648px;height:216px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-5b480dd888b9a0d2f8ae">{"x":{"diagram":"\ndigraph confounder{\ngraph[layout = dot, rankdir = LR ]\nnode [shape = box, fontname = Helvetica]\nsubgraph{rank = same; CorporateGovernance; Performance}\nCorporateGovernance -> Performance\n{CorporateGovernance, Performance} -> MarketReturn\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+]
 
 
 ```r
@@ -491,6 +497,11 @@ d &lt;- tibble(corp_gov = rnorm(N, 0, 1)) %&gt;%
 lm1 &lt;- lm(acc_profit ~ corp_gov, data = d)
 lm2 &lt;- lm(acc_profit ~ corp_gov + market_return, data = d)
 ```
+
+
+
+
+
 
 ---
 
@@ -663,7 +674,7 @@ One interpretation is that a firm can survive by being lucky (and having high re
 
 ## Visualisation of colliders 
 
-&lt;img src="slides3_files/figure-html/unnamed-chunk-23-1.svg" style="display: block; margin: auto;" /&gt;
+&lt;img src="slides3_files/figure-html/unnamed-chunk-24-1.svg" style="display: block; margin: auto;" /&gt;
 
 
 
@@ -681,8 +692,8 @@ class:center, middle
 .pull-left[
 
 &lt;center&gt;
-<div id="htmlwidget-558295c5d421172276c2" style="width:648px;height:432px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-558295c5d421172276c2">{"x":{"diagram":"\n    digraph randomisation{\n    node [shape = box]\n    subgraph{\n      rank = same; x; y;\n    }\n    confounder; collider;\n    confounder -> {x, y};\n\n    {x, y} -> collider\n    edge [color = blue]\n    x -> y\n    }\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-ce3c76808138796690e9" style="width:648px;height:432px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-ce3c76808138796690e9">{"x":{"diagram":"\n    digraph randomisation{\n    node [shape = box]\n    subgraph{\n      rank = same; x; y;\n    }\n    confounder; collider;\n    confounder -> {x, y};\n\n    {x, y} -> collider\n    edge [color = blue]\n    x -> y\n    }\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 &lt;/center&gt;
 
 ]
@@ -692,8 +703,8 @@ class:center, middle
 .pull-right[
 
 &lt;center&gt;
-<div id="htmlwidget-d683cbbcb2a544b9f170" style="width:648px;height:432px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-d683cbbcb2a544b9f170">{"x":{"diagram":"\n    digraph randomisation{\n    node [shape = box]\n    subgraph{\n      rank = same; x; y; iv;\n    }\n    random; confounder; collider;\n    confounder -> {x, y};\n\n    random -> iv;\n    {x, y} -> collider\n    edge [color = blue]\n    x -> y\n    iv -> x;\n    }\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-897c5652dd002c644d51" style="width:648px;height:432px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-897c5652dd002c644d51">{"x":{"diagram":"\n    digraph randomisation{\n    node [shape = box]\n    subgraph{\n      rank = same; x; y; iv;\n    }\n    random; confounder; collider;\n    confounder -> {x, y};\n\n    random -> iv;\n    {x, y} -> collider\n    edge [color = blue]\n    x -> y\n    iv -> x;\n    }\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 &lt;/center&gt;
 ]
 
@@ -1377,7 +1388,7 @@ class: center
 
 ## Why can the `\(R^2\)` be negative with 2SLS?
 
-![](slides3_files/figure-html/unnamed-chunk-31-1.svg)&lt;!-- --&gt;
+![](slides3_files/figure-html/unnamed-chunk-32-1.svg)&lt;!-- --&gt;
 
 ---
 

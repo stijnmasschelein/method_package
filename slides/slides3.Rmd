@@ -112,6 +112,24 @@ Donation -> Return;
 
 class:center, middle
 
+## Assignment: CSR report
+
+```{r,  echo = FALSE, fig.width = 9, fig.height = 4}
+grViz("
+digraph measurement_error{
+graph[layout = dot]
+node [shape = box, fontname = Helvetica]
+subgraph{rank = same; Performance; CSR_report; Return}
+Performance -> {CSR_report; Scandals}
+CSR_report -> {Return; Observed_Report}
+}
+")
+```
+
+---
+
+class:center, middle
+
 # Measurement error and control variables 
 
 ---
@@ -166,24 +184,6 @@ donation and no donation should be 3 but it is less.
 
 ---
 
-## Assignment: CSR report
-
-```{r,  echo = FALSE, fig.width = 9, fig.height = 4}
-grViz("
-digraph measurement_error{
-graph[layout = dot]
-node [shape = box, fontname = Helvetica]
-subgraph{rank = same; Performance; CSR_report; Return}
-Performance -> {CSR_report; Scandals}
-CSR_report -> {Return; Observed_Report}
-}
-")
-```
-
----
-
-class:center, middle
-
 # Confounders and control variables
 
 ---
@@ -215,7 +215,7 @@ set.seed(230383)
 N <- 1000
 ds <- tibble(TI = rbinom(N, 1, .25)) %>%
   mutate(Performance = rnorm(N, TI, 1),
-         CG = rnorm(N, .5 - TI), .2)
+         CG = rnorm(N, .5 - TI, .2))
 ```
 
 
@@ -323,10 +323,11 @@ table <- as_tibble(table) %>%
   select(p_id, women_dat, time, ltime, mix_ra, course,
          race_id, yrmt_locid)
 table_clean <- filter(table, complete.cases(table)) %>%
-  select(ltime, women_dat, mix_ra, course, p_id,
+  select(ltime, women_dat, mix_ra, course, p_id, race_id,
          yrmt_locid)
 ltime_reg <- feols(ltime ~ women_dat : mix_ra + mix_ra
                    | course + p_id + yrmt_locid,
+                   cluster = "race_id",
                    data = table_clean)
 ```
 
@@ -426,6 +427,20 @@ CSR_report -> {Return; Observed_Report}
 
 ## Simulation Bad Control
 
+.center[
+```{r,  echo = FALSE, fig.width = 9, fig.height = 3}
+grViz("
+digraph confounder{
+graph[layout = dot, rankdir = LR ]
+node [shape = box, fontname = Helvetica]
+subgraph{rank = same; CorporateGovernance; Performance}
+CorporateGovernance -> Performance
+{CorporateGovernance, Performance} -> MarketReturn
+}
+")
+```
+]
+
 ```{r corp_gov_collider}
 d <- tibble(corp_gov = rnorm(N, 0, 1)) %>%
   mutate(acc_profit = rnorm(N, corp_gov, sd = 3),
@@ -434,6 +449,11 @@ d <- tibble(corp_gov = rnorm(N, 0, 1)) %>%
 lm1 <- lm(acc_profit ~ corp_gov, data = d)
 lm2 <- lm(acc_profit ~ corp_gov + market_return, data = d)
 ```
+
+
+
+
+
 
 ---
 
