@@ -31,31 +31,77 @@ wrds <- dbConnect(Postgres(),
 See [Compustat/WRDS](https://wrds-www.wharton.upenn.edu/pages/support/research-wrds/research-guides/procedures-using-fama-and-french-48-industry-classification/)
 
 ```{r wrds_query, eval = run_wrds}
-sql1 <- "SELECT fyear, gvkey, AT, IB, DPACT
+sql1 <- "SELECT fyear, gvkey, oibdp, at, sich
        FROM COMP.FUNDA
-       WHERE fyear > 1979 AND fyear < 2016 AND INDFMT <> 'FS' AND CURNCD = 'USD'"
+       WHERE fyear > 1978 AND fyear < 2016 AND indfmt = 'INDL' AND datafmt = 'STD'
+       AND popsrc = 'D' AND consol = 'C' AND fic = 'USA'"
 res <- dbSendQuery(wrds, sql1)
 dt <- as_tibble(dbFetch(res)) %>%
   rename_all(tolower)
 dbClearResult(res)
 roas <- dt %>%
-  mutate(roa = ib / (at + dpact)) %>%
-  select(year = fyear, firm = gvkey, roa) %>%
-  filter(!is.na(roa), !is.infinite(roa)) %>%
+  rename(year = fyear, firm = gvkey) %>%
+  filter(!is.na(year), !is.na(at), !is.na(oibdp), at > 0) %>%
+  group_by(firm) %>% arrange(year) %>%
+  mutate(roa = oibdp / lag(at)) %>%
+  ungroup() %>%
+  select(year, firm, roa, sich) %>%
+  filter(!is.na(roa), year > 1979)
+glimpse(roas)
+```
+
+```{r, eval = run_wrds}
+sql2 <- "SELECT gvkey, incorp, sic FROM crsp.comphead"
+res <- dbSendQuery(wrds, sql2)
+dt2 <- as_tibble(dbFetch(res)) %>%
+  rename_all(tolower)
+dbClearResult(res)
+roas <- rename(dt2, firm = gvkey) %>%
+  filter(!is.na(incorp) & incorp %in% state.abb) %>%
+  right_join(roas) %>%
+  mutate(sich = coalesce(sich, sic)) %>%
+  filter(!sich %in% c(6000:6999)) %>%
+  glimpse()
+```
+
+```{r, eval = run_wrds}
+roas <- roas %>%
   group_by(firm) %>%
-  mutate(n = n()) %>%
-  filter(n >= 5)
+  add_tally() %>%
+  filter(n >= 5) %>%
+  ungroup()
+glimpse(roas)
+
+# winsorize ROA at 99, and censor at -1
+wins <- function(x) {
+  # winsorize and return
+  case_when(
+    is.na(x) ~ NA_real_,
+    x < -1 ~ -1,
+    x > quantile(x, 0.99, na.rm = TRUE) ~ quantile(x, 0.99, na.rm = TRUE),
+    TRUE ~ x
+  )
+}
+
+# winsorize ROA by year
+roas <- roas %>%
+  group_by(year) %>%
+  mutate(roa = wins(roa)) %>%
+  arrange(firm, year) %>%
+  ungroup()
+```
+
+```{r, eval = run_wrds}
 saveRDS(roas, file)
 ```
 
+
 # Create Data
 
-The deletion of the tails is just to get to a reasonable standard deviation. 
+The deletion of the tails is just to get to a reasonable standard deviation.
 
 ```{r}
-roas <- readRDS(file) %>% ungroup()
-roa_centiles <- quantile(roas$roa, c(0.01,.99))
-roas <- filter(roas, roa > roa_centiles[1], roa < roa_centiles[2])
+roas <- readRDS(file) 
 mtime <- file.info((file))$mtime
 ```
 
@@ -82,10 +128,18 @@ decomp_fast <- function(){
     fungroup() %>%
     fmutate(residual = roa - fef - fey) 
 }
+decomp_fixest <- function(){
+  mod <- feols(roa ~ 1 | firm + year, data = roas)
+  firm_fes <- fixef(mod)$firm
+  year_fes <- fixef(mod)$year
+  return(list(ff = firm_fes, fy = year_fes, resid = resid(mod)))
+}
 microbenchmark::microbenchmark(dplyr = decomp_dplyr(),
-                  collapse = decomp_fast(),
+                               collapse = decomp_fast(),
+                               fixest = decomp_fixest(),
                   times = 100)
-roas <- decomp_fast()
+decomp <- decomp_fixest()
+glimpse(decomp)
 ```
 
 Holy smokes!
@@ -96,31 +150,31 @@ Holy smokes!
 n <- fnrow(roas)
 sigma_roa <- sd(roas$roa)
 observations <- setDT(fselect(roas, year, firm))
-years <- fselect(roas, year, fey) %>% fgroup_by(year) %>% fmean() %>% setDT()
-firms <- fselect(roas, firm, fef) %>% fgroup_by(firm) %>% fmean() %>% setDT()
-residuals <- roas$residual
+observations[, firm := as.numeric(firm)]
+firms <- data.table(firm = as.numeric(names(decomp$ff)), fef = decomp$ff)
+years <- data.table(year = as.numeric(names(decomp$fy)), fey = decomp$fy)
+residuals <- decomp$res
 treatment_groups <- c(1989, 1998, 2007)
 treatment_effects <- c(.05, .03, .01)
-states <- 1:50
 state_treatments <- sample(1:3, 50, TRUE)
 ```
 
 The next step is to allow for different treatment effects
 
 ```{r}
-nfirm <- 1000
+#nfirm <- 1000
 new_sample <- function(){
-  sample_firms <- firms[, .SD[sample(.N, nfirm, FALSE)]]
+  sample_firms <- firms[, fef := sample(fef, .N, TRUE)]
+  sample_years <- years[, fey := sample(fey, .N, TRUE)]
   sample_firms[, state := sample(1:50, .N, TRUE)]
   sample_firms[, state_treatment := state_treatments[state]]
   sample_firms[, treatment_group := treatment_groups[state_treatment]]
   sample_firms[, treatment_effect := treatment_effects[state_treatment]]
   new <- observations[
     sample_firms, on = .(firm = firm)][
-    years, on = .(year = year)]
-  new[, roa :=  treatment_effect * sigma_roa
-      * pmax(year - treatment_group + 1, 0)
-      + fef + fey + sample(residuals, .N, TRUE)]
+    sample_years, on = .(year = year)]
+  new[, treatment := treatment_effect * sigma_roa * pmax(year - treatment_group + 1, 0)]
+  new[, roa := treatment + fef + fey + sample(residuals, .N, TRUE)]
   new[, rel_year := year - treatment_group]
   return(as.data.table(new))
 }
@@ -149,8 +203,9 @@ coefficients(twoway)
 See [Andrew Baker's Github](https://github.com/andrewchbaker/JFE_DID/blob/main/Code/1e.%20Alternative%20Event%20Study%20Estimators.R)
 
 ```{r sun}
+max_rel_year <- 5
 sa_new <- new_sample() %>%
-  filter(year < treatment_group | rel_year <= 5) %>%
+  filter(year < treatment_group | rel_year <= max_rel_year) %>%
   filter(year < 2007)
 sun_ab <- feols(roa ~ 1 + sunab(treatment_group, year)
                 | firm + year, sa_new)
@@ -158,6 +213,15 @@ etable(sun_ab)
 summary(sun_ab, agg = "ATT")
 ATT <- coeftable(summary(sun_ab, agg = "ATT"))[1,1]
 print(ATT)
+```
+
+## True ATT
+
+```{r att}
+true_att <- (max_rel_year + 2)/2 * sigma_roa * treatment_effects
+collap(new[rel_year %in% 0:5], treatment ~ rel_year + treatment_group) %>%
+  collap(treatment ~ treatment_group)
+print(true_att)
 ```
 
 # Simulation
@@ -183,6 +247,7 @@ estimates <- parallel::mclapply(1:nsim, FUN = simulate, mc.cores = 4L) %>%
 summary(estimates)
 hist(estimates$twoway, breaks = nsim/20)
 hist(estimates$sun_abraham, breaks = nsim/20)
+abline(v = mean(true_att[1:2]), col = "blue")
 plot(estimates$twoway, estimates$sun_abraham)
 ```
 

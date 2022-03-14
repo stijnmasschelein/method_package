@@ -21,13 +21,18 @@ The section discusses variables we want to control for (confounders) and the spe
 
 ### TODO
 
-- [] Update the initial example for DAGs with an example from the seminar
+- [ ] Update the initial example for DAGs with an example from the seminar
 - [x] Update IV diagnostics 
 - [x] Explanation of negative Rsquared with IV
 
 ## Lecture 4
 
 ## Lecture 5
+
+### TODO
+
+- [ ] Tiange's study as event study
+- [ ] Clustered Standard Errors
 
 # Assignments
 # Auxilary files
