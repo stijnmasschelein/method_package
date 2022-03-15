@@ -1,0 +1,647 @@
+# The models
+
+A lot of theories in accounting and finance are about information that is being revealed for strategic reasons and how investors react to that information. The models about strategic disclosure I use for the assignment come from the book ['Games and Information' by Eric Rasmusen](http://www.rasmusen.org/GI/) which is the best introduction to Game Theory that I am aware of.
+
+In this assignment, I will explain two simple models of how companies can reveal information about their own performance to investors. These questions are relevant to voluntary disclosure problems in accounting and a lot of research questions on corporate social responsibility. They provide a toy world to think about the typical research designs in a lot of accounting and finance research.
+
+The goal of introducing these models is to make them less scary. They are not that hard to understand at the conceptual level but they are often couched in advanced mathematics in research papers. Fortunately, Rasmusen does an excellent job explaining these models by using simple versions that reveal the key issues. These little games are really useful because they reveal unexpected implications of some assumptions that are not necessarily clear from verbal explanations. For instance, you might think that if a certain disclosure is 'cheap talk' that it is useless. That is not necessarily true! And I will show this in these assignments. 
+
+Second, the results of these models are relatively easy to simulate in `R`. This means that we can simulate data and run regressions on the data. This can help you to understand which variables you will need to collect, which tests are appropriate, what the underlying assumptions are of your test, and how you should interpret the data. The assignment questions are aimed at helping you through the simulations and the regression models.
+
+## Terminology
+
+I need to explain some terminology before we dive into the models. Agency theory games deal with *players* in a game. In accounting and finance, we often deal with two players: firms and investors. *Nature* is a special, extra player that makes decisions that are beyond the control of any players that we are interested in. The actions of Nature can be thought of as random variation or uncertainty. These players can take some simple *actions* which we will represent by numbers. For instance, a firm can decide to disclose some information ($\textrm{disclosure} = 1$) or not ($\textrm{disclosure} = 0$). The actions taken by the players give rise to *payoffs* or outcomes and the players try to maximise their own payoff taking into account the other players' actions. A stable outcome is called the *equilibrium* when no player can improve their payoffs by changing their own actions. There are often multiple equilibria for a game but not all of them are equally feasible or interesting.
+
+For each model that I present, I will explain who the players are, which actions they take and the order of these actions, the payoffs, and finally the equilibrium that I am interested in.
+
+## Signalling 
+
+The first model that I want to present is a model where a firm can decide to hire a Big4 auditor to certify their financial statements. The Big4 auditor is more expensive and especially so when financial performance is bad. In such a situation hiring a Big4 auditor can be a signal that the firm has good underlying financial performance.
+
+### Players
+
+A firm and two investors
+
+### The order of play
+
+0. Nature chooses the firm's performance $p \in \{1,
+   4\}$. Performance is observed by the firm, not by the investors.
+1. The firm chooses a Big4 auditor or not $a \in \{0, 1\}$
+2. The investors bid for the company $b(a)$ taking into account the
+   audit choice.
+3. The firm accepts the bid or rejects it. 
+4. The output equals $p$ 
+
+### Payoffs
+
+$$
+\pi_{firm} = 
+\begin{cases}
+  b - 8a/p & \text{if the firm accepts a bid} \\
+  0        & \text{if the firm rejects all bids}
+\end{cases}
+$$
+  
+
+$$
+\pi_{investor} = \begin{cases}
+  p - b & \text{for the investor whose bid is accepted} \\
+  0     & \text{for the other investor}
+  \end{cases}
+$$
+
+### Separating Equilibrium
+
+One equilibrium is where all high performing firms ($p = 4$) hire a Big4 auditor ($a = 1$) and the low performing firms ($p = 1$) do not hire a Big4 auditor ($a = 0$). In such a scenario, investors will bid 4 for the firms with a Big4 auditor ($b(1) = 4$) and 1 for firms without a Big4 auditor ($b(0) = 1$). I assume that investors will always bid their payoff to 0 because there is competition between investors, i.e. we have a competitive financial market.
+
+A high performing firm that does not hire a Big4 auditor will receive a lower bid ($b(0) - b(1) = -3$) and the cost savings will not compensate for that loss ($0 - 8/4 = -2$). A low performing firm that hires a Big4 auditor will receive a higher bid ($b(1) - b(0) = 3$) but the extra cost outweigh ($8/1 - 0 = 8$) this benefit. As a result, neither the high performing firm nor the low performing firm have an incentive to deviate from the optimal decision.
+
+### Key Assumptions
+
+The key assumption in the model is that hiring a Big4 auditor is costly and more costly if the firm has bad financial performance. More specifically, the cost for the low performing firm must be larger than the additional benefit from getting a higher bid from the investors. Otherwise, the low performing firms might think it worthwhile to signal high performance by hiring the auditor. At that point, the investors could no long distinguish between high and low performing firms and they would bid the average performance between the firms.
+
+Another assumption is that the payoff of the investors is dependent on $p$. This means that the investors care about the performance of the firm. On the other hand, the investor's only care about the choice of auditor because it is a signal not because it affects the actual performance of the firm.
+
+### Applications
+
+One interpretation of this model is that $p$ is the unobserved economic value of the firm and $b$ is the market value. The firm's can signal that they are highly valuable by paying for a costly Big4 auditor. This would mean that in equilibrium the companies with a Big4 auditor ($a = 1$) have a higher market value ($b = 4$). 
+
+These signalling models have a number of other applications. You can think of some forms of advertising as a game between a firm and a customer where advertising is a costly signal of the quality of the firm's products. You can also analyse dividends as a costly signal (i.e. less cash for the company) of the health of the company. In the assignment questions, we will interpret this model as a firm's choice to engage in corporate social responsibility (CSR) activities. That is, one model of CSR activities is that it is costly but only firms with good financial performance are able to perform these activities at a low enough cost.
+
+## Cheap Talk 
+
+The second example is a model of cheap talk.  Cheap talk is often used as a term when firms can disclose information but there is no way to check whether the information is correct. The implicit implication is often that investors should not believe that information. However, the following model shows that if investors and firms both care about whether investors have the correct belief, that this implicit assumption is wrong.
+
+The game is very simple, the firm discloses a report, $r$, about their performance, $p$, where both $r$ and $p$ can be any number between 0 and 10. The complication is in the payoffs which I will explain further on.
+
+### Players
+
+A firm and an investor
+
+### Order of Play
+
+0. Nature chooses firm performance as $p \sim \mathrm{U}[0, 10]$.
+1. The firm chooses a report $r \in [0, 10]$.
+2. The investor chooses to believe performance is $b$.
+
+### Payoffs
+$$
+\pi_{firm} = c - (b - [p + 1])^2
+$$
+
+$$
+\pi_{investor} = c - (b - p)^2
+$$
+
+$c$ is just a constant to make sure that firms and investors have a positive payoff. In Game Theory terms: $c$ must be high enough so that firms are willing to play the game. It does not play any role in the actual game.
+
+The interpretation of the payoffs is that the firm wants the investor to believe that they are doing a little better than they are actually doing but not by too much. The investor wants to be correct in their assessment of the performance of the firm. You can interpret this as follows. If the performance is going to be bad, the investor wants to short the company; if performance is going to be good, the investor wants to buy the company. Either way, they are making money. The firm's payoff can be interpreted as them preferring that the investors buy the company but if they misrepresent their financial situation too much, regulators are going to punish them in the long run. An additional interpretation is that the more firms misrepresent the more likely they are to be detected for misreporting.
+
+### Pooling equilibrium: Everybody Lies
+
+All firms prepare a report that says $r = 10$, all investors believe that $b = 5$. In this equilibrium, the disclosure is not informative and investors will ignore it. Investors will just believe the expected value of the firm performance before they received the report. Firms always pretend that they are doing excellent. This is the typical equilibrium that people have in mind when they say that firm disclosures are just cheap talk.  An alternative, but very similar equilibrium is that firms just report a random number without any connection to the performance. The investors will respond in the same by just ignoring the report.
+
+### Partial pooling equilibrium
+
+If $p \in [0, 3]$, choose a report that says $r = 0$, if $p > 3$,
+choose a report that says $p = 10$. 
+
+If $r = 0$, the investors believe that $b = 1.5$. If $r = 10$, the
+investors believe that $b = 6.5$.
+
+The details are [in the Appendix](#cheaptalk).
+
+### Key Assumptions 
+
+The key assumption is that the payoffs of the investor and the firm partly overlap. The firm wants the investors to be roughly correct in their belief. That is there is no complete conflict of interest between investors and firms.
+
+### Interpretation 
+
+The interpretation of the partial pooling equilibrium is the most interesting and I am going to focus on this equilibrium. First of all, notice that the separation between low performing firms and the other firms works because the low performers would misreport by too much, i.e. the investor would believe $b = 6.5$ while the true performance is $p \leq 3$. At best the firm's payoff would be $\pi_{firm} = c - (2.5)^2$. 
+
+One interpretation is that $b$ represents the stock price of the firm. If investor's belief, $b$, is their best estimate of the value of the firm that is what they are willing to pay for it. The amount of money they make is not necessarily given by whether they pay a lot for the stock or not but by how correct they are in their belief. For instance, if they short the stock and it turns out the company was more valuable than $b$, they lose money. If they buy the stock and it turns out that the value of the firm was lower, they also lose money.
+
+It might sound weird that the firm itself might want the stock price to be not too different from the true value. However, in a strong regulatory environment, firm's might risk legal action if the stock price is too high and they did not warn investors enough about the potential overvaluation. Even the previously richest man in the world once said that his largest asset was probably overvalued.
+
+> [Tesla stock price is too high
+> imo](https://twitter.com/elonmusk/status/1256239815256797184).
+
+Another reason why firms might care about roughly conveying the right information to investors is that disclosure is a repeated game. If the firm exaggerates their performance by too much, the investors will eventually find out and might not believe future reports by the firm.
+
+As explained before, the key assumption is that the firm and investor care about reporting the true performance. If the firm's payoff function would include $[p + 10]$ instead of $[p + 1]$, the firm would have a much stronger incentive to exaggerate the report and a partial pooling equilibrium would not be possible. If the payoff function would have $[p + .1]$ and thus a smaller incentive to exaggerate. The firms would now choose between more than 2 reporting regimes. The intuition for this is clearest when you think about a situation where the payoff for the firm and the investor are the same. In this case the firm is going to always report truthfully and the investor is going to believe them.
+
+This means that the cheap talk partial pooling equilibrium is going to be a better explanation in an institutional environment where the firm knows that they will be punished for misrepresenting their financial situation and investors know that firms are not trying to outright defraud them. So, you can think of the payoffs as an assumption that investors expect a no fraud environment.
+
+## Conclusion
+
+In general, I do not want you to take these models too seriously. Simple model like these will never capture all the complexities of the real world. However, while they might seem ridiculously simplified, they can help you to think through the implications of assumptions that are necessary to predict a certain outcome in the data that you collect. They also tell you what the key assumptions are. In your thesis, you can defend these key assumptions based on prior research or by testing them with your data. The role of your literature review and robustness checks is to convince the reader that the assumptions in your theory are defensible in your setting. 
+
+These type of models can help you in general to better identify what you can and cannot test with your data. For instance, both the signalling separation equilibrium and the cheap talk partial pooling equilibrium predict that low performers will behave differently from high performers. That means that you should at least see some difference in the actions in the data. As another example, the cheap talk partial pooling equilibrium predicts that firms will exaggerate their performance when it is not terrible. This is something we observe in the real world.
+
+Finally, these models can provide an alternative explanation to your findings. You might have a complex theory with many variables and moving parts but should you believe your theory if a simple model can explain your findings as well?
+
+---
+author: Stijn Masschelein
+title: 'Assignment: Theory and Linear Models'
+subtitle: 'How theory informs research design and analysis.'
+output: rmdformats::readthedown
+---
+
+# Assignment 1
+
+In the first assignment, you are going to simulate data from these two models and run a number of regression models in the setting of CSR. This will give you some practice in running simulations and regression models in `R`.
+
+## Set-up
+
+You need to make one change in the `setup` chunk. You have to set your student number equal to the `student_number` object in the code. 
+
+The remainder of the code sets up the `R` environment. The first three lines, check whether you have the `cowplot` package installed, and if not it will be installed. Then, I load the `tidyverse` and `cowplot` packages and set the theme for the plots to the default from the `cowplot` package. I do not like the `ggplot` default and prefer the more sparse theme from `cowplot`. I use your student number to set the random seed which makes sure that while all the random simulations are random, they do not change every time you rerun the code. This can make it easier to figure out problems with simulations.
+
+The `eval_assignment1` to `eval_assignment5` variables are set to `FALSE` for the moment. If you are happy with all the `R` code for respectively assignment 1 to 5, you can set them to `TRUE` to knit the whole document. It should not take a lot of time.
+
+```{r, setup}
+if (!require(cowplot)){
+    install.packages("cowplot")
+}
+library(tidyverse)
+library(cowplot)
+theme_set(theme_cowplot())
+#' Change the following line to your student number
+student_number <- 00076637 
+set.seed(student_number)
+eval_assignment1 <- TRUE
+eval_assignment2 <- TRUE
+eval_assignment3 <- TRUE
+eval_assignment4 <- TRUE
+eval_assignment5 <- TRUE
+```
+
+## CSR as signalling. 
+
+First, we can treat CSR activities as a signal of the underlying performance of the firm. Given the assumptions of the signalling model, we want a CSR activity that (a) is costly for the firm, (b) less costly for firms that are performing well and (c) investors care about the underlying performance. Donating money to local charities can be seen as an activity that fulfils these assumptions because donating money is more costly for firms that are in a bad financial situation. In the separation equilibrium firms will donate money to local charities when they are high performers but not when they are low performers. As a result, the stock price return of the high performing companies is higher than for the low performing companies. 
+
+### Questions
+
+1. *Simulation*: Complete the code in the code chunk `crs-signalling`
+   in the answers section. I added indicators, `.x`, `.y`, `.z` or
+   `...` when you need to add changes. When I use `.x` and friends, you only
+   need to fill in one variable or function. When I use `...`, you will need to
+   use more code than just one variable. 
+
+   The code works as follows.
+   - We are going to create a dataset with 1000 observations.
+
+   - `high_performance` is 1 with probability .5 for each of the observations. 
+
+   - `donation` is 1 when the firm is a high performing firm and 0 otherwise. The signalling model represents the donation by $a$.
+
+   - `return` or $b$ in the signalling model is 4 when the firm donates and 1 otherwise.
+
+   - In reality, we will never observe the underlying values perfectly; maybe there are other factors at work, maybe our data collection is imperfect. So, we will add some randomness to the variables. Donations are wrongly observed 10% of the time. We code this as a 90% chance that we have a correct observations: `rbinom(N, 1, .9)`. If we have a correct observation, `observed_donation` is `donation`, otherwise `observed_donation` is the opposite of `donation`.
+ 
+   - `observed_return` is normally distributed with a mean of `return` and a standard deviation of 3.
+
+   - We put the observed variables in a data frame as `donation` and `return` that we call `sig` (short for signalling).
+
+   - We also use `mutate` to make a new variable `donated` which equals 'yes' when the firm has donated and 'no' otherwise. This will make it easier to plot the data.
+
+2. *Plotting*: Let's plot the basic effect with `donated` on the x-axis and `return` on the y-axis. We call the figure `sig_plot`.
+
+3. *Regression*: Run a linear regression with `return` as the dependent variable and `donation` as the independent variable. Use `summary` to show the results of the regression.
+
+4. *Interpretation*: explain your answer with 1 or 2 sentences for
+   each question below.
+
+   a. Based on the analysis and the underlying theory, a firm that is not donating money in the sample, can earn a higher stock return by donating money. True or False?
+
+   b. Based on the analysis and the underlying theory, if you know that a firm is high performing, they should donate money if they want to increase their stock return. True or False? Explain your answer.
+
+### Answers
+
+1. Data simulation
+    ```{r CSR-signalling, eval = eval_assignment1}
+    N <- 1000
+    sig <- tibble(
+      high_performance = rbinom(N, 1, 0.5)) %>%
+      mutate(
+        donation = ifelse(high_performance == 1, 1, 0),
+        return = ifelse(donation == 1, 4, 1),
+        observed_donation = ifelse(rbinom(N, 1, .9) == 1,
+                                   donation, 1 - donation),
+        observed_return = rnorm(N, return, 3)
+      )
+    glimpse(sig)
+    ```
+
+2. Plotting
+    ```{r signalling-plot, eval = eval_assignment1}
+    sig_plot <- ggplot(sig, aes(x = observed_donation, y = observed_return)) +
+        geom_jitter(width = .3)
+    plot(sig_plot)
+    ```
+
+3. Regression
+    ```{r signalling-regression, eval = eval_assignment1}
+    sig_reg <- lm(observed_return ~ observed_donation, data = sig)
+    summary(sig_reg)
+    ```
+
+4. Interpretation
+
+    a. True, the stock price of a firm that is not donating now and is low performance will increase if they donate. However, this is not the optimal decision for these low performance firms because of the cost of donating money. This is also the reason why we can find an effect in our regression. Some firms are not donating (and that is for good reasons). ^[This becomes a little bit more complicated because of the measurement error introduced by `observed_donation` but it does not change that argument in this particular simulation.]
+    
+    b. True, donating money is a positive signal of underlying stock performance and investors are willing to pay more than the cost of the donation.
+    
+    > One important insight is that you do not need the results to answer these interpretation questions. You can answer them straight from the theory. For your thesis, you will need the analysis to show that your theory/story is right but the interpretation of your results depend on your theory/story as well. 
+
+## CSR as cheap talk.
+
+We can also think of some CSR reporting as cheap talk. One example would be a CSR report or an integrated report that has not been certified by an external auditor. The main assumptions that we make in the cheap talk model is that both the firm and the investor care about getting investor to believe the true state of the firm but the firm prefers the investors to believe that the firm is doing slightly better than the actual CSR performance.
+
+In the separation equilibrium of our model, the firm is choosing between two options: not issuing a report ($r = 0$) or issuing a glowing CSR report ($r = 10$) depending on their underlying CSR performance. In this world, all firms with performance $10 > p > 3$ are doing some form of greenwashing^[You could also argue that all the bad performing firms are taking a big bath]. 
+
+### Questions
+
+1. *Simulation*
+   - We still have `N = 1000` from our previous simulation.
+
+   - `csr_performance` has `N` observations and is randomly uniformly distributed between 0 and 10. 
+
+   - `csr_report` is 1 if `csr_performance` is larger than 3 and 0 otherwise.
+   
+   - However, we have to hand collect the data. We have to look up the reports and there is only a 60% chance that we will find it if it exits. Let's create a variable `observed_report` which is 1, .6 of the time. Our data will contain a 1 for `csr_report_observed` if there is a `csr_report` and if the report is observed.
+
+   - Now, we construct a variable `scandals` which indicates how many CSR scandals the firms had after the publication of the report. Scandals or incidents are often used as a post-hoc measure of CSR performance. For no particular reason, we assume that there are 20 periods and in each period a firm has a `scandal_probability` that they will have a scandal in that period. `scandal_probability` is calculated as a function of the CSR performance and we assume that a higher CSR performance is associated with lower `scandal_probability`. I use the `plogis` function which is the `R` function for the logit transformation. This function takes the value and transforms it to a number between 0 and 1. The higher the value, the closer to 1; the lower the value, the closer to 0. `plogis(csr_performance)` can be interpreted as the probability of no scandal, so `1- plogis(csr_performance)` is `scandal_probability`.
+
+   - The `return` on the stock is the belief that investors have about the stock in the cheap talk model. So, if `csr_report` is equal to 1, the return on the stock of the firm will be 6.5 and 1.5 otherwise. The `observed_return` in our dataset is normally distributed with a mean equal to `return` and a standard deviation of 5. 
+
+   - We can put the observed csr report and the observed returns in a dataset, together with the number of scandals. We use `mutate` to create a variable, `report`, that equals 'yes' if we observe a csr report and 'no' otherwise.
+
+2. *Plotting*: Make a similar plot as for the signalling model and call it `cheap_plot`. Whether a company has an observed csr report should be on the x-axis and the observed returns should be on the y-axis.
+   
+3. *Regressions*
+
+   - Create a regression, `cheap_lm1`, with `observed return` as the dependent variable and `csr_report` as the independent variable.
+
+   - Create a regression, `cheap_lm2`, which is similar to `cheap_lm1` but adds scandal as a control variable.
+
+   - Create a regression, `cheap_lm3`, with `observed return` as the dependent variable and `scandals` as the independent variable.
+
+   - Create a new dataset, `only_reports`, with only the firms that have a csr report.
+
+   - Create a regresion, `cheap_lm4`, with the same model as `cheap_lm3` but only use the data in `only_reports`. 
+
+4. TODO In the `cheap-msummary` chunk I use (and install) the `modelsummary` package to get a nice html output in the knitted document. If you run the code in the `R` console it will give you a preview in your default browser. You need to wrap all the models in a list to get them to use next to each other. I added the traditional p-value starts with `stars = TRUE`. `msummary` includes a lot more *g*oodness-*o*f-*f*it indices, you can omit the least important ones with `gof_omit = "IC|Log|Adj"`. We are typically not too interested in these. If you want to knit the document with the code, you will first have to set `eval_assignment1 <- TRUE` in the setup chunk above. Once you have the results, you can interpret them.
+
+   a. Say that a researcher is interested whether CSR reports are informative for investors, should they report regression (1) or regression (2)? Explain in couple of sentences.
+
+   b. Regression (3) and (4) have a different result for the relation between scandals and return. Explain in a couple of sentences why that is the case.
+
+### Answers
+
+1. *Simulation*
+
+    ```{r CSR-cheap, eval = eval_assignment1}
+    cheap <- tibble(
+      csr_performance = runif(N, 0, 10)) %>%
+      mutate(
+        csr_report = ifelse(csr_performance > 3, 1, 0),
+        observed_report = rbinom(N, 1, 0.6),
+        csr_report_observed = csr_report * observed_report,
+        scandal_probability = 1 - plogis(csr_performance),
+        scandals = rbinom(N, 20, scandal_probability),
+        return = ifelse(csr_report == 1, 6.5, 1.5),
+        observed_return = rnorm(N, return, 5),
+        observed_report = ifelse(csr_report == 1, "yes", "no"))
+    ```
+
+2. *Plotting*
+
+    ```{r cheap-plot, eval = eval_assignment1}
+    cheap_plot <- ggplot(cheap, aes(x = observed_report,
+                                    y = observed_return)) +
+    geom_jitter(width = .3)
+    plot(cheap_plot)
+    ```
+
+3. *Regressions*
+
+    ```{r cheap-regression, eval = eval_assignment1}
+    cheap_lm1 <- lm(observed_return ~ csr_report_observed, data = cheap)
+    cheap_lm2 <- lm(observed_return ~ csr_report_observed + scandals,
+                    data = cheap)
+    cheap_lm3 <- lm(observed_return ~ scandals, data = cheap)
+    only_reports <- filter(cheap, csr_report == 1)
+    cheap_lm4 <- lm(observed_return ~ scandals, data = only_reports)
+    ```
+
+4. *Interpretations*
+
+    ```{r cheap-msummary, results = 'asis', eval = eval_assignment1}
+    if (!require(modelsummary)){
+        install.packages("modelsummary")
+    }
+    library(modelsummary)
+    msummary(list(cheap_lm1, cheap_lm2, cheap_lm3, cheap_lm4),
+             gof_omit = "IC|Log|Adj", stars = TRUE)
+    ```
+ 
+    a. The researcher should report regression (1). The stock return is a function of the CSR report because the CSR report is the only credible communication of the underlying performance. At the moment, we measure the stock return, investors do not know the performance nor the how many scandals the firm will have. You can see scandals as an imperfect measure for performance. Thus, if we adjust for scandals it is as if we keep performance constant. We already know that for a given level of performance, the csr report will not increase the stock return.
+
+    b. Recall from above that scandals is an imperfect proxy for performance and we know that there is a relation between performance and return because firms can communicate their performance through the CSR report. However, once we keep the CSR report constant there is no longer any variation in returns (except for random noise) that is related to scandals. ^[There is a wrinkle. This reasoning will lead us to believe that there would not be a significant effect in the group without a report either. This would be correct if not for the way we set up the measurement error in `csr_report_observed`. Because the group of firms without a report in the sampel will consist of firms who did not have a report and firms who did have a report (but it was not found by the researchers), there will still be an effect of scandals in the group without an observed CSR report.]
+    
+# Assignment 2
+
+This is setup chuck for the second assignment. Set `eval_assignment2` to `TRUE` once you are happy with all the `R` code below.
+
+```{r setup-assignment2}
+eval_assignment2 <- FALSE
+```
+
+## Introduction
+
+In the first assignment, we assumed that the stock market return on a share of the firm is equal to the parameter $b$ in our model. The implicit assumption is that the price of the stock price before anything happens is 0. So, the return on the investment is $b-0$ ^[Do not take this to literally as an assumption. The assumption is more to have a convenient way to calculate the growth in the stock price]. However, in the signalling model we can also think of the return as $p - b$. The assumption is now that the investors pays $b$ for the stock of the company first and at the end of the year the results of the company are revealed to be $p$ and the value of the stock is now $p$.
+
+The difference between these two assumptions is crucial for a lot of capital market research. The difference is that when returns equal $b-0$, we assume that the investors have no knowledge about what the firm is going to do or what their performance is going to be at the start of the period, i.e. all firms have the same stock price of 0. When returns equal $p-b$, we assume that at the start of the period the investors already make an informed decision about the stock price $b$ and during the year some new information occurs so that $p$ is not necessarily equal to $b$. The *efficient market hypothesis* loosely translates to the fact that on average $p - b$ must be equal to 0. This is also exactly the result in the signalling model!
+                                                                    
+The difference between the two assumptions informs a lot of research design decisions when researchers investigate market reactions or stock price returns. The assumption that $b-0$ is the correct underlying theoretical construct for stock price returns is appropriate in *event studies* (see much more later in the course) where you study the effect of an unexpected event on the stock price. For assignment 1, this means that we implicitly assumed that investors could not know beforehand which firms would make a donation and which ones would not when we run our regression tests.
+
+In this assignment, we assume that investors actually have a pretty good idea which firms are going to donate and which ones are not. This is the case in a typical study with quarterly and yearly data but there are ways to get around it. You will see that a lot of studies try to measure unexpected donations (or whatever their variable of interest is) for instance. In general, the main solution will be to think very carefully about how you measure the variables of interest (i.e. research design) but better regression models can help as we will show in assignment 2.
+
+## Investor payoff as `return` in signalling model
+
+The main research question we have is "do investors value donations as
+a signal of good underlying performance?". 
+
+### Questions
+
+1. *Simulation*
+   - Simulate `high_performance` for each of `N` observations. A firm is `high_performance` with a probability of .5. The actual `performance` of the firm is $4$ for high performers and $1$ otherwise. 
+   - The firms offer a `donation` when they are `high_performance` and they do not otherwise.
+   - The investors are willing to `bid` the same as the expected performance. The eventual `performance` is equal to the `bid`. This means that we are living in a efficient market world.
+   - The `observed_bid` is normally distributed around `bid` with a standard deviation of 1.
+   - The `return` is `performance` - `bid`.
+   - The `observed_return` is randomly distributed around `return` with a standard deviation of 3.
+   - The `observed_donation` variable is correct with probability .8 (and wrong with probability .2). See assignment 1 for a similar implementation of measurement error for the discrete variable donation.
+   - Finally, we construct a new dataset `sig2` with `observed_return`, `observed_donation`, and `observed_bid`. We make a new variable `donated` which equals "yes" when the new donation variable is 1 and "no" otherwise. Similar as in assignment 1.
+
+2. *Plot*
+   - Make a figure with the density of `return` for the observations who `donated` and who did not in a different colour.
+
+3. *Regression*
+   - Run a regression with `return` as dependent variable and donation as independent variable.
+   - Run a regression with `bid` as dependent variable and donation as independent variable. 
+   - Use `msummary` to show the results of the regression.
+
+4. *Interpretation*
+   The regressions give different results. Which regression is most like an event study design, and which one is more like a study with quarterly or yearly data? Which of the regressions helps you make the case that donations serve as a signal of good financial performance?
+
+### Answers
+
+1. *Simulations*
+
+    ```{r, simulation-assignment2-cross, eval = eval_assignment2}
+    N <- 1000
+    high_performance <- rbinom(...)
+    donation <- high_performance
+    performance <- ifelse(...)
+    bid <- performance
+    observed_bid <- rnorm(...)
+    return  <- ...
+    observed_return <- ...
+    observed_donation <- ifelse(rbinom(N, 1, .x) == 1,
+                                ...)
+    sig2 <- tibble(
+        return = observed_return,
+        donation = observed_donation,
+        bid = observed_bid) %>%
+        mutate(donated = ifelse(donation == 1, "yes", "no"))
+    ```
+
+2. *Plot*
+
+    ```{r plot-assignment2-cross, eval = eval_assignment2}
+    plot_sig2 <- ggplot(.x, aes(colour = .y, x = .z)) + 
+        ...
+    plot(plot_sig2)
+    ```
+
+3. *Regressions*
+
+    ```{r regression-a2a1, results = 'asis', eval = eval_assignment2 }
+    sig_lm_return <- lm(..., data = .x)
+    sig_lm_bid <- lm(..., data = .x)
+    msummary(list(sig_lm_return, sig_lm_bid),
+             gof_omit = "IC|adj|log",
+             stars = TRUE)
+    ```
+
+4. *Interpretation*
+
+
+## `it_quality` as a nuisance 
+
+In this section, we assume that quality of the IT system in a company has two effects. First of all, `high_quality` affects the return positively. The intuition is that firms with a high quality IT system create more value in the long run than firms without a high quality IT system. Second, firms with a `high_quality` IT system have a .1 probability that they will make an `it_mistake` while firms without high quality IT have a .4 probability that they will make an `it_mistake`. If firms make an `it_mistake` they do not report their donations while they did actually make a donation.
+
+We further assume that investors cannot assess the `it_quality` of the firms when they make a `bid` and that `it_quality` does not show up in the annual report (i.e. `observed_performance`).
+
+The simulation is in the code chunck below. We reuse the variables that are not changed from the previous simulation.
+
+```{r, simulation-it-quality, eval = eval_assignment2}
+high_quality <- rbinom(N, 1, .5)
+prob_it_mistake <- ifelse(high_quality == 1, .1, .4)
+it_mistake <- rbinom(N, 1, prob_it_mistake)
+observed_donation <- ifelse(rbinom(N, 1, .9) == 1,
+                             donation * (1 - it_mistake),
+                             1 - donation * (1 - it_mistake))
+observed_performance <- rnorm(N, performance, 3)
+observed_return <- observed_performance - 1.5 +  3 * high_quality - bid
+sig3 <- tibble(
+    return = observed_return,
+    performance = observed_performance,
+    donation = observed_donation,
+    high_quality = high_quality)
+```
+
+### Questions
+
+1. Draw a *DAG diagram* on a piece of paper to visualise the causal link between `return`, `donation`, and `high_quality` in the `sig3` data set. You can take a picture of it with your phone and copy it to your computer. You can then include it with the following syntax `![some_tag]("path_to_your_file")`. You do not need a code chunck for this. It's pure markdown.
+
+2. Run the following four *regressions* and show the results with the
+   `modelsummary` package:
+   - `return` as dependent variable and `donation` as independent variable. 
+   - Add `high_quality` as a control variable to the first regression. (This implies that we the researchers can measure `high_quality` but investors cannot at the time of making the bid. This is something that might be important to think about in your research design).
+   - Add `performance` as a control variable to the second regression.
+   - Change the dependent variable to `bid` in the first regression. 
+
+3. *Interpretation*
+   - Of the regressions (1) and (2), which one gives you the correct relation between donations and return given that return is measured as ($p - b$). How should we interpret the coefficient of `donation` in the correct specification? Explain in less than three sentences.
+   - I argue that the regression (3) gives us a close to correct answer for the research question "do investors value donations as a signal of underlying performance?". Regression (3) is probably the best that we can do if we do not have an event study design (see regression (4)). Try to explain, why regression (3) works. This is a hard question! You can skip it.
+
+### Answers
+
+1. *DAG diagram*
+
+
+2. *Regressions*
+
+    ```{r, results = 'asis', eval = eval_assignment2}
+    sig_lm1 <- lm(...)
+    sig_lm2 <- lm(...)
+    sig_lm3 <- lm(...)
+    sig_lm4 <- lm(...)
+    msummary(list(sig_lm1, sig_lm2, sig_lm3, sig_lm4),
+             gof_omit = "adj|IC|log",
+             stars = TRUE)
+    ```
+
+3. *Interpretation*
+
+## `wokeness` as an instrumental variable
+
+In this last section, I introduce a hypothetical variable `wokeness` of the CEO. A woke CEO is always going to donate to a charity independent of whether they are performing well or not^[Religiosity has been used as a very similar variable in the literature]. The additional assumption that we will make is that there is no direct link between wokeness and performance and that investors cannot observe the wokeness of the CEO before buying the stock. 
+
+This does change the model slightly but not in a qualitative sense. If we assume that there is .3 probability that the CEOs is woke, than there will be a .15 probability that a firm that donates is a bad firm. That means that there is a .65 probability that a firm will donate. So, the probability that a firm that donates is a good firm is $.5/.65$ while there is a $.15/.65$ probability that a firm that donates is a bad performing firm (with a woke CEO).
+
+We can simulate the data as follows.
+
+```{r, simulation-iv, eval = eval_assignment2}
+yes_woke <- rbinom(N, 1, 0.3)
+donation <-  ifelse(high_performance == 1 | yes_woke,
+                    1, 0)
+observed_donation <- ifelse(rbinom(N, 1, .9) == 1,
+                            donation, 1 - donation)
+bid <- ifelse(donation == 1L, (4 * .5)/.65 + (1 * .15)/.65, 1)
+observed_return <- rnorm(N, performance - bid, 3)
+sig_iv <- tibble(
+    return = observed_return,
+    donation = observed_donation,
+    yes_woke = yes_woke)
+```
+
+### Questions
+
+1. Draw a *DAG diagram* for the causal relations between `return`, `donation`, and `yes_woke` on a piece of paper and insert it in this document with the `![some_name](path_to_your_dag_file)` markdown syntax.
+
+2. Create the following *regressions*:
+   - A simple regression of `donation` on `return`.
+   - The reduced form regression of `yes_woke` on `return`.
+   - The full instrumental variable estimation with the `estimatr` package where `yes_woke` is the instrument for `donation`.
+   - I show how you can get the first stage and second stage regression of the `iv` object to incorporate them into the `msummmary` output.
+
+3. *Interpretation*: How do you interpret the four regressions? Which ones help you answer the main research question: "Do investors value donations as a signal of underlying financial performance?" Write a short paragraph to explain your answer.
+
+### Answers
+
+1. *DAG diagram*
+
+2. *Regressions*
+
+    ```{r, results = 'asis', eval = eval_assignment2}
+    if (!require(fixest)){
+      install.packages("fixest")
+      library(fixest)
+    }
+    iv_lm <- lm(..., data = sig_iv)
+    iv_lm_reduced <- lm(..., data = sig_iv)
+    iv <- feols(return ~ 1 | ... , data = sig_iv)
+    iv_1st <- summary(iv, stage = 1)
+    iv_2st <- iv
+    msummary(list(iv_lm, iv_lm_reduced, iv_1st, iv_2st),
+             gof_omit = "IC|Adj|Log|Pseudo",
+             stars = TRUE)
+    ```
+
+3. Interpretations.
+
+# Appendix {.unnumbered}
+
+## The partial pooling equilibrium in the Cheap Talk game {.unnumbered #cheaptalk}
+
+In the equilibrium, firms only make two choices. They either report
+that performance is perfect, $r = 10$, or that performance is
+terrible, $r = 0$. You can also interpret the latter report as not
+disclosing any performance at all.
+
+Given that is the case, we want to find from which performance, $x$,
+the firm will report $r = 10$. We know that investors will belief the
+expected value of the interval that they think the firm is in. That is
+if, $r = 0$, investor belief that $b = x/2$ and if $r = 10$, investors
+belief that $b = (10 + x)/2$.
+
+That means that the firm's payoff when they report $r = 0$, can be
+written as 
+
+$$
+\pi_{firm, r = 0} = c - (x/2 -[p + 1])^2
+$$
+
+The payoff when the firm reports $r = 10$, is equal to
+
+$$
+\pi_{firm, r = 10} = c - ([10 + x]/2 - [p + 1])^2
+$$
+
+At the point, where $p = x$, the firm does not care about the
+difference between $r = 0$ or $r = 10$. This means that we need to
+set $p = x$ and $\pi_{firm, r = 0}$ to $\pi_{firm, r = 10}$. 
+
+$$
+\begin{aligned}
+\pi_{firm, r = 0} &=\pi_{firm, r = 10} \\
+([p + 1] - x/2)^2 &= ([10 + x]/2 - [p + 1])^2 \\
+(x/2 + 1)^2 &= ([10 - x]/2 - 1)^2 \\
+x/2 + 1 &= 5 - x/2 - 1 \\
+x &= 3
+\end{aligned}
+$$
+
+
+## The three report version of the partial pooling equilibrium in the Cheap Talk game {.unnumbered #threereport}
+
+
+Let's assume that the function for the firms is given by
+
+$$\pi_{firm} = c - (b - (p + t))^2$$
+
+where $t$ is a measure of the level of the conflict of interest between the firm and the investors.
+
+Let's assume that there is level of performance $x$ and $y$ with $x > y$ and where for performance $p < x$, the firm does not report performance, for $x < p < y$ the firm reports medium good performance, and for $p > y$ the firm reports excellent performance.
+
+The condition for $x$ is 
+
+$$
+\begin{aligned}
+x + t - \frac{x}{2} &= \frac{x + y}{2} - x + t \\
+2 (x + t) - x &= \frac{y}{2} \\
+2t + x &= \frac{y}{2}
+\end{aligned}
+$$
+
+The condition for $y$ is 
+
+$$
+\begin{aligned}
+(y + t) - \frac{y + x}{2} &= \frac{10 + y}{2} - (y + t) \\
+2 (y + t) - \frac{x}{2} - y &= 5 \\
+y &= 5 - 2t + \frac{x}{2}
+\end{aligned}
+$$
+
+Combining both conditions:
+
+$$
+\begin{aligned}
+4t + 2x &= 5 - 2t+ \frac{x}{2} \\
+6t - 5 &= - \frac{3}{4} x \\
+5 - 6t &= \frac{3}{4} x \\
+x &= 2 (\frac{5}{3} - 2t)
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+y &= 5 - 2t + 2(\frac{5}{3} - 2t) \\
+  &= \frac{25}{3} - 6t \\
+\end{aligned}
+$$
