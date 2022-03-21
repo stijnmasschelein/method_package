@@ -143,14 +143,6 @@ Go also back to Assignment 2 where we modeled the same problem when investors an
 ---
 
 
-## Mergers and Acquisitions and event study
-
-   TODO
-
----
-
-class: middle, center
-
 # Difference-in-Difference
 
 ---
@@ -529,7 +521,6 @@ class: middle
 ---
 
 # When should you cluster?
-
 ### [Abadie, Athey, Imbens, and Wooldridge (2017)](http://economics.mit.edu/files/13927)
 
 > What is the level of the treatment variable? What is the comparison?
