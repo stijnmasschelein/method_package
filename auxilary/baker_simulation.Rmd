@@ -1,6 +1,6 @@
 ---
 author: "Stijn Masschelein"
-title: "Fast (?) Baker et al. simulation"
+title: "Baker et al. simulation"
 ---
 
 # R Setup
@@ -8,6 +8,8 @@ title: "Fast (?) Baker et al. simulation"
 ```{r}
 library(here)
 library(tidyverse)
+library(cowplot)
+theme_set(theme_cowplot())
 library(collapse)
 library(data.table)
 library(RPostgres)
@@ -72,7 +74,7 @@ roas <- roas %>%
   ungroup()
 glimpse(roas)
 
-# winsorize ROA at 99, and censor at -1
+ # winsorize ROA at 99, and censor at -1
 wins <- function(x) {
   # winsorize and return
   case_when(
@@ -126,7 +128,7 @@ decomp_fast <- function(){
     fgroup_by(firm) %>%
     fmutate(fef = fmean(roa)) %>%
     fungroup() %>%
-    fmutate(residual = roa - fef - fey) 
+    fmutate(residual = roa - fef - fey)
 }
 decomp_fixest <- function(){
   mod <- feols(roa ~ 1 | firm + year, data = roas)
@@ -159,21 +161,39 @@ treatment_effects <- c(.05, .03, .01)
 state_treatments <- sample(1:3, 50, TRUE)
 ```
 
-The next step is to allow for different treatment effects
+The next step is to allow for different treatment effects. The average treatment effects look as follows. 
+
+```{r, effect_plot}
+plot_dt <- data.table(year = rep(1980:2015, 3),
+                      group = rep(1:3, each = 36))
+plot_dt[, `:=`(roa = pmax(year - treatment_groups[group] + 1, 0)
+               * treatment_effects[group] * sigma_roa,
+               label = ifelse(year == 2012, paste("group", group, sep = " "),
+                              NA))]
+effect_plot <- ggplot(plot_dt, aes(y = roa, x = year, group = group,
+                                   label = label)) +
+  geom_line() +
+  geom_label()
+save_plot(here("slides", "figures", "baker_effects.svg"), effect_plot)
+print(effect_plot)
+```
 
 ```{r}
 #nfirm <- 1000
 new_sample <- function(){
-  sample_firms <- firms[, fef := sample(fef, .N, TRUE)]
-  sample_years <- years[, fey := sample(fey, .N, TRUE)]
-  sample_firms[, state := sample(1:50, .N, TRUE)]
+  sample_firms <- firms[, `:=`(
+    fef = sample(fef, .N, TRUE),
+    state = sample(1:50, .N, TRUE))]
   sample_firms[, state_treatment := state_treatments[state]]
-  sample_firms[, treatment_group := treatment_groups[state_treatment]]
-  sample_firms[, treatment_effect := treatment_effects[state_treatment]]
+  sample_firms[, `:=`(
+    treatment_group = treatment_groups[state_treatment],
+    treatment_effect = treatment_effects[state_treatment])]
+  sample_years <- years[, fey := sample(fey, .N, TRUE)]
   new <- observations[
     sample_firms, on = .(firm = firm)][
     sample_years, on = .(year = year)]
-  new[, treatment := treatment_effect * sigma_roa * pmax(year - treatment_group + 1, 0)]
+  new[, treatment := treatment_effect *
+          sigma_roa * pmax(year - treatment_group + 1, 0)]
   new[, roa := treatment + fef + fey + sample(residuals, .N, TRUE)]
   new[, rel_year := year - treatment_group]
   return(as.data.table(new))
@@ -182,12 +202,7 @@ new_sample()
 microbenchmark::microbenchmark(sample = new_sample(), times = 100)
 ```
 
-TODO
-
-[] Read up on `.SD` function.
-
 # Analyse
-
 ## Two-way Fixed Effects
 
 ```{r twoway}
@@ -200,6 +215,28 @@ coefficients(twoway)
 
 ## Sun and Abraham
 
+### Explanation of Sample Selection
+
+
+```{r sun-sample-selection}
+plot_dt[, `:=`(
+  roa = roa - 0.002 * group,
+  sample_groups = case_when(
+    year >= 2007 - 1 ~ "no_control_group",
+    year - treatment_groups[group] > 5 - 1 ~ "no_interest",
+    year < treatment_groups[group] - 1 ~ "control",
+    year >= treatment_groups[group] - 1 ~ "treatment"
+  ))]
+sun_plot <- ggplot(plot_dt, aes(y = roa, x = year, group = group,
+                                label = label, colour = sample_groups)) +
+  geom_line(size = 2) +
+  viridis::scale_colour_viridis(discrete = T)
+save_plot(here("slides", "figures", "baker_sun_sample.svg"), sun_plot)
+print(sun_plot)
+```
+
+### The code
+
 See [Andrew Baker's Github](https://github.com/andrewchbaker/JFE_DID/blob/main/Code/1e.%20Alternative%20Event%20Study%20Estimators.R)
 
 ```{r sun}
@@ -207,21 +244,34 @@ max_rel_year <- 5
 sa_new <- new_sample() %>%
   filter(year < treatment_group | rel_year <= max_rel_year) %>%
   filter(year < 2007)
+saveRDS(sa_new, here("data", "sa_new.RDS"))
 sun_ab <- feols(roa ~ 1 + sunab(treatment_group, year)
-                | firm + year, sa_new)
+                | firm + year, cluster = "state", data = sa_new)
 etable(sun_ab)
 summary(sun_ab, agg = "ATT")
 ATT <- coeftable(summary(sun_ab, agg = "ATT"))[1,1]
 print(ATT)
 ```
 
+### Explanation of the code
+
+```{r sun-explanation-code}
+library(modelsummary)
+sun_ab$coefficients
+summary(sun_ab, agg = "cohort") %>%
+  msummary(gof_omit = "IC|Log|Adj|Ps", stars = c("*" = 0.1, "**" = .05, "***" = .01))
+```
+
 ## True ATT
 
 ```{r att}
+true_full_att <- mean((2016 - treatment_groups)/2 *
+                      sigma_roa * treatment_effects)
 true_att <- (max_rel_year + 2)/2 * sigma_roa * treatment_effects
+print(true_full_att)
+print(true_att)
 collap(new[rel_year %in% 0:5], treatment ~ rel_year + treatment_group) %>%
   collap(treatment ~ treatment_group)
-print(true_att)
 ```
 
 # Simulation
@@ -245,10 +295,18 @@ simulate()
 estimates <- parallel::mclapply(1:nsim, FUN = simulate, mc.cores = 4L) %>%
   bind_rows()
 summary(estimates)
-hist(estimates$twoway, breaks = nsim/20)
-hist(estimates$sun_abraham, breaks = nsim/20)
-abline(v = mean(true_att[1:2]), col = "blue")
-plot(estimates$twoway, estimates$sun_abraham)
+sim_twoway <- ggplot(estimates, aes(x = twoway)) +
+  geom_histogram(bins = 20) +
+  ylab("twoway fixed effects") +
+  geom_vline(xintercept = true_full_att)
+sim_sun_abraham <- ggplot(estimates, aes(x = sun_abraham)) +
+  geom_histogram(bins = 20) +
+  ylab("Sun and Abraham") +
+  geom_vline(xintercept = mean(true_att[1:2]))
+save_plot(here("slides", "figures", "simulation_twoway.svg"), sim_twoway)
+save_plot(here("slides", "figures", "simulation_sun_abraham.svg"), sim_sun_abraham)
+print(sim_twoway)
+print(sim_sun_abraham)
 ```
 
 

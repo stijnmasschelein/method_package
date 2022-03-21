@@ -35,8 +35,8 @@ class: middle, center
 ## A basic before event - after event comparison
 
 &lt;center&gt;
-<div id="htmlwidget-fa310e2e2486df3e7488" style="width:800px;height:300px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-fa310e2e2486df3e7488">{"x":{"diagram":"\n  digraph event{\n  node [shape = box]\n  subgraph{\n    rank = same; \"Event Happened\", Treatment, Outcome\n  }\n  \"Event Happened\" -> Treatment -> Outcome\n  Time -> {\"Event Happened\", Outcome}\n  }\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-85fb1533f93165168a75" style="width:800px;height:300px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-85fb1533f93165168a75">{"x":{"diagram":"\n  digraph event{\n  node [shape = box]\n  subgraph{\n    rank = same; \"Event Happened\", Treatment, Outcome\n  }\n  \"Event Happened\" -> Treatment -> Outcome\n  Time -> {\"Event Happened\", Outcome}\n  }\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 &lt;/center&gt;
 
 [Chapter 17 Event Studies in The Effect]()
@@ -72,8 +72,8 @@ We do not observe the yellow/gold returns. We have to estimate them or convince 
 ## Front-running, information leaking, and anticipation are all very annoying.
 
 &lt;center&gt;
-<div id="htmlwidget-d8e6d74a8be9f57c6df9" style="width:800px;height:200px;" class="grViz html-widget"></div>
-<script type="application/json" data-for="htmlwidget-d8e6d74a8be9f57c6df9">{"x":{"diagram":"\n  digraph event{\n  node [shape = box]\n  subgraph{\n    rank = same; \"Before Block Trade\", \"Large Block Trade\", \"Price Impact\"\n  }\n  \"Before Block Trade\" -> \"Large Block Trade\" -> \"Price Impact\"\n  Time -> {\"Before Block Trade\", \"Price Impact\"}\n  }\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-a70f584a394a6fd65c7b" style="width:800px;height:200px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-a70f584a394a6fd65c7b">{"x":{"diagram":"\n  digraph event{\n  node [shape = box]\n  subgraph{\n    rank = same; \"Before Block Trade\", \"Large Block Trade\", \"Price Impact\"\n  }\n  \"Before Block Trade\" -> \"Large Block Trade\" -> \"Price Impact\"\n  Time -> {\"Before Block Trade\", \"Price Impact\"}\n  }\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 &lt;/center&gt;
 
 --
@@ -87,6 +87,7 @@ We do not observe the yellow/gold returns. We have to estimate them or convince 
 ???
 
 Go also back to Assignment 2 where we modeled the same problem when investors anticipate a donation.
+
 ---
 
 
@@ -169,10 +170,10 @@ rd_did_panel %&gt;%
 ## # Groups:   time [2]
 ##    time report2 profit_report profit_no_report causal_effect
 ##   &lt;int&gt; &lt;lgl&gt;           &lt;dbl&gt;            &lt;dbl&gt;         &lt;dbl&gt;
-## 1     1 FALSE           12.5              7.54             5
-## 2     1 TRUE            10.1              5.09             5
-## 3     2 FALSE            9.90             4.90             5
-## 4     2 TRUE             6.55             1.55             5
+## 1     1 FALSE           13.4              8.37             5
+## 2     1 TRUE            10.1              5.15             5
+## 3     2 FALSE            9.62             4.62             5
+## 4     2 TRUE             6.64             1.64             5
 ```
 
 ---
@@ -195,15 +196,15 @@ rd_did_panel %&gt;%
 ## # A tibble: 2 × 3
 ##   report2   `1`   `2`
 ##   &lt;lgl&gt;   &lt;dbl&gt; &lt;dbl&gt;
-## 1 FALSE    7.54  4.90
-## 2 TRUE     5.09  6.55
+## 1 FALSE    8.37  4.62
+## 2 TRUE     5.15  6.64
 ```
 
 ---
 
 ## Regressions
 
-&lt;small&gt;
+&lt;small&gt;&lt;small&gt;
 
 ```r
 did_lm &lt;- feols(actual_profit ~ report, data = rd_did_panel)
@@ -227,31 +228,31 @@ msummary(list(simple = did_lm, "time 2" = did_sub, "firm FE" = did_fixed, "two-w
 &lt;tbody&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; (Intercept) &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 5.531\*\*\* &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 4.904\*\*\* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 5.699\*\*\* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 4.622\*\*\* &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;"&gt; (0.149) &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; (0.327) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.312) &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; report &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 1.020\*\*\* &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 1.647\*\*\* &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 1.463\*\*\* &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 4.102\*\*\* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.937\*\*\* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 2.014\*\*\* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1.487\*\*\* &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 5.237\*\*\* &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.242) &lt;/td&gt;
-   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.376) &lt;/td&gt;
-   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.217) &lt;/td&gt;
-   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.430) &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.245) &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.362) &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.241) &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.432) &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; Num.Obs. &lt;/td&gt;
@@ -262,17 +263,17 @@ msummary(list(simple = did_lm, "time 2" = did_sub, "firm FE" = did_fixed, "two-w
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; R2 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.018 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.037 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.655 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.686 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.014 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.058 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.580 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.643 &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; R2 Within &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
    &lt;td style="text-align:center;"&gt;  &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.078 &lt;/td&gt;
-   &lt;td style="text-align:center;"&gt; 0.150 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.064 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.205 &lt;/td&gt;
   &lt;/tr&gt;
   &lt;tr&gt;
    &lt;td style="text-align:left;"&gt; Std.Errors &lt;/td&gt;
@@ -299,7 +300,7 @@ msummary(list(simple = did_lm, "time 2" = did_sub, "firm FE" = did_fixed, "two-w
 &lt;tfoot&gt;&lt;tr&gt;&lt;td style="padding: 0; " colspan="100%"&gt;
 &lt;sup&gt;&lt;/sup&gt; \* p &amp;lt; 0.1, \*\* p &amp;lt; 0.05, \*\*\* p &amp;lt; 0.01&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
 &lt;/table&gt;
-&lt;/small&gt;
+&lt;/small&gt;&lt;/small&gt;
 
 ---
 
@@ -370,9 +371,16 @@ rd_did3_panel &lt;- tibble(
 
 ---
 
+## Overview of 4 groups of firms
+
+1. Never reporters
+2. Reporters in year 3 
+3. Reporters in year 2 and 3 (Medium)
+4. Reporters in year 2 and 3 (High)
+
 
 ```r
-rd_did3_panel %&gt;%
+causal_effects &lt;- rd_did3_panel %&gt;%
   mutate(causal_effect = profit_report - profit_no_report,
          group = case_when(
            performance &lt; cutoff3[1] ~ 1,
@@ -384,7 +392,7 @@ rd_did3_panel %&gt;%
   summarise(report = mean(report),
             N = n(),
             M_report = mean(profit_report),
-            M_no_no_report = mean(profit_no_report),
+            M_no_report = mean(profit_no_report),
             M_causal_effect = mean(causal_effect))
 ```
 
@@ -392,25 +400,577 @@ rd_did3_panel %&gt;%
 ## `summarise()` has grouped output by 'time'. You can override using the `.groups` argument.
 ```
 
-```
-## # A tibble: 12 × 7
-## # Groups:   time [3]
-##     time group report     N M_report M_no_no_report M_causal_effect
-##    &lt;int&gt; &lt;dbl&gt;  &lt;dbl&gt; &lt;int&gt;    &lt;dbl&gt;          &lt;dbl&gt;           &lt;dbl&gt;
-##  1     1     1      0   134     7.72          7.72             0   
-##  2     1     2      0   155     7.92          7.92             0   
-##  3     1     3      0   170     5.58          5.58             0   
-##  4     1     4      0   541     5.26          5.26             0   
-##  5     2     1      0   134     8.20          3.20             5   
-##  6     2     2      0   155     9.49          4.49             5   
-##  7     2     3      1   170     7.15          2.15             5   
-##  8     2     4      1   541     6.64          1.64             5   
-##  9     3     1      0   134     6.27          3.93             2.33
-## 10     3     2      1   155     6.53          4.20             2.33
-## 11     3     3      1   170     3.23          0.894            2.33
-## 12     3     4      1   541     7.29          0.620            6.67
+---
+
+## Overview of 4 groups of firms
+
+&lt;small&gt;
+
+```r
+causal_effects %&gt;% knitr::kable(digits = 2)
 ```
 
+&lt;table&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:right;"&gt; time &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; group &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; report &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; N &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; M_report &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; M_no_report &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; M_causal_effect &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 145 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 8.47 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 8.47 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.00 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 159 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 8.33 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 8.33 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.00 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 162 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 5.81 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 5.81 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.00 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 534 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4.85 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4.85 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.00 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 2 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 145 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 10.44 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 5.44 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 5.00 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 2 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 159 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 9.29 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4.29 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 5.00 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 2 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 162 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 6.69 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.69 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 5.00 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 2 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 534 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 6.24 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.24 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 5.00 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 145 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 5.66 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3.33 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2.33 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 159 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 6.20 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3.87 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2.33 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 162 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3.92 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.58 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2.33 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:right;"&gt; 3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 534 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 7.32 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.65 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 6.67 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;/small&gt;
+
+---
+
+## Two-way Fixed Effects
+
+
+```r
+twoway12 &lt;- feols(actual_profit ~ report | firm + time,
+                  data = filter(rd_did3_panel, time != 3))
+twoway13 &lt;- feols(actual_profit ~ report | firm + time,
+                  data = filter(rd_did3_panel, time != 2))
+twoway123 &lt;- feols(actual_profit ~ report | firm + time,
+                  data = rd_did3_panel)
+```
+
+---
+
+## Separate 2 by 2 effects are larger than the total sample effect
+
+
+
+```r
+msummary(list("time 1 and 2" = twoway12, "time 1 and 3" = twoway13,
+              "time 1, 2 and 3" = twoway123), gof_omit = gof_omit,
+         stars = c("*" = .1, "**" = .05, "***" = .01))
+```
+
+&lt;table style="NAborder-bottom: 0; width: auto !important; margin-left: auto; margin-right: auto;" class="table"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt;   &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; time 1 and 2 &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; time 1 and 3 &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; time 1, 2 and 3 &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; report &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 4.829*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 5.927*** &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 4.347*** &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.484) &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.635) &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.414) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Num.Obs. &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 2000 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 2000 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 3000 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.590 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.550 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.422 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 Within &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.090 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.074 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.053 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Std.Errors &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; by: firm &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; by: firm &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; by: firm &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; FE: firm &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; X &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; X &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; X &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; FE: time &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; X &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; X &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; X &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;tfoot&gt;&lt;tr&gt;&lt;td style="padding: 0; " colspan="100%"&gt;
+&lt;sup&gt;&lt;/sup&gt; * p &amp;lt; 0.1, ** p &amp;lt; 0.05, *** p &amp;lt; 0.01&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
+&lt;/table&gt;
+
+
+???
+
+This is not what I would expect. Why would the full sample lead to a smaller effect than *all* the subsamples?
+
+---
+
+class: center, middle
+
+# Baker, Larcker, and Wang (2022) in JFE
+
+The paper is forthcoming in JFE but [available on ssrn](http://dx.doi.org/10.2139/ssrn.3794018 )
+
+---
+
+## Problem Statement
+
+&gt; Finally, when research settings combine staggered timing of treatment effects and treatment effect heterogeneity across firms or over time, staggered DiD estimates are likely to be biased. In fact, these estimates can produce the wrong sign altogether compared to the true average treatment effects.
+
+--
+
+## Solution
+
+&gt; While the literature has not settled on a standard, the proposed solutions all deal with the biases arising from the *“bad comparisons”* problem inherent in TWFE DiD regressions by modifying the set of effective comparison units in the treatment effect estimation process. For example, each alternative estimator ensures that *firms receiving treatment are not compared to those that previously received it.*
+
+???
+
+Again, the solution to all our problems is to make sure that we make the right comparison. 
+
+---
+
+## Simulation Setup - The True Average Treatment Effect of Three Groups
+
+.center[
+&lt;img src="figures/baker_effects.svg" height="450" /&gt;
+]
+
+???
+
+It's clear that the average treatment effect should be positive. It's positive for every group.
+
+---
+
+## The Estimated Effect by Twoway Fixed Effects of 500 Simulations
+
+.center[
+&lt;img src="figures/simulation_twoway.svg" height="450" /&gt;
+]
+
+---
+
+## The Sun and Abraham Solution - Restrict The Sample
+
+.center[
+&lt;img src="figures/baker_sun_sample.svg" height="450" /&gt;
+]
+
+---
+
+## The Estimated Effect with the Sun and Abraham Solution
+
+.center[
+&lt;img src="figures/simulation_sun_abraham.svg" height="450" /&gt;
+]
+
+
+---
+
+## Sun and Abraham in Practice
+
+
+```r
+sa_new &lt;- readRDS(here("data", "sa_new.RDS"))
+sa_fe &lt;- feols(roa ~ 1 + sunab(treatment_group, year) | firm + year,
+               cluster = "state", data = sa_new)
+sa_fe_att &lt;- summary(sa_fe, agg = "ATT")
+sa_fe_group &lt;- summary(sa_fe, agg = "cohort")
+```
+- `treatment_group`: first year of treatment
+- `year`: calendar year
+
+
+```r
+names(sa_fe$coefficients)
+```
+
+```
+##  [1] "year::-18:cohort::1998" "year::-17:cohort::1998" "year::-16:cohort::1998"
+##  [4] "year::-15:cohort::1998" "year::-14:cohort::1998" "year::-13:cohort::1998"
+##  [7] "year::-12:cohort::1998" "year::-11:cohort::1998" "year::-10:cohort::1998"
+## [10] "year::-9:cohort::1989"  "year::-9:cohort::1998"  "year::-8:cohort::1989" 
+## [13] "year::-8:cohort::1998"  "year::-7:cohort::1989"  "year::-7:cohort::1998" 
+## [16] "year::-6:cohort::1989"  "year::-6:cohort::1998"  "year::-5:cohort::1989" 
+## [19] "year::-5:cohort::1998"  "year::-4:cohort::1989"  "year::-4:cohort::1998" 
+## [22] "year::-3:cohort::1989"  "year::-3:cohort::1998"  "year::-2:cohort::1989" 
+## [25] "year::-2:cohort::1998"  "year::0:cohort::1989"   "year::0:cohort::1998"  
+## [28] "year::1:cohort::1989"   "year::1:cohort::1998"   "year::2:cohort::1989"  
+## [31] "year::2:cohort::1998"   "year::3:cohort::1989"   "year::3:cohort::1998"  
+## [34] "year::4:cohort::1989"   "year::4:cohort::1998"   "year::5:cohort::1989"  
+## [37] "year::5:cohort::1998"
+```
+
+---
+
+## Sun and Abraham - Default: Relative Year
+
+&lt;small&gt;&lt;small&gt;
+
+```r
+msummary(sa_fe, gof_omit = gof_omit, stars = stars, statistic = NULL,
+         estimate = "{estimate} ({std.error}) {stars}", coef_omit = "-1")
+```
+
+&lt;table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt;   &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Model 1 &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; year = -9 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.004 (0.006) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; year = -8 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.001 (0.006) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; year = -7 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.004 (0.007) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; year = -6 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.004 (0.006) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; year = -5 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.000 (0.007) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; year = -4 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.007 (0.006) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; year = -3 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.000 (0.005) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; year = -2 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; −0.010 (0.005) \*\* &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; year = 0 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.007 (0.006) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; year = 1 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.020 (0.005) \*\*\* &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; year = 2 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.033 (0.007) \*\*\* &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; year = 3 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.036 (0.006) \*\*\* &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; year = 4 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.055 (0.006) \*\*\* &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;box-shadow: 0px 1px"&gt; year = 5 &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; 0.076 (0.007) \*\*\* &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Num.Obs. &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 113317 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.722 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 Within &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.005 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Std.Errors &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; by: state &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; FE: firm &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; X &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; FE: year &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; X &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;/small&gt;&lt;/small&gt;
+
+---
+
+## Sun and Abraham - Default: Relative Year
+
+.center[
+
+```r
+iplot(sa_fe)
+```
+
+![](slides5_files/figure-html/sun_abraham_rel_year_plot-1.svg)&lt;!-- --&gt;
+]
+
+---
+
+## Sun and Abraham - ATT
+
+&lt;small&gt;
+
+```r
+msummary(sa_fe_att, gof_omit = gof_omit, stars = stars)
+```
+
+&lt;table style="NAborder-bottom: 0; width: auto !important; margin-left: auto; margin-right: auto;" class="table"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt;   &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Model 1 &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; ATT &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.038\*\*\* &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.005) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Num.Obs. &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 113317 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.722 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 Within &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.005 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Std.Errors &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; by: state &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; FE: firm &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; X &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; FE: year &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; X &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;tfoot&gt;&lt;tr&gt;&lt;td style="padding: 0; " colspan="100%"&gt;
+&lt;sup&gt;&lt;/sup&gt; \* p &amp;lt; 0.1, \*\* p &amp;lt; 0.05, \*\*\* p &amp;lt; 0.01&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
+&lt;/table&gt;
+&lt;/small&gt;
+
+---
+
+## Sun and Abraham - Cohort Effects
+
+&lt;small&gt;
+
+```r
+msummary(sa_fe_group, gof_omit = gof_omit, stars = stars)
+```
+
+&lt;table style="NAborder-bottom: 0; width: auto !important; margin-left: auto; margin-right: auto;" class="table"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt;   &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Model 1 &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; cohort = 1989 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.045\*\*\* &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; (0.007) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; cohort = 1998 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.030\*\*\* &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;box-shadow: 0px 1px"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:center;box-shadow: 0px 1px"&gt; (0.007) &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Num.Obs. &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 113317 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.722 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; R2 Within &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.005 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Std.Errors &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; by: state &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; FE: firm &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; X &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; FE: year &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; X &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;tfoot&gt;&lt;tr&gt;&lt;td style="padding: 0; " colspan="100%"&gt;
+&lt;sup&gt;&lt;/sup&gt; \* p &amp;lt; 0.1, \*\* p &amp;lt; 0.05, \*\*\* p &amp;lt; 0.01&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;
+&lt;/table&gt;
+&lt;/small&gt;
+
+---
+
+class: middle
+
+## Take-away Lessons
+
+#### Simulations are good!
+#### Everything is a regression (Ok, not really)
+#### Not all the data should go in the regression 
 
 ---
 

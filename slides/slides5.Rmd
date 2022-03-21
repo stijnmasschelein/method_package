@@ -139,6 +139,7 @@ grViz("
 ???
 
 Go also back to Assignment 2 where we modeled the same problem when investors anticipate a donation.
+
 ---
 
 
@@ -245,7 +246,7 @@ rd_did_panel %>%
 
 ## Regressions
 
-<small>
+<small><small>
 ```{r}
 did_lm <- feols(actual_profit ~ report, data = rd_did_panel)
 did_sub <- feols(actual_profit ~ report, data = filter(rd_did_panel, time == 2))
@@ -255,7 +256,7 @@ msummary(list(simple = did_lm, "time 2" = did_sub, "firm FE" = did_fixed, "two-w
          gof_omit = gof_omit, stars = stars)
 
 ```
-</small>
+</small></small>
 
 ---
 
@@ -324,8 +325,15 @@ rd_did3_panel <- tibble(
 
 ---
 
-```{r}
-rd_did3_panel %>%
+## Overview of 4 groups of firms
+
+1. Never reporters
+2. Reporters in year 3 
+3. Reporters in year 2 and 3 (Medium)
+4. Reporters in year 2 and 3 (High)
+
+```{r, causal-three-years}
+causal_effects <- rd_did3_panel %>%
   mutate(causal_effect = profit_report - profit_no_report,
          group = case_when(
            performance < cutoff3[1] ~ 1,
@@ -337,10 +345,186 @@ rd_did3_panel %>%
   summarise(report = mean(report),
             N = n(),
             M_report = mean(profit_report),
-            M_no_no_report = mean(profit_no_report),
+            M_no_report = mean(profit_no_report),
             M_causal_effect = mean(causal_effect))
 ```
 
+---
+
+## Overview of 4 groups of firms
+
+<small>
+```{r, causal-table-three-years}
+causal_effects %>% knitr::kable(digits = 2)
+```
+</small>
+
+---
+
+## Two-way Fixed Effects
+
+```{r, two-way-three-years}
+twoway12 <- feols(actual_profit ~ report | firm + time,
+                  data = filter(rd_did3_panel, time != 3))
+twoway13 <- feols(actual_profit ~ report | firm + time,
+                  data = filter(rd_did3_panel, time != 2))
+twoway123 <- feols(actual_profit ~ report | firm + time,
+                  data = rd_did3_panel)
+```
+
+---
+
+## Separate 2 by 2 effects are larger than the total sample effect
+
+
+```{r}
+msummary(list("time 1 and 2" = twoway12, "time 1 and 3" = twoway13,
+              "time 1, 2 and 3" = twoway123), gof_omit = gof_omit,
+         stars = c("*" = .1, "**" = .05, "***" = .01))
+```
+
+
+???
+
+This is not what I would expect. Why would the full sample lead to a smaller effect than *all* the subsamples?
+
+---
+
+class: center, middle
+
+# Baker, Larcker, and Wang (2022) in JFE
+
+The paper is forthcoming in JFE but [available on ssrn](http://dx.doi.org/10.2139/ssrn.3794018 )
+
+---
+
+## Problem Statement
+
+> Finally, when research settings combine staggered timing of treatment effects and treatment effect heterogeneity across firms or over time, staggered DiD estimates are likely to be biased. In fact, these estimates can produce the wrong sign altogether compared to the true average treatment effects.
+
+--
+
+## Solution
+
+> While the literature has not settled on a standard, the proposed solutions all deal with the biases arising from the *“bad comparisons”* problem inherent in TWFE DiD regressions by modifying the set of effective comparison units in the treatment effect estimation process. For example, each alternative estimator ensures that *firms receiving treatment are not compared to those that previously received it.*
+
+???
+
+Again, the solution to all our problems is to make sure that we make the right comparison. 
+
+---
+
+## Simulation Setup - The True Average Treatment Effect of Three Groups
+
+.center[
+```{r, out.height = 450, echo = FALSE}
+knitr::include_graphics("figures/baker_effects.svg")
+```
+]
+
+???
+
+It's clear that the average treatment effect should be positive. It's positive for every group.
+
+---
+
+## The Estimated Effect by Twoway Fixed Effects of 500 Simulations
+
+.center[
+```{r, out.height = 450, echo = FALSE}
+knitr::include_graphics("figures/simulation_twoway.svg")
+```
+]
+
+---
+
+## The Sun and Abraham Solution - Restrict The Sample
+
+.center[
+```{r, out.height = 450, echo = FALSE}
+knitr::include_graphics("figures/baker_sun_sample.svg")
+```
+]
+
+---
+
+## The Estimated Effect with the Sun and Abraham Solution
+
+.center[
+```{r, out.height = 450, echo = FALSE}
+knitr::include_graphics("figures/simulation_sun_abraham.svg")
+```
+]
+
+
+---
+
+## Sun and Abraham in Practice
+
+```{r sun_abraham_in_r}
+sa_new <- readRDS(here("data", "sa_new.RDS"))
+sa_fe <- feols(roa ~ 1 + sunab(treatment_group, year) | firm + year,
+               cluster = "state", data = sa_new)
+sa_fe_att <- summary(sa_fe, agg = "ATT")
+sa_fe_group <- summary(sa_fe, agg = "cohort")
+```
+- `treatment_group`: first year of treatment
+- `year`: calendar year
+
+```{r}
+names(sa_fe$coefficients)
+```
+
+---
+
+## Sun and Abraham - Default: Relative Year
+
+<small><small>
+```{r sun_abraham_rel_year}
+msummary(sa_fe, gof_omit = gof_omit, stars = stars, statistic = NULL,
+         estimate = "{estimate} ({std.error}) {stars}", coef_omit = "-1")
+```
+</small></small>
+
+---
+
+## Sun and Abraham - Default: Relative Year
+
+.center[
+```{r sun_abraham_rel_year_plot, fig.height = 5}
+iplot(sa_fe)
+```
+]
+
+---
+
+## Sun and Abraham - ATT
+
+<small>
+```{r sun_abraham_att}
+msummary(sa_fe_att, gof_omit = gof_omit, stars = stars)
+```
+</small>
+
+---
+
+## Sun and Abraham - Cohort Effects
+
+<small>
+```{r sun_abraham_cohort}
+msummary(sa_fe_group, gof_omit = gof_omit, stars = stars)
+```
+</small>
+
+---
+
+class: middle
+
+## Take-away Lessons
+
+#### Simulations are good!
+#### Everything is a regression (Ok, not really)
+#### Not all the data should go in the regression 
 
 ---
 
