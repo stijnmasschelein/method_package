@@ -1,9 +1,21 @@
 ---
 author: "Stijn Masschelein"
 title: "Baker et al. simulation"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_collapse: true
+    toc_depth: 2
 ---
 
+# Introduction
+
+This is a non necessarily coherent collection of code that I used to develop my course material to teach the [Baker, Larcker, and Wang](https://doi.org/10.1016/j.jfineco.2022.01.004) paper on staggered difference-in-difference, specifically simulation 6. I used the opportunity to familiarise myself with some of the [fastverse packages](https://sebkrantz.github.io/fastverse/) and I sprinkled some timing tests in the code here and there.^[You may or may not be interested in this but there you go. It's free.]. If you are going to work with large datasets and just summarising the data takes a lot of computing time, switching over from the tidyverse to (some of) the fastverse packages might be a worthwhile investment of your time^[This whole document knits in less than 10 minutes on my 2014 MacBook Pro. I am quite pleased with this.]. My other interest in writing this all up is that it will allow me to test other estimators and other data generating processes. 
+
 # R Setup
+
+The `here` package helps with managing the different files associated with my teaching material. The `tidyverse` is what I normally use for data management and what I teach because I like the pedagogy but it's not as fast compared to `data.table` and `collapse`. `cowplot` is my preference for decent default in plots. `RPostgress` is necessary to get the data from the WRDS server. `fixest` is the gold standard for regression estimators with fixed effects as of the time of writing. `modelsummary` is a package to create tables from regression objects. `gof_omit` and `stars` will override some of the defaults in `modelsummary. `run_wrds` is just a boolean to control whether I want to rerun the WRDS query.^[I do not.] 
 
 ```{r}
 library(here)
@@ -14,12 +26,17 @@ library(collapse)
 library(data.table)
 library(RPostgres)
 library(fixest)
+library(modelsummary)
+gof_omit = "IC|Log|Adj|Ps"
+stars = c("*" = 0.1, "**" = .05, "***" = .01)
 i_am("auxilary/baker_simulation.Rmd")
 run_wrds <- FALSE
 file <- here("data", "roas.RDS")
 ```
 
 # WRDS
+
+The data comes from WRDS which has [pretty good documentation](https://wrds-www.wharton.upenn.edu/pages/support/programming-wrds/programming-r/r-from-your-computer/) on how to set up `R` and `Rstudio` to work. You do need an WRDS account though and they are not cheap. The code in this section only runs if `run_wrds` is TRUE because I assume it does not change. ^[Which is not necessarily a given. See [this terrifying looking paper. ](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3930228)].
 
 ```{r wrds_connection, eval = run_wrds}
 wrds <- dbConnect(Postgres(),
@@ -30,7 +47,7 @@ wrds <- dbConnect(Postgres(),
                   sslmode='require')
 ```
 
-See [Compustat/WRDS](https://wrds-www.wharton.upenn.edu/pages/support/research-wrds/research-guides/procedures-using-fama-and-french-48-industry-classification/)
+I used [Andrew Baker's Github repository](https://github.com/andrewchbaker/JFE_DID/blob/main/Code/1e.%20Alternative%20Event%20Study%20Estimators.R) for the paper to replicate the underlying data but implement them in my own way. I don't fully replicate the sample but it's good enough for my sample. I have slightly more observations and one day I will figure out where I went wrong.
 
 ```{r wrds_query, eval = run_wrds}
 sql1 <- "SELECT fyear, gvkey, oibdp, at, sich
@@ -93,6 +110,8 @@ roas <- roas %>%
   ungroup()
 ```
 
+Saving the 
+
 ```{r, eval = run_wrds}
 saveRDS(roas, file)
 ```
@@ -100,7 +119,7 @@ saveRDS(roas, file)
 
 # Create Data
 
-The deletion of the tails is just to get to a reasonable standard deviation.
+Let's read the data back in.
 
 ```{r}
 roas <- readRDS(file) 
@@ -110,6 +129,8 @@ mtime <- file.info((file))$mtime
 The data was last modified on `r mtime`
 
 # Decomposition
+
+If you are interested in creating you are own Baker file this is less relevant. It's just my experimentation with the `collapse` package to mimic a naive calculation of year and time fixed effects with `dplyr`. Long story short, `decomp_dplyr` is almost 10 times slower than `decomp_fast`. With decent sized data and simulation exercises I am definitely more motivated to use the `fastverse` packages now. `decomp_fixest` is the correct decomposition in year and firm fixed effects. It's not directly comparable to the other decompositions but given that it is actually the correct thing, it holds up pretty well in the timing.
 
 ```{r}
 decomp_dplyr <- function(){
@@ -144,9 +165,11 @@ decomp <- decomp_fixest()
 glimpse(decomp)
 ```
 
-Holy smokes!
-
 # Sampling
+
+Now we can create new samples with the above derived fixed effects for the ROAs. I use the `data.table` package for most of the data manipulation.
+The first bit of code prepares everything that does not change across conditions
+in the `observations` data. We keep the identifier for the firm and year. The new `firms` data keeps the firm fixed effects the `years` data has the year firm fixed effects from the decomposition above. The `residuals` are stored as a vector and will represent the empirical distribution of the unexplaind part of the ROAs. The remaining variables reflect the treatment effects which are applied to three groups of states which are randomly assigned to one of the three groups ^[This is slightly different than in the Baker et al. paper. I allow that by random chance some of the groups are larger than the other while the Baker et al. simulation keeps the groups (almost) equal in size. I was too lazy to change it when I noticed the difference but I am also interested in what happens to the average treatment effect if some group effects are estimated more precisely so my simulation is at least consistent with that goal]
 
 ```{r, sampling-preparation}
 n <- fnrow(roas)
@@ -161,7 +184,7 @@ treatment_effects <- c(.05, .03, .01)
 state_treatments <- sample(1:3, 50, TRUE)
 ```
 
-The next step is to allow for different treatment effects. The average treatment effects look as follows. 
+Instead of explaining the average treatment effect per row I am just plotting them below. Behold the data generating process for simulation 6.
 
 ```{r, effect_plot}
 plot_dt <- data.table(year = rep(1980:2015, 3),
@@ -178,8 +201,17 @@ save_plot(here("slides", "figures", "baker_effects.svg"), effect_plot)
 print(effect_plot)
 ```
 
+The actual data simulation is in the `new_sample` function which again mostly uses `data.table`. The function goes through the following steps. I think I am adding more variation than the Baker et al. paper. So this is by no means a one-for-one replication but it allows me to build on extensions if I so want.
+
+1. Each firm in the firm gets allocated a random firm fixed effect based on the empirical distribution of the firm fixed effects and gets allocated to one of 50 states.
+2. Based on the state, I assign the firm to a treatment group and treatment effect.
+3. Each year gets a randomly sampled year fixed effect based on the empirical distribution.
+4. The two fixed effects are merged to the firm-year `observations`.
+5. The simulated ROA is calculated based on the fixed effects, the treatment effect, and random residuals.
+
+During the development of the function I kept track of the timing of the function. Overall, I am quite impressed how fast this was.
+
 ```{r}
-#nfirm <- 1000
 new_sample <- function(){
   sample_firms <- firms[, `:=`(
     fef = sample(fef, .N, TRUE),
@@ -198,11 +230,13 @@ new_sample <- function(){
   new[, rel_year := year - treatment_group]
   return(as.data.table(new))
 }
-new_sample()
 microbenchmark::microbenchmark(sample = new_sample(), times = 100)
 ```
 
 # Analyse
+
+For now I just focus on two estimators. The traditional two-way fixed effect estimator and the [Sun and Abraham](https://doi.org/10.1016/j.jeconom.2020.09.006) estimator. I choose the latter out of the many options because it's easy to implement as a fixed effect regression and conceptually easy to explain because the hard work is done by only using the appropriate data which allows for the appropriate comparison.
+
 ## Two-way Fixed Effects
 
 ```{r twoway}
@@ -214,9 +248,9 @@ coefficients(twoway)
 ```
 
 ## Sun and Abraham
-
 ### Explanation of Sample Selection
 
+The hard work is done by making sure that we make no invalid comparisons. I try to explain this with the following figure. I assume we are only interested in the treatment effect 5 years after the implementation of the treatment. For group 3 who gets the treatment last, there is not appropriate control group (`no_control_group`) so we do not use this group after the treatment. For the other groups, we delete the data more than 5 years after treatment (`no_interest`). We are left with controls which are all pre treatment (`control`) and the 5 years of treatment in group 1 and 2 (`treatment`). 
 
 ```{r sun-sample-selection}
 plot_dt[, `:=`(
@@ -237,7 +271,9 @@ print(sun_plot)
 
 ### The code
 
-See [Andrew Baker's Github](https://github.com/andrewchbaker/JFE_DID/blob/main/Code/1e.%20Alternative%20Event%20Study%20Estimators.R)
+The actual code to run the Sun and Abraham estimator is available in `fixest`. We first need to construct the cleaned data set following the figure above. Next, we run the regression with `fixest` and use the `sunab` function, which automatically creates indicators for each relative year - treatment group combination. It excludes `rel_year = -1` which is the year before the treatment and the benchmark to which all the estimated coefficients can be compared.
+
+The default output for the Sun and Abraham estimator is to report the aggregated^[over the groups] relative time coefficients. The overall average treatment effect can be extracted with the summary function. 
 
 ```{r sun}
 max_rel_year <- 5
@@ -247,22 +283,24 @@ sa_new <- new_sample() %>%
 saveRDS(sa_new, here("data", "sa_new.RDS"))
 sun_ab <- feols(roa ~ 1 + sunab(treatment_group, year)
                 | firm + year, cluster = "state", data = sa_new)
-etable(sun_ab)
-summary(sun_ab, agg = "ATT")
+modelsummary(sun_ab, gof_omit = gof_omit, stars = stars)
 ATT <- coeftable(summary(sun_ab, agg = "ATT"))[1,1]
 print(ATT)
 ```
 
 ### Explanation of the code
 
+You can extract the individual coefficients for each relative year - treatment group estimation. 
+
 ```{r sun-explanation-code}
-library(modelsummary)
 sun_ab$coefficients
 summary(sun_ab, agg = "cohort") %>%
-  msummary(gof_omit = "IC|Log|Adj|Ps", stars = c("*" = 0.1, "**" = .05, "***" = .01))
+  msummary(gof_omit = gof_omit, stars = stars)
 ```
 
 ## True ATT
+
+The true ATT will be different if we use the full sample or restrict the treated observations to 5 years after the treatment for group 1 and 2. The following code calculates the expected true ATT for the full sample or by cohort. The `true_att` calculation exploits the linear increase in the treatment effect.
 
 ```{r att}
 true_full_att <- mean((2016 - treatment_groups)/2 *
@@ -275,6 +313,10 @@ collap(new[rel_year %in% 0:5], treatment ~ rel_year + treatment_group) %>%
 ```
 
 # Simulation
+
+Everything is now in place to run a simulation that simulates new data and runs the two-way fixed effect OLS estimator and the Sun and Abraham one. I extract the estimate of the ATT from both and save them as the `results`.
+
+The rest of the code runs the simulation `nsim` times and plots the estimate with the expected true ATT. 
 
 ```{r simulation}
 nsim <- 500
@@ -308,5 +350,7 @@ save_plot(here("slides", "figures", "simulation_sun_abraham.svg"), sim_sun_abrah
 print(sim_twoway)
 print(sim_sun_abraham)
 ```
+
+
 
 
