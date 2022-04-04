@@ -1,0 +1,57 @@
+---
+author: 
+title: Assignment 4 - Simulated Data
+---
+
+# Introduction
+
+The goal of this assignment is to get you to experiment with how you think your data will look based on your current understanding and whether it will allow you to test your main research question. 
+
+# Question 1: Research question
+
+In a paragraph explain your main research question and which data you plan to use to answer the research question. Focus on the main question, not every single hypothesis. If the main goal is to compare a number of different predictors, than you can write that. In the simulation, you can simulate for instance 5 predictors without paying too much attention to what they actually are. This part is not assessed and you can lift this from your pitching document. The main purpose is that I know what you are trying to test.
+
+# Question 2: Simulation
+
+I gave a lot of examples on how to simulate data in the slides and I hope that you can borrow from these examples, for instance for the structure of panel data. If you need help with a specific question after you gave it a try but got stuck, you can contact me in the Teams R help channel for the unit.
+
+This should be a simplified version of your real data. The features that are most important to me are the ones that relate to the research design. That means that you should focus on the two main variables if you are identifying a cause-and-effect relation and the main threat to that identification. If you are trying to predict a variables based on a large number of variables, think about why you want to make that prediction. Are you interested in the specific variables or in the overall prediction? If the former, you have to think about similar identification problems. If you have a lot of variables, you also have to think about how they relate to each other because that might affect their individual effects.
+
+Try to think about the main difficulty that you are trying to solve?
+
+- What is the main confounder?
+- Do you have a potential selection effect or collider you need to account for?
+- What is the main alternative explanation for your research question?
+- What is the research design, what are the comparisons? 
+- Do you want to make predictions for future values of the outcome variable?
+- How are my predictors related to each other?
+- Are there important time trends? You do not have to simulate a complicated time series, you can just assume a linear or logarithmic trend. 
+
+You don't have to answer all these questions. They will not be relevant to everyone anyway. Pick the most important challenge and incorporate this in your simulation. 
+
+```{r simulation}
+```
+
+# Question 3: Plot
+
+Use your simulated data to make a plot that describes your data in a way that it is informative to understand your research question or your research design. You can use examples from the slides.
+
+```{r}
+```
+
+# Question 4: Regression
+
+Use the regression tools from the lectures and test your main hypotheses. If you have a time series model, you can try to implement a simple version in R. I do not need a full GARCH or ARIMA. You can also mimic a time series model by a regression where you include time as a continuous variable (i.e. not a fixed effect). This is statistically incorrect as a time series model but it is fine for the purpose of this assignment.
+
+Use no more than three regressions and print them in a table. One regression is sufficient. 
+
+```{r}
+```
+
+# Question 5: Repeat
+
+This part is not assessed. You can skip it. Once, you got everything working. Rerun the code for the simulation, the plot, and the regression a couple of times. Let's say 5 to 10 times. This should give you some initial idea of the potential variation in your estimates. Do you notice anything specifically? (You can also do this after submission of the assignment, I can still give feedback if you have questions.)
+
+
+
+
