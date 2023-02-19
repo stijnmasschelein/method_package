@@ -1,0 +1,451 @@
+---
+title: "Introduction to Research Methods in Finance and Accounting"
+execute:
+    dpi: 200
+    dev: 'svg'
+    fig-height: 5
+    fig-width: 10
+---
+
+
+```{r} 
+#| label: setup
+#| include: false
+library(tidyverse)
+library(cowplot)
+library(viridis)
+library(here)
+i_am("slides/slides1.qmd")
+theme_set(theme_cowplot(font_size = 18))
+options(tibble.width = 60)
+options(width = 60)
+uwa_blue <- "#003087"
+uwa_gold <- "#DAAA00"
+```
+
+# What is this unit?
+
+## How to do empirical research
+
+- The connection between theory and the observed data
+- The connection between practical knowledge and what you can investigate
+- The appropriate statistical tests and code
+
+::: {.notes}
+Empirical just means that some data in the broadest possible be sense will be collected or generated. The emphasis on the units will be on the practical and statistical issues of the data analysis part of a thesis. The influence will not be on the accounting and finance part of your thesis. The goal is to be relevant to everyone in the unit. This would be a good time to figure out whether students do a study with a more qualitative approach.
+:::
+
+## Different Modules
+
+1. The research process and basic data skills in `R` (week 1 - 3)
+2. Research design (week 4 - 6) 
+3. Advanced regression (week 7 - 9)
+4. Time series analysis 10 - 12)
+
+::: {.notes}
+All modules work as stand-alone units and aim to cover a wide range of topics. Not all of them will in the end be relevant for everyone. However, it is probably a good idea to get to know the different statistical methods, their advantages, and disadvantages. Bringing a new methodology to an old topic can be a valuable contribution. Some problems have already been solved in other research streams.
+:::
+
+## Assessment
+
+- No Exam
+
+- (Almost weekly) Assignments (70%)
+
+::: {aside}
+    - Homework: Practical Issues (0%) (3 March)
+    - Assignment 1: Theory and Regressions (10%) (10 March)
+    - Assignment 2: Regression and control variables (10%) (17 March)
+    - Assignment 3: Research Design (10%) (7 April)
+    - Assignment 4: Event Study (10%) (28 April)
+    - Assignment 5: Machine Learning (10%) (5 May)
+    - Assignment 6: Simulation Research Design (20%) (26 May)
+:::
+
+- Proposal and presentation (30%) 
+
+::: {aside}
+    - Pitch (10%) (31 March)
+    - Proposal (10%) (12 May)
+    - Presentation (10%) (Probably Thursday 20 July)
+:::
+
+::: {.notes}
+We want you to (1) do some data analysis and (2) be well prepared to undertake (the data analysis part of) a research project. So we are going to evaluate you by letting you (1) analyse data and (2) prepare your honours thesis.
+:::
+
+
+---
+
+## The first two weeks
+### CEO compensation
+
+![This is not my area of expertise!](http://i0.kym-cdn.com/entries/icons/original/000/008/342/ihave.jpg){width=80%}
+
+::: {.notes}
+I am not a specialist in the topic nor in this type of data analysis. CEO compensation is something that people in finance, accounting, economics, and outside of academia are interested in. The topic is probably the one with the most commonality. I am comforable with these type of economic theories and I am going to stress the role of theory in data analysis a lot. Some of you will have a topic that is at first sight less theory driven or rely more strongly on very specific knowledge about your setting. I am going to try to convince you that it is going to be useful to think about the underlying story that you are testing.
+:::
+
+## Topic
+
+Completely based on [@edmans2016](https://dx.doi.org/10.1257/jel.20161153) in *Journal of Economic Literature*.
+
+1. The level of CEO compensation
+2. CEO incentives
+
+::: {.notes}
+I am going to focus on two topics.
+1. How high can we expect the total compensation of a CEO to be (compared to other CEOs) based on some simple economic assumptions. Too high CEO compensation is sometimes seen as a signal of bad corporate goverance. To measure what 'too high' means, we first need to establish a baseline of normal levels of compensation.
+2. How should CEOs be incentivised: equity or options? How schould we measure whether CEOs have appropriate incentives: \$ for \$ increases, % for % increases? Incentives are a big topic in Accounting and Finance.
+:::
+
+## Firm production function
+
+
+$$
+V = T^{\alpha_T} \Bigl( \frac{K}{\alpha_K} \Bigl)^{\alpha_K}
+                 \Bigl( \frac{L}{\alpha_L} \Bigl)^{\alpha_L}
+$$
+
+$$
+\alpha_T + \alpha_K + \alpha_L = 1
+$$
+
+- $V =$ The value of the firm
+- $K =$ Capital of the firm
+- $L =$ Labour of the firm
+- $T =$ CEO talent/skills/ability/experience
+
+::: {.notes}
+We assume that there is nothing in the structure of the production function that favours a particular firm size, i.e. constant returns to scale.
+:::
+
+## CEO decision
+
+$$
+\max_{K, L} W_T = V - w_L L - rK
+$$
+
+- $W_T =$ wage for CEO with talent T
+- $w_L =$ labour unit costs
+- $r =$ cost of capital (or return on capital for investors)
+
+
+::: {.notes}
+The CEO maximises their income $W_T$ by attracting capital at a cost, $r$, and and hiring labour at a wage, $w_L$. The model assumes that the CEO takes the ultimate decision. As it turns out when you assume competitive labour and financial markets, that assumptions does not really matter a lot.
+
+This model is too simple to capture reality perfectly. However, that is not the goal of the model and of this exercise. The idea is to see whether we can find a reasonable baseline for CEO compensation that we can test against the data.
+:::
+
+## Relation between size and CEO wage
+
+$$
+W_T = \alpha_T V
+$$
+
+> In this model, the driving force is that more talented CEOs grow the business to a bigger size and they earn more money when they create more value.
+
+::: {.notes}
+First find the optimal level of capital  ...
+
+$$
+\begin{aligned}
+\frac{\partial W_T}{\partial K} &=  T^{\alpha_T}  
+\Bigl( \frac{K}{\alpha_K} \Bigl)^{\alpha_K - 1} 
+\Bigl( \frac{L}{\alpha_L} \Bigl)^{\alpha_L} - r = 0
+\\
+T^{\alpha_T} \Bigl( \frac{K}{\alpha_K} \Bigl)^{\alpha_K} 
+\Bigl( \frac{L}{\alpha_L} \Bigl)^{\alpha_L}
+\frac{\alpha_K}{K}
+&= r 
+\\
+\frac{V}{r} &= \frac{K}{\alpha_K}
+\end{aligned}
+$$
+
+... and labour
+
+$$
+\begin{aligned}
+\frac{\partial W_T}{\partial K} &=  T^{\alpha_T}  
+\Bigl( \frac{K}{\alpha_K} \Bigl)^{\alpha_K} 
+\Bigl( \frac{L}{\alpha_L} \Bigl)^{\alpha_L - 1} - w_L
+\\
+T^{\alpha_T} \Bigl( \frac{K}{\alpha_K} \Bigl)^{\alpha_K} 
+\Bigl( \frac{L}{\alpha_L} \Bigl)^{\alpha_L}
+\frac{\alpha_L}{L} &= w_L
+\\
+\frac{V}{w_L} &= \frac{L}{\alpha_L}
+\end{aligned}
+$$
+
+Now we can plugin $L$ and $K$ in $V$ ...
+
+$$
+\begin{align}
+V = T^{\alpha_T} \Bigl( \frac{V}{r} \Bigl) ^{\alpha_K} 
+\Bigl( \frac{V}{w_L} \Bigl) ^{\alpha_L} 
+\\
+V^{1 - \alpha_K - \alpha_L} = \frac{T^{\alpha_T}}
+{r^{\alpha_K} w_L^{\alpha_L}}
+\\
+V^{\alpha_T} = \frac{T^{\alpha_T}}
+{r^{\alpha_K} w_L^{\alpha_L}}
+\\
+V = \frac{T}
+{r^{\frac{\alpha_K}{\alpha_T}} w_L^{\frac{\alpha_L}{\alpha_T}}}
+\end{align}
+$$
+
+... and in $W_T$.
+
+$$
+\begin{align}
+W_T = V - V \alpha_K - V\alpha_L = (1 - \alpha_K - \alpha_L) V 
+= \alpha_T V
+\end{align}
+$$
+
+I like the basic intuition and deriviation of the model. The derivation is straightforward and (some of) the implicit assumptions are relatively easy to accept. The effect of the CEO depends on the size of the firm ($V$). When there is more capital and labour available a more talented CEO will have a bigger impact. The model also predicts a clear quantitative relationship between firm size, $V$, and CEO compensation, $W_T$, i.e. that relationship should be linear. This is a nice result that we can test with data. In contrast to the linear relationship between firm size and CEO talent. We can measure $V$ but not $T$.
+:::
+
+## Data: Compensation-Value 
+
+
+```{r us_comp_value_data, include = TRUE, echo=FALSE}
+# Read the data from a custom folder. If the data is not in this folder, change
+# the path to the folder. Rename some of the variables to make them easier to
+# work with.
+us_comp = readRDS(here("data", "us-compensation-new.RDS")) %>%
+  rename(total_comp = tdc1)
+us_value = readRDS(here("data", "us-value-new.RDS")) %>%
+  rename(year = fyear, market_value = mkvalt)
+# Match the compensation data with the value data based on company key and year
+us_comp_value = left_join(select(us_comp, gvkey, year, total_comp),
+                          us_value, by = c("year", "gvkey"))
+# Run the non-linear regression and save the results as an equation to put on
+# the figure. This goes beyond what we are going to do in this module.
+power_law_start = list(a= 5, b = .15)
+power_law_comp = nls(total_comp/1000 ~ a * (market_value/1000)^b,
+                     data = us_comp_value, start = power_law_start)
+eqn_comp = substitute(italic("compensation") == a * italic("MV") ^ b,
+                      list(a = as.numeric(format(coef(power_law_comp)[1],
+                                                 digits = 2)),
+                           b = as.numeric(format(coef(power_law_comp)[2],
+                                                 digits = 2))))
+# create the plot
+plot_comp_value =
+  # Add dataset and define x and y axis
+  ggplot(us_comp_value, aes(x = market_value/1000, y = total_comp/1000)) +
+  # Add the observations as points to the plot
+  geom_point(alpha = .125) +
+  # Draw the results of the power_law regression on the plot
+  stat_function(fun =
+                function(x){
+                  coef(power_law_comp)[1] * x ^ coef(power_law_comp)[2]},
+                colour = "blue") +
+  # Add a title
+  ggtitle("US CEO compensation 2011-2022") +
+  # Add label for the x-axis and y-axis
+  ylab("CEO compensation (in million USD)") +
+  xlab("Company market value (in billion USD)")
+```
+
+```{r us_comp_value_plot, warning=FALSE, fig.margin = TRUE, echo = FALSE}
+print(plot_comp_value + annotate("text", y = 45, x = 500, parse = TRUE,
+                                 label = as.character(as.expression(eqn_comp))))
+```
+
+::: {.notes}
+The data is downloaded from Compustat and Execucomp. A lot of you will use these are similar databases in your research project. I did not clean or check the data for this exercise. In your own project, you should show a better understanding of how the data are gathered and what they include than what I am displaying here.
+
+- CEO compensation is fairly complete. It includes changes in the value of equity and options.
+- Market value also includes all outstanding financial instruments on the company.
+
+The qualitative relationship holds quite well. Bigger companies
+have CEOs with higher compensation. However, the relationship is
+far from linear and looks more like a power function. Clearly
+there are other effects at play. In this sample, the power
+coefficient is 0.31. Prior studies have found a coefficient more
+closely to 0.33 [@baker1988]. Remember that
+in our setup the CEO can grow the firm at will by attracting more
+capital and more labour. That assumption is probably too strong.
+:::
+
+# How does research work?
+
+## The research process
+
+::: {.callout-tip}
+## Summary
+- Make assumptions
+- Derive relationship between measurable quantities
+- Compare the theory and the data
+:::
+
+::: {.aside}
+Note what we have just done. We started with some assumptions about the
+production function of a company and competitive markets to find the theoretical
+relation between firm size and CEO compensation. We followed up by testing this
+theory to data from S&P500 firms. These are the steps that you should be
+following.
+:::
+
+## Literature search
+
+- [Google Scholar](https://www.scholar.google.com)
+- [UWA One Search](https://onesearch.library.uwa.edu.au)
+- [Web of Knowledge](https://apps.webofknowledge.com)
+- [EBSCOhost Research Databases](https://search.ebscohost.com/login.asp?defaultdb=bth&lang=en)
+- [Social Science Research Network](https://ssrn.com/en/)
+- [National Bureau of Economic Research](https://www.nber.org/papers.html)
+
+::: {.notes}
+In the CEO compensation case above, we derived the theoretical
+prediction. Normally, you will build on prior theoretical and
+empirical research to build predictions. The
+
+In most cases (ssrn is the exception), you will have to be on the
+university's network if you want to actually read the full paper.
+
+- Google Scholar is probably the most comprehensive repository.
+This search engine work very similar to regular Google search.
+There are some additional tricks you can use
+"author:lastname-firstname" will help you to narrow down papers
+from a specific author. "intitle:keyword" let's you search for
+keywords in the title of papers. You can also narrow down your
+search based on year of publication. The advanced search features
+hidden in the left side bar give you additional options such as
+searching for certain journals. If you are on the university
+network, Google Scholar will tell you for every paper
+
+- Onesearch is the university search engine. It's the best way to
+figure out whether there is an easily accessible version of the
+paper.
+
+- Webofknowledge and EBSCOhost are two publisher driven
+initiatives. They work pretty well. Each with their own quirks.
+
+- SSRN (Social Science Research Network) and NBER (National
+Bureau of Economic Research) both provide access to their own
+not-yet-peer-reviewed paper repositories. Here you go to find
+cutting edge research.
+:::
+
+## Start of literature search
+
+- Don't start too narrow! 
+- Review articles and journals
+    - Journal of Economic Literature
+    - Journal of Accounting Literature
+- A*/A journals
+    - [Accounting](https://abdc.edu.au/research/abdc-journal-list/)
+    - [Finance](https://abdc.edu.au/research/abdc-journal-list/)
+
+::: {.notes}
+My favourite way to start a research project now is to find one or two excellent
+overview or review papers. A (systematic) review paper provides a state of a
+research field and identifies interesting new research questions. I am not sure
+whether my strategy will work for you. I find that a good review paper gives a
+good list of papers you can build on and they often already compare the most
+important papers in a field. The trick is to be not too picky. You probably will
+not find a review for your exact reserch problem but it is unlikely that you
+will not find a partly relevant overview paper. You can search for review papers
+by adding "intitle:review" or "intitle:overview" to your Google Scholar search.
+
+To find other papers relevant to your topic, you can build on the review paper
+by (1) looking up the papers referred to in the review paper and (2) search for
+papers that cite the review paper. You can do the latter via Google Scholar and
+Webofknowledge.
+
+To find good reviews, I think you should start your search in the better
+journals. Some journals are dedicated to these literature reviews for instance
+*Journal of Economic Literature* and *Journal of Accounting Literature*. I am
+not aware of a similar journal in finance but I will happily add it if you let
+me know.
+
+When you start your literature search, you don't want to narrow. You are not
+going to find an overview paper about "CEO compensation in Australian mining
+companies after the GFC". However, you can start with an overview paper about
+CEO compensation. Like the one I found: ["Executive Compensation: A Modern
+Primer"](https://dx.doi.org/10.1257/jel.20161153) by Alex Edmans and Xavier
+Gabraix in *Journal of Economic Literature*.
+:::
+
+
+# Plan Your Year!
+## Signs of bad workload management 
+
+- Irregular sleeping habits
+- Loss of motivation
+- Postponing difficult tasks 
+
+
+## Working with a supervisor
+
+1. The role of the supervisor
+  - Guide you towards a feasible research project
+  - Help you finish the dissertation
+
+2. Work process
+  - Schedule weekly or fortnightly meetings
+  - Submit writing or data analysis before every meeting. 
+
+3. Add a tl;dr section.
+  - Your supervisor is not your copy-editor, let them know when you submit an "early" draft.
+  - Tell your supervisor what has changed
+  - Clarify the sample and the main variables in tables
+  - Tell your supervisor what the main table or figure is
+
+
+## Managing the workload (40 hours per week)
+
+1. Plan ahead (with your supervisor) towards major deadlines
+
+2. It's okay to submit partial assignments, as long as you make progress. (Especially for programming exercises)
+
+3. Keep writing!
+
+4. Reach out when you need help with planning or when you feel overwhelmed.
+    - stijn.masschelein@uwa.edu.au
+    - [UWA Counselling services](https://www.student.uwa.edu.au/experience/health-wellbeing-safety/counselling)
+
+::: {.notes}
+The plan can be an excel sheet with deadlines and milestones. Breaking down 5000 words into 10 weeks of 500 words is a lot less daunting.
+:::
+
+# Homework
+
+## Questions {.smaller}
+
+1. Answer in Quarto (`.qmd`) format.
+    `File > New File > Quarto Document ... >`
+
+2. You can use the code examples that I used in the video. I have
+   uploaded the file to LMS. Use a different level 2 header for each
+   question. Use R chunks to
+
+    - Load the CEO compensation data from LMS so that you can work
+      with it.
+    - Print the dataset with only the CEOs without a cash bonus
+      in 2013. You do not need to print the whole dataset. The default
+      number of lines is sufficient.
+    - Calculate the number of observations, and the average and median
+      bonus per year for the entire dataset.
+
+3. Click the `Render` button and upload the `qmd` and `html` version to LMS.
+
+::: {.notes}
+There is going to be some trial-and-error and debugging. That is fine.
+Carefully read the errors you get and use the resouces for help. Don't be
+afraid to ask me or each other for help.
+
+1. Give a name to your document and enter your name
+2. See the examples
+3. See the render button in RStudio
+:::
+
+
+# References
+
+---

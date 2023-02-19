@@ -1,0 +1,7 @@
+format:
+  revealjs:
+    theme: default
+    code:
+      code-overflow: scroll
+execute:
+  echo: true

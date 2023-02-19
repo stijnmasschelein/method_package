@@ -1,0 +1,15 @@
+project:
+  title: "Method Package"
+  output-dir: _output
+  render:
+    - auxilary/introduction_to_rstudio_for_accfin.qmd
+    - slides/slides1.qmd
+    - slides/slides2.qmd
+    - slides/slides3.qmd
+    - slides/slides4.qmd
+    - slides/slides5.qmd
+bibliography: citations.bib
+author: "Stijn Masschelein"
+
+
+

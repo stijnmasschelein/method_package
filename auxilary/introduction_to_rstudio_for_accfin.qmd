@@ -1,0 +1,142 @@
+---
+author: Stijn Masschelein
+title: Introduction to Rstudio for Accounting and Finance
+format:
+  html:
+    toc: true
+---
+
+This setup code loads a package, `here`, that helps to navigate the folder structure in which I will create files. The `tidyverse` package is the main package, we will use to manipulate datasets. There are other ways to program in `R`. I think that to start of the `tidyverse` way of looking at data is quite intuitive and it is very well supported. The intuition and how quickly you can do meaningful things will hopefully be clear by the end of this document.
+
+```{r}
+#| label: setup
+library(here) 
+i_am("auxilary/introduction_to_rstudio_for_accfin.Rmd")
+library(tidyverse)
+```
+
+
+# Get the data
+
+We establish a connection with the WRDS databases with my account. [WRDS](https://wrds-www.wharton.upenn.edu/) is the data provider the university subscribes to and it has a lot of good tutorials on how to connect to their databases from R. The website. However, you will first have to ask for an account from the person in charge of the databases in the department. I will give a more extensive example later in the unit.
+
+```{r}
+#| label: wrds_connection
+#| eval: true
+library(RPostgres)
+wrds <- dbConnect(Postgres(),
+              host='wrds-pgdata.wharton.upenn.edu',
+              port=9737,
+              dbname='wrds',
+              user='stimas',
+              sslmode='require')
+```
+
+With an SQL string, we define which data we want. This is one of the cool things of these kind of files. You can combine different programming languages. Behind the scene, I have given the code a name, `wrds_data` for the output of the SQL query. You can see this if you are looking at the `.qmd` file.
+
+```{sql}
+--| label: sql_query_execcomp
+--| eval: true
+--| connection: wrds
+--| output.var: wrds_data
+SELECT year, gvkey, cusip, exec_fullname, coname, ceoann,
+execid, bonus, salary, stock_awards_fv, stock_unvest_val,
+eip_unearn_num, eip_unearn_val, option_awards,
+option_awards_blk_value, option_awards_num, tdc1, tdc2,
+shrown_tot_pct, becameceo, joined_co, reason
+FROM EXECCOMP.ANNCOMP
+WHERE year > 2010 AND ceoann = 'CEO'
+```
+
+```{r}
+#| label: wrds_execcomp
+#| eval: true
+library(tidyverse)
+compensation <- as_tibble(wrds_data) %>%
+  rename_all(tolower)
+glimpse(compensation)
+saveRDS(compensation, here("data", "us-compensation-new.RDS"))
+```
+Now, we do the same for the market value of the company. Unfortunately, we need to do it the old fashioned way, completely in `R`. The reason is that I don't want to download all market values. Only for the firms that are already in our compensation data. The firms are 
+
+```{r}
+#| label: gvkeys
+gvkeys <- unique(compensation$gvkey)
+length(gvkeys)
+key_string <- paste(gvkeys, collapse = "','")
+```
+```{r}
+#| eval: true
+#| label: wrds_fundamental
+sql2 <- paste0("SELECT fyear, gvkey, mkvalt, ni ",
+            "FROM COMP.FUNDA ",
+            "WHERE fyear > 2010 ",
+            "AND gvkey in ('", key_string, "')"
+           )
+value <- dbGetQuery(wrds, sql2) %>%
+  as_tibble() %>%
+  rename_all(tolower)
+glimpse(value)
+value <- distinct(value)
+glimpse(value)
+
+saveRDS(value, here("data", "us-value-new.RDS"))
+```
+
+# Explore the data
+
+## With the tidyverse
+
+```{r}
+us_comp <- readRDS(here("data", "us-compensation-new.RDS"))
+glimpse(us_comp)
+```
+
+```{r}
+filter(us_comp, gvkey == "001004")
+```
+
+```{r}
+filter(us_comp, bonus == 0, year == 2012)
+```
+
+## A Gamestop to introduce the pipe
+
+1. Look for any company where "gamestop" is in the name of the company.
+2. Look for the `gvkey` of Gamestop. Then use `filter` with exactly that key.
+
+```{r gamestop}
+filter(us_comp, str_detect(tolower(coname),
+                           "gamestop"))
+filter(us_comp, gvkey == "145049")
+```
+
+## Moving on
+
+```{r}
+select(us_comp, year, coname, bonus, salary, total = tdc1)
+```
+
+We first build up the dataset with `select` and `mutate` and the pipe `%>%`. When we are satisfied with the result, we can save the dataset as an R object with the name `us_comp_small`.
+
+```{r}
+us_comp_small <-
+  select(us_comp, year, coname, bonus,
+       salary, total = tdc1) %>%
+    mutate(salary_percentage = salary/total)
+```
+
+
+## Quick descriptive statistics
+
+```{r}
+group_by(us_comp, gvkey) %>%
+    summarise(N = n(), N_CEO = n_distinct(execid),
+              average = mean(salary),
+              sd = sd(salary),
+              med = median(salary),
+              min = min(salary),
+              max = max(salary)) %>%
+    ungroup() %>%
+  filter(med > 1000)
+```

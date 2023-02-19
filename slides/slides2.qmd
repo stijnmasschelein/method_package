@@ -1,0 +1,670 @@
+---
+title: "Simulations, Regressions, and Significance"
+---
+
+
+```{r}
+#| label: setup
+#| include: false
+library(tidyverse)
+library(cowplot)
+library(viridis)
+library(here)
+i_am("slides/slides2.qmd")
+theme_set(theme_cowplot(font_size = 30))
+options(tibble.width = 60)
+options(width = 60)
+uwa_blue = "#003087"
+uwa_gold = "#DAAA00"
+```
+
+# Simulations
+
+## Why simulate data?
+
+- Visualising your theory
+- Experimenting with and understanding statistical tests
+- Experimenting with statistical approaches without peaking at your data
+
+See also [Chapter 15 in @huntington-klein2021](https://theeffectbook.net/ch-Simulation.html)
+
+::: {.notes}
+- Visualising can help you sharpen your intuition for your theory and for which values are reasonable and which are not.
+- You can simulate variables and causal structures that you cannot observe. See also this week's homework
+- You don't want to just decide on which statistical test to use because it gives you the "right" answer. If you want to experiment with different statistical models, you can do that with simulated data.
+:::
+
+## Simulating distributions in `R`
+
+
+```{r}
+#| label: random-number
+N <- 1000
+random <- tibble(
+  normal = rnorm(N, 2, 5),
+  uniform = runif(N, 1, 5),
+  binomial = rbinom(N, 1, .25),
+  sample = sample(1:10, N, replace = T)
+)
+glimpse(random)
+```
+
+---
+
+```{r}
+#| label: random-plot1
+#| fig-height: 10
+#| fig-width: 20
+p1 <- ggplot(random, aes(x = normal)) + geom_density() + ggtitle("normal density")
+plot_grid(p1, ncol = 4)
+```
+
+---
+
+```{r}
+#| label: random-plot2
+#| fig-height: 10
+#| fig-width: 20
+p1 <- ggplot(random, aes(x = normal)) + geom_density() + ggtitle("normal density")
+p2 <- ggplot(random, aes(x = uniform)) + geom_histogram(bins = 50) + ggtitle("uniform histogram")
+plot_grid(p1, p2, ncol = 4)
+```
+
+---
+
+```{r}
+#| label: random-plot3
+#| fig-height: 10
+#| fig-width: 20
+p1 <- ggplot(random, aes(x = normal)) + geom_density() + ggtitle("normal density")
+p2 <- ggplot(random, aes(x = uniform)) + geom_histogram(bins = 50) + ggtitle("uniform histogram")
+p3 <- ggplot(random, aes(x = binomial, y = normal)) + geom_point() + ggtitle("binomal-normal")
+plot_grid(p1, p2, p3, ncol = 4)
+```
+
+---
+
+```{r}
+#| label: random-plot4
+#| fig-height: 10
+#| fig-width: 20
+p1 <- ggplot(random, aes(x = normal)) + geom_density() + ggtitle("normal density")
+p2 <- ggplot(random, aes(x = uniform)) + geom_histogram(bins = 50) + ggtitle("uniform histogram")
+p3 <- ggplot(random, aes(x = binomial, y = normal)) + geom_point() + ggtitle("binomal-normal")
+p4 <- ggplot(random, aes(x = as.factor(sample), y = uniform)) + geom_jitter(width = .2) +
+    ggtitle("sample-uniform") + labs(x = "sample")
+plot_grid(p1, p2, p3, p4, ncol = 4)
+```
+
+## Better Code Formatting
+
+```{r}
+#| label: code-formatting
+#| eval: false
+p1 <- ggplot(random, aes(x = normal)) +
+  geom_density() +
+  ggtitle("normal density")
+p2 <- ggplot(random, aes(x = uniform)) +
+  geom_histogram(bins = 50) +
+  ggtitle("uniform histogram")
+p3 <- ggplot(random, aes(x = binomial, y = normal)) +
+  geom_point() +
+  ggtitle("binomal-normal")
+p4 <- ggplot(random, aes(x = as.factor(sample), y = uniform)) +
+  geom_jitter(width = .2) +
+  ggtitle("sample-uniform") + labs(x = "sample")
+plot_grid(p1, p2, p3, p4, ncol = 4)
+```
+
+# CEO-firm matching
+
+## New theory
+
+::: {.callout-tip}
+## Summary
+- Firms have different size and CEOs have different talent.
+- More talented CEOs work for bigger firms.
+- Firms pay just enough so that the CEO is not tempted to work for a smaller firm.
+:::
+
+::: {.aside}
+The model is the second one presented in @edmans2016. A more rigorous proof is shown in @tervio2008. A simplified explanation is in [Chapter 5 of my lecture notes](https://stijn-masschelein.netlify.app/teaching/just_enough/maths-sim.htm)
+:::
+
+## Visualisation of matching theory
+
+:::: {.columns}
+::: {.column width="50%"}
+```{r}
+#| label: matching-viz
+#| code-fold: true
+#| fig-height: 10
+obs <- 500
+size_rate <- 1; talent_rate <- 2/3;
+C <- 1/60; w0 = 1;
+n <- c(1:obs)
+size <-  600 * n ^ (-size_rate)
+talent <- - 1/talent_rate * n ^ (talent_rate)
+
+wage <- rep(NA, obs)
+wage[obs] <- w0
+for (i in (obs - 1):1){
+  wage[i] <- wage[i + 1] + C * size[i + 1] *
+      (talent[i] - talent[i + 1])
+}
+
+matching_plot <- qplot(x = size, y = wage) +
+    labs(x = "Company Market Value", y = "CEO compensation")
+plot(matching_plot + ggtitle("Value - Compensation"))
+```
+:::
+
+::: {.column width="50%"}
+
+```{r}
+#| label: mathing-log
+#| code-fold: true
+#| fig-height: 10
+plot(matching_plot +
+     scale_x_continuous(trans = "log",
+                        breaks = scales::log_breaks(n=5, base=10)) +
+     scale_y_continuous(trans = "log",
+                        breaks = scales::log_breaks(n=5, base=5)) +
+     ggtitle("log(Value) - log(Compensation)")
+     )
+```
+:::
+::::
+
+## CEO compensation data
+
+```{r}
+#| label: read-data
+us_comp <- readRDS(here("data", "us-compensation-new.RDS")) %>%
+  rename(total_comp = tdc1)
+us_value <- readRDS(here("data", "us-value-new.RDS")) %>%
+  rename(year = fyear, market_value = mkvalt)
+summary(us_value$market_value)
+```
+
+## Putting it all together with `_join`
+
+```{r}
+us_comp_value <-
+    select(us_comp, gvkey, year, total_comp) %>% 
+    left_join(
+        us_value,
+        by = c("year", "gvkey"))
+glimpse(us_comp_value)
+```
+
+::: {.aside}
+More information on joins to merge two datasets on [the tidyverse website](https://dplyr.tidyverse.org/articles/two-table.html). I prefer the `left_join` function as the default because it indicates that we have a main dataset (left) to which we want to add a second dataset (right). We will also spend more time with these functions in week 7.
+:::
+
+## First plot {.smaller}
+
+::::: {.panel-tabset}
+
+### The Basics
+
+:::: {.columns}
+::: {.column}
+```{r}
+plot_comp_value <- ggplot(
+    us_comp_value,
+    aes(y = total_comp, x = market_value)) +
+    geom_point(alpha = .10) +
+    ylab("compensation ($ 000)") +
+    xlab("market value ($ million)")
+```
+:::
+::: {.column}
+```{r}
+print(plot_comp_value)
+```
+:::
+::::
+### The scales
+
+:::: {.columns}
+::: {.column}
+```{r}
+plot_log <- plot_comp_value +
+    scale_x_continuous(
+        trans = "log1p",
+        breaks = c(1e2, 1e3, 1e4, 1e5, 1e6),
+        labels = function(x)
+            prettyNum(x/1000, digits = 2)) +
+    scale_y_continuous(
+        trans = "log1p",
+        breaks = c(1e1, 1e2, 1e3, 1e4, 1e5),
+        labels = function(x)
+            prettyNum(x/1000, digits = 2)) +
+    ylab("compensation ($ million)") +
+    xlab("market value ($ billion)")
+```
+:::
+::: {.column}
+```{r}
+print(plot_log)
+```
+:::
+::::
+
+### Zoom in
+
+:::: {.columns}
+::: {.column}
+```{r}
+plot_zoom <- plot_log +
+    coord_cartesian(
+        xlim = c(1e1, NA), ylim = c(1e2, NA))
+```
+:::
+::: {.column}
+```{r}
+print(plot_zoom)
+```
+:::
+::::
+:::::
+
+# Linear regression in `R`
+
+See [Chapter 6 of the lecture notes](https://stijn-masschelein.netlify.app/teaching/just_enough/linear-regression.html)
+
+---
+
+## Notation {.smaller}
+
+:::: {.columns}
+::: {.column}
+
+\begin{equation}
+y_i = a + b_1 x_{1i} + ... + b_n x_{ni} + \epsilon_i
+\end{equation}
+
+\begin{equation}
+\vec{y} = a + b_1 \vec{x_1} + ... b_n \vec{x_n} + \vec{\epsilon}
+\end{equation}
+
+\begin{equation}
+\vec{y} = a + \vec{b} X + \vec{\epsilon}
+\end{equation}
+
+\begin{equation}
+\vec{y} = \mathcal{N}(a + \vec{b} X, \sigma)
+\end{equation}
+
+See also [Chapter 13 in   @huntington-klein2021](https://theeffectbook.net/ch-StatisticalAdjustment.html)
+
+:::
+::: {.column}
+
+```{r, eval = FALSE, echo = TRUE}
+reg <- lm(y ~ x1 + x2, data = my_data_set)
+summary(reg)
+```
+:::
+::::
+
+## Finally, the regression
+
+```{r, echo = TRUE}
+reg <- lm(log(total_comp + 1) ~ log(market_value + 1),
+         data = us_comp_value)
+# summary(reg)
+print(summary(reg)$coefficients, digits = 2)
+```
+
+::: {.aside}
+The regression uses a trick with the `log(... + 1)` formulation which is probably not appropriate. We will see the poisson regression later for a more appropriate way of analysing the effect on a positive variable.
+:::
+
+# CEO Incentives and Size
+
+See [Chapter 7 of the lecture notes](https://stijn-masschelein.netlify.app/teaching/just_enough/measurement.html)
+
+
+## Historical Discussion {.smaller}
+
+> Our estimates of the pay-performance relation (including pay, options, stockholdings, and dismissal) for chief executive officers indicate that CEO wealth changes $3.25 for every $1,000 change in shareholder wealth [@jensen1990].
+
+. . .
+
+> [...] The statistic in isolation can present a misleading picture of pay to performance relationships because the denominator - the change in firm value - is so large [@hall1998].
+
+. . .
+
+> This article addresses four major concerns about the pay of U.S. CEOs: (1) failure to pay for performance; [...]. The authors' main message is that most if not all of these concerns are exaggerated by the popular tendency to focus on the annual income of CEOs (consisting of salary, bonus, and stock and option grants) while ignoring their existing holdings of company equity [@core2005].
+
+
+::: {.notes}
+This is actually a good example of why a literature review is valuable. It's not enough to just say that the three papers find different effects. They do more than that. The newer papers gradually build up a better theory of what happens in practice and use better measures to reflect that theory.
+:::
+
+
+## Stock holding data
+
+```{r}
+us_comp <- readRDS(here("data", "us-compensation-new.RDS")) %>%
+    rename(total_comp = tdc1, shares = shrown_tot_pct) %>%
+    select(gvkey, execid, year, shares, total_comp)
+us_value <- readRDS(here("data", "us-value-new.RDS")) %>%
+    rename(year = fyear, market_value = mkvalt) %>%
+    select(-ni) 
+us_comp_value <- left_join(
+    us_comp, us_value, by = c("year", "gvkey")) %>%
+    filter(!is.na(market_value) & !(is.na(shares))) %>%
+    mutate(wealth = shares * market_value / 100)
+glimpse(us_comp_value)
+```
+
+
+## Shares to Market Value {.smaller}
+
+:::: {.columns}
+::: {.column}
+
+```{r}
+plot_shares <- ggplot(
+    data = us_comp_value,
+    aes(x = market_value/1000, y = shares)) +
+    geom_point(alpha = .10) +
+    ylab("CEO Ownership") +
+    xlab("Firm Market Value (in Billions)") +
+    scale_x_continuous(
+        trans = "log",
+        labels = function(x)
+            prettyNum(x, digits = 2),
+        breaks =
+            scales::log_breaks(n = 5,
+                               base = 10)) +
+    scale_y_continuous(
+        trans = "log",
+        labels =
+            function(x)
+                prettyNum(x, digits = 2),
+        breaks =
+            scales::log_breaks(n = 5,
+                               base = 10))
+```
+:::
+::: {.column}
+```{r, warning = FALSE, fig.height = 5}
+print(plot_shares)
+```
+:::
+::::
+
+## Pay to Performance Sensitivity {.smaller}
+
+::::: {.panel-tabset}
+
+### Data
+```{r}
+us_sens <- us_comp_value %>%
+    group_by(gvkey, execid) %>%
+    arrange(year) %>%
+    mutate(prev_market_value = lag(market_value),
+            prev_wealth = lag(wealth)) %>%
+    ungroup() %>%
+    mutate(change_log_value = log(market_value) - log(prev_market_value),
+           change_log_wealth = log(wealth) - log(prev_wealth)) %>%
+    filter(!is.infinite(change_log_wealth)) %>%
+    arrange(gvkey)
+```
+
+::: {.notes}
+- The assumption for pay-for-performance and incentives is that we
+  want to measure whether a CEO has taken the correct decisions. In a
+  bigger firm, the impact of a CEOs decisions are larger. If you
+  improve management of employees, then the effects will be bigger for
+  a firm with more employees.
+- The other assumption is that CEOs do not care about dollar increases
+  in dollars but in increases in percentages. Partly
+
+$$
+\begin{align}
+\frac{\partial W}{W} \frac{V}{\partial V}  \\
+  &= \frac{ln(W)}{ln(V)}
+\end{align}
+$$
+:::
+
+
+### Plot
+:::: {.columns} 
+::: {.column}
+```{r}
+plot_hypothesis <- ggplot(
+    us_sens,
+    aes(y = change_log_wealth / change_log_value,
+        x = market_value/1000)) +
+  geom_point(alpha = .1) +
+  scale_x_continuous(
+    trans = "log", 
+    breaks = scales::log_breaks(n = 5, base = 10),
+    labels = function(x) prettyNum(x, dig = 2)) +
+  coord_cartesian(
+    ylim = c(-10, 10)) +
+  xlab("market value") +
+  ylab("sensitivity")
+```
+
+:::
+::: {.column}
+```{r}
+print(plot_hypothesis)
+```
+:::
+::::
+:::::
+
+
+# p-values
+
+::: {.callout-warning}
+### Definition
+Assuming the null hypothesis is true, how likely is it to get an estimate that is as extreme as the one we have in our data.
+:::
+
+## Randomisation or Permutation Test {.smaller}
+
+::::: {.panel-tabset}
+
+### Randomisation
+
+```{r}
+data_hypo <- us_sens %>%
+    mutate(
+      sensitivity = change_log_wealth / change_log_value) %>%
+  select(sensitivity, market_value) %>%
+  filter(complete.cases(.))
+
+observed_cor <- cor(
+  data_hypo$sensitivity, data_hypo$market_value)
+
+random_cor <- cor(
+  data_hypo$sensitivity, sample(data_hypo$market_value))
+
+print(prettyNum(c(observed_cor, random_cor), dig = 3))
+```
+
+### Test 
+
+:::: {.columns}
+::: {.column}
+
+```{r}
+simulate_cor <- function(data){
+    return(cor(data$sensitivity,
+               sample(data$market_value)))}
+rand_cor <- replicate(1e4,
+                      simulate_cor(data_hypo))
+```
+
+```{r}
+hist_sim <- ggplot(
+    mapping = aes(
+        x = rand_cor,
+        fill = abs(rand_cor) < abs(observed_cor))) +
+    geom_histogram(bins = 1000) +
+    xlab("Random Correlations") +
+    scale_fill_manual(values = c(uwa_blue, uwa_gold)) +
+    theme(legend.position = "none") +
+    coord_cartesian(
+        xlim = c(-0.1, 0.1))
+```
+
+:::
+::: {.column}
+
+```{r, fig.height = 5}
+plot(hist_sim)
+```
+
+:::
+::::
+:::::
+
+## Bootstrap {.smaller}
+
+:::: {.columns}
+::: {.column}
+
+```{r}
+calc_corr <- function(d){
+  n <- nrow(d)
+  id_sample <- sample(1:n, size = n,
+                      replace = TRUE)
+  sample <- d[id_sample, ]
+  corr <- cor(sample$sensitivity,
+              sample$market_value)
+  return(corr)
+}
+boot_corr <- replicate(
+    2000, calc_corr(data_hypo))
+```
+
+```{r}
+plot_boot <- ggplot(
+    mapping = aes(x = boot_corr)) +
+  geom_histogram(bins = 100, colour = uwa_blue,
+                 fill = uwa_blue) +
+    geom_vline(aes(xintercept = 0),
+               colour = uwa_gold) +
+    xlab("Bootstrapped Correlation")
+```
+
+:::
+::: {.column}
+
+```{r}
+print(plot_boot)
+```
+:::
+::::
+
+## Comparison {.smaller}
+
+:::: {.columns}
+::: {.column}
+
+### Permutation Test
+- Calculate the observed statistic
+- Randomly resample the data by breaking the relation you want to test
+  (= Null Hypothesis)
+- Calculate the statistic for each random sample
+- Is the observed statistic more extreme than the randomly resampled
+  statistic?
+
+See also [Chapter 4.2 in @cunningham2021](https://mixtape.scunning.com/potential-outcomes.html#randomization-inference)
+
+:::
+::: {.column}
+
+### Bootstrap
+
+- Randomly sample observed observations with replacement.
+- Calculate the statistic you are interested in.
+- Is the distribution of resampled statistics unlikely to be 0 (= Null
+  Hypothesis)?
+
+See also [Chapter 15 in @huntington-klein2021](https://theeffectbook.net/ch-Simulation.html#simulation-with-existing-data-the-bootstrap)
+
+:::
+::::
+
+## Formula Based P-value
+
+```{r}
+cor <- cor.test(data_hypo$sensitivity, data_hypo$market_value)
+pvalue_cor <- cor$p.value
+print(prettyNum(pvalue_cor, dig = 2))
+```
+
+. . .
+
+```{r}
+regr_sens <- lm(sensitivity ~ I(market_value/1e3), data = data_hypo)
+coefficients(summary(regr_sens)) %>% print(dig = 2)
+```
+
+# Assignment 1: Plots and regressions
+
+## Models
+
+:::: {.columns}
+::: {.column}
+
+### Signaling Model 
+
+![Peacock's tail as a signal](https://www.arts.uwa.edu.au/__data/assets/image/0010/117973/Peacock-165px.jpg)
+
+
+:::
+
+::: {.column}
+
+### Cheap Talk Model
+
+![Assumptions are important](https://www.dlsweb.rmit.edu.au/lsu/content/B_DSC/gsssp/graphics/iceberg.jpg)
+
+:::
+::::
+
+## Answers
+
+```{r}
+#| eval: false
+N <- 1000
+high_performance <- rbinom(.x, .y, .z)
+donation <- ifelse(.x, 1, 0)
+return <- ifelse(donation == 1, .y, .z)
+observed_donation <- ifelse(rbinom(N, 1, .9) == 1, donation, 1 - donation)
+observed_return <- ... 
+sig <- tibble(return = ...,
+              donation = ...) %>%
+    mutate(donated = ...)
+glimpse(sig)
+```
+. . .
+
+```{r}
+#| eval: false
+sig_plot <- ggplot(..., aes(x = .x, y = .y)) +
+    geom_jitter(width = .3)
+plot(sig_plot)
+```
+. . .
+
+```{r}
+#| eval: false
+sig_reg <- lm(..., data = sig)
+summary(...)
+```
+
+# References
+---

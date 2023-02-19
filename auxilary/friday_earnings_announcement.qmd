@@ -1,0 +1,540 @@
+---
+title: Reconstruction of "Investor Attention and Friday Earnings Announcements"
+author: Stijn Masschelein
+format:
+    html:
+        toc: true
+---
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(dtplyr)
+library(RPostgres)
+library(here)
+library(cowplot)
+library(tidystringdist)
+library(lubridate)
+theme_set(theme_cowplot(font_size = 18))
+```
+
+# Get data from WRDS
+
+This is me building up my understanding from scratch. In the next section, I will try to optimise the code. This kind of prototyping is typically what you should be doing with a small dataset. You'll see that I look at the earnings announcements in a very narrow range, January and February 2020 for this testing.
+
+```{r}
+#| label: setup-wrds
+wrds <- dbConnect(Postgres(),
+                  host='wrds-pgdata.wharton.upenn.edu',
+                  port=9737,
+                  dbname='wrds',
+                  user='stimas',
+                  sslmode='require')
+begin_date <- "'2020-01-01'"
+end_date <- "'2020-03-01'"
+```
+
+## IBES
+
+Exploring the I/B/E/S tables. This gives all the EPS tables for the US.
+
+```{r}
+#| label: ibes
+res <- dbSendQuery(wrds, "select distinct table_name
+from information_schema.columns
+where table_schema='ibes'
+order by table_name")
+all_tables <- dbFetch(res, n=-1)
+dbClearResult(res)
+filter(all_tables, str_detect(table_name, "eps*us"))
+```
+
+The data contains multiple The data base name stands for `det`ail `e`arnings `p`er `share` `us`.
+
+```{r}
+#| label: ibes-analyst
+sql <- paste(
+  "SELECT oftic, cusip, ticker, anndats, estimator, value, anndats_act, actual, analys
+  FROM ibes.det_epsus
+  WHERE (anndats_act BETWEEN", begin_date, "AND", end_date, ")
+       AND actual IS NOT NULL")
+res <- dbSendQuery(wrds, sql)
+fetch <- dbFetch(res)
+announcements <- as_tibble(fetch) %>%
+  rename_all(tolower)
+dbClearResult(res)
+print(announcements)
+```
+
+## Compustat
+
+```{r}
+#| label: compustat
+res <- dbSendQuery(wrds, "select distinct table_name
+from information_schema.columns
+where table_schema='comp'
+order by table_name")
+all_tables <- dbFetch(res, n=-1)
+dbClearResult(res)
+filter(all_tables, str_detect(table_name, "security"))
+```
+
+```{r}
+sql <- paste(
+  "SELECT tic, cusip, rdq
+   FROM comp.fundq
+   WHERE (rdq BETWEEN", begin_date, "AND", end_date, ")"
+)
+res <- dbSendQuery(wrds, sql)
+fetch <- dbFetch(res)
+ann_compstat <- as_tibble(fetch) %>%
+  rename_all(tolower)
+dbClearResult(res)
+```
+
+## Merging IBES, CRSP, and Compustat
+
+See also this [WRDS tutorial](https://wrds-www.wharton.upenn.edu/pages/support/support-articles/ibes/merging-crsp-or-compustat-sa/).
+
+Get the linking tables. See this [WRDS tutorial](https://wrds-www.wharton.upenn.edu/pages/wrds-research/applications/linking-databases/linking-ibes-and-crsp-data/) for the documentation. For the [compustat and crsp links](https://wrds-www.wharton.upenn.edu/pages/wrds-research/applications/linking-databases/linking-crsp-and-compustat/)
+
+https://libguides.princeton.edu/MatchFinancial
+
+```{r}
+#| label: linking-tables
+sql <- "
+    SELECT *
+    FROM ibes.idsum"
+res <- dbSendQuery(wrds, sql)
+fetch <- dbFetch(res)
+ibes_id <- as_tibble(fetch) %>%
+  rename_all(tolower)
+dbClearResult(res)
+sql <- "
+    SELECT *
+    FROM crsp.stocknames"
+res <- dbSendQuery(wrds, sql)
+fetch <- dbFetch(res)
+crsp_id <- as_tibble(fetch) %>%
+  rename_all(tolower)
+dbClearResult(res)
+sql <- "
+    SELECT *
+    FROM crsp.Ccmxpf_linktable
+"
+res <- dbSendQuery(wrds, sql)
+fetch <- dbFetch(res)
+crsp_comp <- as_tibble(fetch) %>%
+  rename_all(tolower)
+dbClearResult(res)
+sql <- "
+    SELECT *
+    FROM comp.security
+    WHERE ibtic IS NOT NULL
+"
+res <- dbSendQuery(wrds, sql)
+fetch <- dbFetch(res)
+ibes_comp <- as_tibble(fetch) %>%
+  rename_all(tolower)
+dbClearResult(res)
+```
+
+The documentation tells us that the stock price data is only available for US companies so we should ignore other companies in the IBES data. Furthermore, the documentation tells us to use the `ncusip` variable from CRSP and hte `cusip` variable from IBS to link between the two datasources.
+
+In the IBES data we use the sdates data to only keep the latest combination of ticker-cusip so that we later check whether the name of the company matches the CRSP data
+
+I use an `inner_join` because we are not interested in firms that are only in one data source.
+
+```{r}
+#| label: linking_table
+crsp_small <- select(crsp_id, permno, ncusip, comnam, st_date, end_date) %>% distinct(.)
+ibes_small <- ibes_id %>%
+  filter(usfirm == 1) %>%
+  select(ticker, cusip, cname, sdates) %>%
+  mutate(first_date_ibes = min(sdates), last_date_ibes = max(sdates),
+         .by = c(ticker, cusip)) %>%
+  filter(sdates == last_date_ibes) %>%
+  select(-sdates) 
+comp_small <- crsp_comp %>%
+  select(gvkey, linktype, usedflag, iid = liid, permno = lpermno, stdt = linkdt, enddt = linkenddt) %>%
+  filter(!is.na(permno), linktype %in% c("LU", "LC"), usedflag == 1) %>%
+  select(gvkey, permno, stdt, enddt) %>%
+  distinct()
+comp_small %>%
+  mutate(N = n(), .by = permno) %>%
+  filter(N > 1) %>%
+  arrange(permno)
+comp_small_with_ibes <- ibes_comp %>%
+  select(gvkey, isin, ibtic, cusip_comp = cusip)
+
+
+link_table <- inner_join(ibes_small, crsp_small,
+                         by = join_by(cusip == ncusip))
+```
+
+We get a warning that there are some duplicates that is because the (n)cusip variable is not entirely unique in both datasets.
+
+https://wrds-www.wharton.upenn.edu/pages/support/manuals-and-overviews/i-b-e-s/ibes-estimates/general/wrds-overview-ibes/#linking-to-other-products
+
+```{r}
+#| label: duplicates-and-check
+print(nrow(crsp_small))
+print(n_distinct(crsp_small$ncusip))
+print(nrow(ibes_small))
+print(n_distinct(ibes_small$cusip))
+filter(link_table, st_date < '2006-04-01')
+```
+
+One thing we can do as a sanity check is compare, the company name from both data sources. There is a function `tidy_stringdist` from the very similar package that helps with that. After some trial and error I found that a cutoff of .35 for the `jw` distance metric is reasonable. For now, I use that but there might be room for improvement. 
+
+```{r}
+select(link_table, cusip, permno, ticker, comnam, cname) %>%
+  distinct(.) %>%
+  tidy_stringdist(comnam, cname, method = c("jw")) %>%
+  filter(jw < .35) %>%
+  arrange(desc(jw))
+```
+
+So let's delete the rows where the `jw` distance between the two names is higher than 35. Last I add a check to see whether the IBES date range false (give or take 10 days) within the CRSP data. However, this does not really change anything so it's not super important. Finally, we add all the gvkeys for the link with the COMPUSTAT data with CUSIP as a sanity check.
+
+```{r}
+#| label: write-final-link
+final_link <- link_table %>%
+  tidy_stringdist(comnam, cname, method = c("jw")) %>%
+  filter(jw < .35) %>%
+  filter(first_date_ibes >= st_date - 10, last_date_ibes <= end_date + 10) %>%
+  select(-contains("ibes"), -jw) %>%
+  left_join(comp_small_with_ibes, join_by(ticker == ibtic)) %>%
+  filter(str_sub(cusip, 1, 6) == str_sub(cusip_comp, 1, 6))
+saveRDS(final_link, here("data", "freaky_friday", "final_link.RDS"))
+```
+
+
+## Get the data we need.
+
+If we trust the link data, we can simplify things a bit more.
+
+```{r}
+#| label: small_link
+final_link <- readRDS(here("data", "freaky_friday", "final_link.RDS"))
+small_link <- select(final_link, ticker, gvkey, permno, isin) %>%
+  distinct() %>% print()
+```
+
+```{r}
+begin_date <- "'1995-01-01'"
+end_date <- "'2006-07-01'"
+```
+
+### I/B/E/S
+
+With the link data in hand, we can now be a little bit smarter about downloading the announcement data that we need. We don't need it for every single firm. It's enough to do it only for the ones we have in our link table.
+
+We need [the last review date](https://wrds-www.wharton.upenn.edu/pages/support/support-articles/ibes/detail-history-file-meanings-date-variables/)
+
+```{r}
+#| label: ibes-smart
+tickers <- unique(small_link$ticker)
+sql <- paste0(
+  "SELECT ticker, anndats, revdats, value, anndats_act, actual, analys
+  FROM ibes.det_epsus
+  WHERE (anndats_act BETWEEN", begin_date, "AND", end_date, ")
+       AND actual IS NOT NULL
+       AND ticker IN ('", paste0(tickers, collapse = "','"),
+       "')"
+  )
+res <- dbSendQuery(wrds, sql)
+fetch <- dbFetch(res)
+announcements <- as_tibble(fetch) %>%
+  rename_all(tolower)
+dbClearResult(res)
+saveRDS(announcements, here("data", "freaky_friday", "announcements.RDS"))
+```
+
+It looks like the numerical tickers don't get matched/picked up. But that is normal because, they are all from after the `end_date`
+
+```{r}
+filter(final_link, st_date < '2006-04-01') %>%
+  pull(ticker) %>%
+  unique() %>%
+  head()
+```
+
+### Compustat
+
+```{r}
+gvkeys <- unique(small_link$gvkey)
+sql <- paste0(
+  "SELECT cusip, rdq, gvkey
+   FROM comp.fundq
+   WHERE (rdq BETWEEN", begin_date, "AND", end_date, ")
+   AND gvkey IN ('", paste0(gvkeys, collapse = "','"), "')"
+)
+res <- dbSendQuery(wrds, sql)
+fetch <- dbFetch(res)
+ann_compstat <- as_tibble(fetch) %>%
+  rename_all(tolower)
+dbClearResult(res)
+saveRDS(ann_compstat, here("data", "freaky_friday", "ann_compstat.RDS"))
+```
+
+### Earnings announcements
+
+```{r}
+#| label: read-announcements 
+ibes <- readRDS(here("data", "freaky_friday", "announcements.RDS"))
+compustat <- readRDS(here("data", "freaky_friday", "ann_compstat.RDS"))
+```
+
+```{r}
+#| label: simplify-ibes-merge
+earn_ann <- ibes %>% distinct(ticker, anndats_act) %>%
+  left_join(small_link, by = join_by(ticker)) %>%
+  mutate(anndat_begin = anndats_act - 5, anndat_end = anndats_act + 5) %>%
+  left_join(compustat, by = join_by(gvkey == gvkey, anndat_begin < rdq,  anndat_end > rdq)) %>%
+  filter(!is.na(rdq)) %>%
+  mutate(anndat = pmin(anndats_act, rdq)) %>%
+  select(-anndat_begin, -anndat_end)
+saveRDS(earn_ann, here("data", "freaky_friday", "earn_ann.RDS"))
+```
+
+### Analyst Expectations
+
+Speeding up the calculations with `dtplyr`
+
+There is some tricky work going on with selecting the relevant analyst forecasts. The last confirmation needs to be within 30 days and the initial announcement needs to be before the actual announcement.
+
+```{r}
+#| label: analyst-expectations
+earn_ann <- readRDS(here("data", "freaky_friday", "earn_ann.RDS"))
+earn_ann_lazy <- lazy_dt(earn_ann)
+ibes_lazy <- lazy_dt(ibes)
+analyst <- select(earn_ann_lazy, ticker, anndats_act, anndat) %>%
+  left_join(ibes_lazy, by = c("ticker", "anndats_act"), multiple = "all") %>%
+  filter(!is.na(anndat), anndat - 30 <= revdats, anndats < anndat) %>%
+  select(-anndats_act) %>%
+  group_by(ticker, anndat, actual, analys) %>%
+  arrange(revdats) %>%
+  summarise_all(~ last(.)) %>%
+  group_by(ticker, anndat, actual) %>%
+  summarise(N = n(), median = median(value, na.rm = T),
+            mean = mean(value, na.rm = T),
+            mean_days = mean(anndat - revdats)) %>%
+  ungroup() %>%
+  as_tibble()
+saveRDS(analyst, here("data", "freaky_friday", "analyst.RDS"))
+```
+
+```{r}
+summarise(analyst, .by = c(ticker, anndat))
+mutate(analyst,
+          actuals = n_distinct(actual), .by = c(ticker, anndat)) %>%
+  filter(actuals > 2)
+```
+
+It might be worth checking whether the actual is sometimes different because of revisions which are not known at the time of the first announcement by the market.
+
+## CRSP
+
+Just need to make this a function.
+
+```{r}
+sql <- paste0(
+  "SELECT permno, date, vol, ret, prc
+  FROM crsp_a_stock.dsf
+  WHERE permno = 14593
+  "
+)
+sql
+res <- dbSendQuery(wrds, sql)
+fetch <- dbFetch(res)
+stock <- as_tibble(fetch) %>%
+  rename_all(tolower)
+dbClearResult(res)
+```
+
+```{r}
+res <- dbSendQuery(wrds, "select distinct table_name
+from information_schema.columns
+where table_schema='crspa'
+order by table_name")
+all_tables <- dbFetch(res, n=-1)
+dbClearResult(res)
+all_tables
+```
+
+### Which firms and dates do we need?
+
+```{r}
+crsp <- earn_ann %>%
+  summarise(begin = min(anndat) - 300, end = max(anndat) + 75, .by = permno)
+```
+
+```{r}
+permno_in <- 14593
+begin_in <- "'1996-05-09'"
+end_in <- "'2006-05-09'"
+get_crsp_data <- function(permno, begin, end){
+  sql <- paste0(
+    "SELECT permno, date, vol, ret, prc
+    FROM crsp_a_stock.dsf
+    WHERE permno = ", permno,
+    " AND date BETWEEN ", begin, " AND ", last
+  )
+  res <- dbSendQuery(wrds, sql)
+  fetch <- dbFetch(res)
+  stock <- as_tibble(fetch) %>%
+    rename_all(tolower)
+  dbClearResult(res)
+  return(stock)
+}
+get_crsp_data(permno, begin, end)
+```
+
+```{r}
+#| label: read-write-stock
+#| eval: false
+stock <- crsp %>%
+  # head(n = 10) %>%
+  mutate(begin_sql = paste0("'", begin, "'"), end_sql = paste0("'", end, "'")) %>%
+  mutate(stock = pmap(list(permno, begin_sql, end_sql), get_crsp_data, .progress = TRUE))
+saveRDS(stock, here("data", "freaky_friday", "stock.RDS"))
+```
+
+# Construct main measures
+
+## Get the data
+
+```{r}
+earn_ann <- readRDS(here("data", "freaky_friday", "earn_ann.RDS"))
+stock <- readRDS(here("data", "freaky_friday", "stock.RDS"))
+all_stock <- pull(stock, stock) %>% bind_rows()
+analyst <- readRDS(here("data", "freaky_friday", "analyst.RDS"))
+```
+
+The Fama-French 3 Factors via the [Kenneth French data library](https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html). We need to scale the returns by 100 because they are expressed in %s. 
+
+```{r}
+famafrench <- read_csv(file = here("data", "F-F_Research_Data_Factors_daily.csv"),
+                       col_names = c("date", "mkt_rf", "smb", "hml", "rf"),
+                       skip = 5, col_type = "ddddd") %>%
+  mutate(date = ymd(date)) %>%
+  mutate_if(is.numeric, ~ . / 100)
+```
+## Stock Price Five Days Before
+
+$$P_{t,k}$$
+
+```{r}
+earn_ann <- earn_ann %>%
+  mutate(anndat_minus = anndat - 5) %>%
+  left_join(select(all_stock, permno, date, prc),
+            by = join_by(permno == permno, closest(anndat_minus >= date)))
+```
+
+## Earnings Surprise
+
+$$e_{t,k} - \hat{e}_{t,k}$$
+
+Penny stocks are defined as stocks with a price lower than $5 per share.
+
+```{r}
+#| earnings-suprise
+surprise <- analyst %>%
+  left_join(earn_ann,
+            join_by(ticker, anndat)) %>%
+  filter(abs(median) < prc, abs(actual) < prc, prc > 5) %>%
+  mutate(surprise = (actual - median) / prc,
+         day = lubridate::wday(anndat, label = TRUE)) %>%
+  filter(!is.na(surprise))
+select(surprise, ticker, anndat, surprise, day)
+```
+
+After a check where the duplicates are coming from, it might be worthwhile to see whether we cannot flip the order of `earn_ann` and `analyst`. Huh, getting rid of the penny stocks seems to be solving the duplication problem.
+
+```{r}
+group_by(surprise, ticker, anndat)
+```
+
+This suggest that the duplicate announcements are still prevalent.
+
+```{r}
+summarise(surprise, .by = day, N = n(), mean = mean(surprise * 100)) %>%
+  mutate(perc = N / sum(N))
+```
+
+## Abnormal Returns
+
+### $\alpha_{t,k}$ and $\beta_{t,k}$
+
+```{r}
+#| abnormal-returns
+key_date <- "2002-12-31"
+permno <- 82156
+get_coefs <- function(id, date, start = 150, end = 5){
+  d <- ymd(date)
+  first = d - start
+  last = d - end
+  data <- filter(all_stock, permno == id, date >= first,
+                 date <= last) %>%
+    left_join(select(famafrench, date, mkt_rf, rf),
+              by = "date")
+  alpha <- NA; beta <- NA
+  try(
+    {lm <- lm(ret ~ I(mkt_rf + rf), data = data)
+     alpha <- as.numeric(lm$coefficients[1])
+     beta <- as.numeric(lm$coefficients[2])}
+  )
+  return(list(alpha = alpha, beta = beta))
+}
+get_coefs(permno, key_date)
+
+library(furrr)
+plan(multisession, workers = 6)
+abn_params <- surprise %>%
+  mutate(coefs = future_pmap(list(permno, anndat), ~ get_coefs(..1, ..2, 300, 46),
+                             .progress = TRUE)) %>%
+  unnest_wider(coefs)
+saveRDS(abn_params, here("data", "freaky_friday", "abn_params.RDS"))
+```
+
+This code is the version with `data.table`. There are some marginal speed gains unfortunately. They are nothing compared to ease with which the `tidyverse` version makes the parallelization.
+
+```{r}
+#| best-version-with-data-table
+#| eval: false
+library(data.table)
+dt_surprise <- as.data.table(surprise) 
+
+rows <- 10
+for (i in 1:rows){
+  dt_surprise[i, coefs := list(get_coefs(permno, anndat, 300, 46))]
+}
+```
+
+```{r}
+#| abnormal-returns
+winsorise <- 5/10000
+abn_params <- readRDS(here("data", "freaky_friday", "abn_params.RDS"))
+
+abn_returns <- abn_params %>%
+  distinct(ticker, permno, anndat, alpha, beta) %>%
+  mutate(date75 = anndat + 75) %>%
+  left_join(select(all_stock, permno, date, ret),
+            join_by(permno == permno, date75 >= date, anndat <= date)) %>%
+  left_join(select(famafrench, mkt_rf, rf, date),
+            by = join_by(date == date)) %>%
+  mutate(abnormal = alpha + beta * (mkt_rf + rf),
+         time_frame = if_else(date - anndat <= 1, "short", "long")) %>%
+  select(ticker, permno, anndat, date, beta, rf, abnormal, time_frame) %>%
+  summarise(abnormal = prod(1 + abnormal), rf = prod(1 + rf),
+            .by = c(ticker, permno, anndat, beta, time_frame)) %>%
+  mutate(abn_return = abnormal - 1 - beta * (rf - 1)) %>%
+  filter(percent_rank(abn_return) >= winsorise,
+         percent_rank(abn_return) <= 1 - winsorise,
+         .by = time_frame)
+saveRDS(abn_returns, here("data", "freaky_friday", "abn_returns.RDS"))
+```
+
+There is some data cleaning here as well.
+

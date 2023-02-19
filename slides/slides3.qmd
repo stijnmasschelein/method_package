@@ -1,0 +1,626 @@
+---
+title: "Control Variables"
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidyverse)
+library(cowplot)
+theme_set(theme_cowplot(font_size = 30))
+library(modelsummary)
+library(viridis)
+library(DiagrammeR)
+library(here)
+i_am("slides/slides3.qmd")
+options(tibble.width = 60)
+options(width = 60)
+uwa_blue = "#003087"
+uwa_gold = "#DAAA00"
+```
+
+# Causal Graphs
+
+For more information see [Chapter 8](https://theeffectbook.net/ch-CausalPaths.html) in @huntington-klein2021.
+
+## An Example of a Causal Graph {.smaller}
+
+```{dot}
+//|echo: false
+digraph brand_capital {
+  graph[ rankdir = LR ]
+  node [shape = box, fontname = Helvetica]
+  subgraph {
+  rank = same; InfoEnvironment; FutureCashFlow;
+  }
+  {BrandCapital} -> {InfoEnvironment, FutureCashFlow};
+  {InfoEnvironment, FutureCashFlow} -> CreditRating;
+}
+```
+
+## Difference with equilibrium models
+
+::: {.callout-warning}
+### Differences
+- All the *qualitative* information about *causal* relations is in the graph.
+- The equilibrium model directly gives the relation between the variables of interest.
+
+e.g.: Signaling model
+:::
+
+```{dot}
+//|echo: false
+digraph donations{
+  graph[rankdir = LR ]
+  node [shape = box, fontname = Helvetica]
+  Performance; Donation; Return;
+  Performance -> Donation;
+  Donation -> Return;
+}
+```
+
+::: {.notes}
+- Is there a relation between `Performance` and `Return`?
+- There is a parallel with voluntary disclosure of information that the company does not have.
+- What happens if firms are no longer allowed to donate? What happens if firms are all forced to donate?
+:::
+
+## Assignment: CSR report
+
+```{dot}
+//|echo: false
+digraph measurement_error{
+graph[layout = dot]
+node [shape = box, fontname = Helvetica]
+subgraph{rank = same; Performance; CSR_report; Return}
+Performance -> {CSR_report; Scandals}
+CSR_report -> {Return; Observed_Report}
+}
+```
+
+::: {.notes}
+- What is the effect of an increase in scandals?
+- What happens if we keep the number of scandals constant?
+:::
+
+# Measurement error and control variables 
+
+## Causal Graph
+
+```{dot}
+//|echo: false
+digraph measurement_error{
+graph[layout = dot, rankdir = LR ]
+node [shape = box, fontname = Helvetica]
+subgraph{rank = same; CorporateGovernance; TechIndustry}
+{CorporateGovernance, TechIndustry} -> Performance
+}
+```
+
+::: {.notes}
+Assume that we are interested in the role of the GC on performance.
+:::
+
+## Simulation {.smaller}
+
+:::: {.columns}
+::: {.column}
+```{r}
+#| label: measurement
+set.seed(230383)
+N <- 1000
+ds <- tibble(CG = runif(N, 0, 10),
+             TI = rbinom(N, 1, .25)) %>%
+  mutate(Performance =
+           rnorm(N, CG * .15 + TI * 10, 5))
+```
+```{r}
+lm1 <- lm(Performance ~ CG, data = ds)
+lm2 <- lm(Performance ~ CG + TI, data = ds)
+```
+:::
+::: {.column}
+```{r}
+gof_omit <- "Adj|IC|Log|Pseudo"
+stars <- c('*' = .1, '**' = .05, '***' = .01)
+msummary(list(lm1, lm2), stars = stars,
+         gof_omit = gof_omit, output = "html")
+```
+:::
+::::
+::: {.notes}
+Measurement error typically decreases the effect and this is also what
+happened in the assignment. For instance, the difference between the
+donation and no donation should be 3 but it is less.
+:::
+
+# Confounders and control variables
+
+## Causal Graph
+
+```{dot}
+//|echo: false
+digraph confounder{
+graph[layout = dot, rankdir = LR ]
+node [shape = box, fontname = Helvetica]
+subgraph{rank = same; CorporateGovernance; TechIndustry}
+{CorporateGovernance, TechIndustry} -> Performance
+TechIndustry -> CorporateGovernance
+}
+```
+
+::: {.notes}
+There is only 1 difference between this causal graph and the previous one.
+:::
+
+## Simulation {.smaller}
+
+:::: {.columns}
+::: {.column}
+```{r}
+#| label: confounder
+N <- 1000
+ds <- tibble(TI = rbinom(N, 1, .25)) %>%
+  mutate(CG = rnorm(N, .5 - TI, .2),
+         Performance = rnorm(N, TI + 0 * CG, 1))
+```
+```{r}
+lm1 <- lm(Performance ~ CG, data = ds)
+lm2 <- lm(Performance ~ CG + TI, data = ds)
+```
+
+:::
+::: {.column}
+```{r}
+msummary(list(lm1, lm2), stars = stars,
+         gof_omit = gof_omit, output = "html")
+```
+:::
+::::
+
+::: {.notes}
+In the simulation, we set the effect of GC equal to 0 i.e. there is not effect. The reason to do that is to show why it's necessary to adjust for TI.
+:::
+
+## Fixed effects as a special case
+
+::: {.callout-note}
+### Definition
+Effects that are the same for every industry, year, firm, or individual
+can be adjusted for by using fixed effects.
+:::
+::: {.callout-note}
+### Benefits
+We do not need to measure the specific variables and can just use
+indicators variables for each category (e.g. for each different
+industry).
+:::
+
+See more in [chapter 16](https://theeffectbook.net/ch-FixedEffects.html) of @huntington-klein2021
+
+## Fixed effects (for industry) {.smaller}
+
+::::: {.panel-tabset}
+
+### Causal Diagram
+
+```{dot}
+//|echo: false
+digraph confounder{
+graph[layout = dot, rankdir = LR ]
+node [shape = box, fontname = Helvetica]
+subgraph{rank = same; CorporateGovernance; Industry}
+{CorporateGovernance, Industry} -> Performance
+Industry -> CorporateGovernance
+}
+```
+
+### Simulation
+
+```{r}
+Nind <- 20
+N <- 5000
+di <- tibble(
+  ind_number = 1:Nind,
+  ind_CG = rnorm(Nind, 0, 1),
+  ind_performance = rnorm(Nind, 0, 1)
+)
+ds <- tibble(
+    ind_number = sample(1:Nind, N, replace = TRUE)) %>%
+  left_join(
+    di, by = "ind_number") %>%
+  mutate(
+    CG = rnorm(N, .5 + ind_CG, .2),
+    Performance = rnorm(N, 0 * CG + ind_performance, 1)
+  )
+```
+
+:::: {.columns}
+::: {.column}
+```{r}
+glimpse(di, width = 50)
+```
+:::
+::: {.column}
+```{r}
+glimpse(ds, width = 50)
+```
+:::
+::::
+
+### Regressions
+
+```{r}
+lm1 <- lm(Performance ~ CG, data = ds)
+lm2 <- lm(Performance ~ CG + factor(ind_number), data = ds)
+library(fixest)
+fe <- feols(Performance ~ CG | ind_number, data = ds)
+```
+
+```{r}
+msummary(list(lm1, lm2, fe), gof_omit = gof_omit, stars = stars)
+```
+
+::: {.notes}
+- Why do we need the `factor(ind_number)` formulation?
+:::
+
+### Simulation with correlated fixed effects
+
+```{r}
+#| code-line-numbers: "3|7|8"
+Nind <- 20
+N <- 5000
+correl <- -0.5
+di <- tibble(
+    ind_number = 1:Nind,
+    ind_CG = rnorm(Nind, 0, 1)) %>%
+  mutate(
+    ind_performance = sqrt(1 - correl^2) * rnorm(Nind, 0, 1) + correl * ind_CG)
+ds <- tibble(
+    ind_number = sample(1:Nind, N, replace = TRUE)) %>%
+  left_join(
+    di, by = "ind_number") %>%
+  mutate(
+    CG = rnorm(N, .5 + ind_CG, .2),
+    Performance = rnorm(N, 0 * CG + ind_performance, 1)
+  )
+```
+
+:::: {.columns}
+::: {.column}
+```{r}
+glimpse(di, width = 50)
+```
+:::
+::: {.column}
+```{r}
+glimpse(ds, width = 50)
+```
+:::
+::::
+
+### Regressions with correlated fixed effects
+
+```{r}
+lm1 <- lm(Performance ~ CG, data = ds)
+fe <- feols(Performance ~ CG | ind_number, data = ds)
+```
+
+```{r}
+msummary(list(lm1, fe), gof_omit = gof_omit, stars = stars)
+```
+
+::: {.notes}
+- Why do we need the `factor(ind_number)` formulation?
+- The trick with the correlated `ind_CG` and `ind_performance`
+:::
+
+:::::
+
+
+## What do fixed effects do? {.smaller}
+
+::::: {.panel-tabset}
+### Full Sample
+```{r}
+#| code-fold: true
+#| fig-width: 8
+fe_plot <-
+  ggplot(ds, aes(y = Performance, x = CG)) +
+  geom_point()
+plot(fe_plot)
+```
+
+### Highlight Industry
+```{r}
+#| code-fold: true
+#| fig-width: 8
+fe_colour <-
+  ggplot(ds, aes(y = Performance, x = CG,
+                colour = factor(ind_number))) +
+  geom_point() + theme(legend.position="none") 
+plot(fe_colour)
+```
+
+### Remove Industry Effects
+```{r}
+#| code-fold: true
+#| fig-width: 8
+fe_demean <- group_by(ds, ind_number) %>%
+  mutate(Performance2 = Performance - mean(Performance),
+         CG2 = CG - mean(CG)) %>%
+  ggplot(aes(y = Performance2, x = CG2,
+             colour = factor(ind_number))) +
+  geom_point() + theme(legend.position="none") 
+plot(fe_demean)
+```
+:::::
+
+## Speedboat Racing Example [@booth2017] {.smaller}
+
+:::: {.columns}
+:::{.column}
+- Mixed-sex and single-sex races determined by lottery (*Randomisation*)
+- 7 race courses
+- Multiple races in the same month and location
+:::
+:::{.column}
+```{dot}
+//|echo: false
+//|fig-width: 5
+digraph speedboat{
+  node [shape = box]
+  ave_ability; ltime; mixed_race; female; course;
+  month_location; circumstances;
+  circumstances -> female
+  {mixed_race, female, ave_ability, circumstances} -> ltime
+  female -> {ave_ability}
+  {course month_location} -> circumstances
+}
+```
+:::
+::::
+
+
+## Results of Speedboat Races {.smaller}
+
+```{r}
+#| label: speedboat-data
+#| code-fold: true
+load(here("data", "booth_yamamura.Rdata"))
+table <- as_tibble(table) %>%
+  select(p_id, women_dat, time, ltime, mix_ra, course,
+         race_id, yrmt_locid)
+table_clean <- filter(table, complete.cases(table)) %>%
+  select(ltime, women_dat, mix_ra, course, p_id, race_id,
+         yrmt_locid)
+ltime_reg <- feols(ltime ~ women_dat : mix_ra + mix_ra
+                   | course + p_id + yrmt_locid,
+                   cluster = "race_id",
+                   data = table_clean)
+msummary(ltime_reg, gof_omit = gof_omit, stars = stars)
+```
+
+::: {.notes}
+This requires an explanation of interactions. Luckily, it's relatively simple with two discrete variables.
+```
+| ltime | man    | woman  |
+|-------|:------:|:------:|
+| same  | 0      | 0      |
+| mixed | -0.002 | 0.005  |
+```
+:::
+
+# Colliders and bad controls
+
+::: {.callout-warning}
+Equilibrium models are very good at incorporating these effects!
+:::
+
+## Bad Controls, Survival Bias, Selection Bias, Self-Selection Bias
+
+
+```{dot}
+//|echo: false
+//|fig-height: 1
+digraph confounder{
+graph[layout = dot, rankdir = LR ]
+node [shape = box, fontname = Helvetica]
+CorporateGovernance -> Performance
+Performance -> StockPrice
+}
+```
+
+```{dot}
+//|echo: false
+//|fig-height: 1
+digraph confounder{
+graph[layout = dot, rankdir = LR ]
+node [shape = box, fontname = Helvetica]
+CorporateGovernance -> Performance
+Performance -> Survival
+}
+```
+
+```{dot}
+//|echo: false
+//|fig-height: 1
+digraph confounder{
+graph[layout = dot, rankdir = LR ]
+node [shape = box, fontname = Helvetica]
+CorporateGovernance -> Performance
+Performance -> SP500
+}
+```
+
+```{dot}
+//|echo: false
+//|fig-height: 1
+digraph confounder{
+graph[layout = dot, rankdir = LR ]
+node [shape = box, fontname = Helvetica]
+CorporateGovernance -> Performance
+Performance -> IPO
+}
+```
+
+## Example in the assignment
+
+```{dot}
+//|echo: false 
+digraph measurement_error{
+graph[layout = dot]
+node [shape = box, fontname = Helvetica]
+subgraph{rank = same; Performance; CSR_report; Return}
+Performance -> {CSR_report; Scandals}
+CSR_report -> {Return; Observed_Report}
+}
+```
+
+## Simulation Bad Control {.smaller}
+
+::::: {.panel-tabset}
+
+### Causal Graph
+
+```{dot}
+//|echo: false
+digraph confounder{
+graph[layout = dot, rankdir = LR ]
+node [shape = box, fontname = Helvetica]
+subgraph{rank = same; CorporateGovernance; Performance}
+CorporateGovernance -> Performance
+{CorporateGovernance, Performance} -> MarketReturn
+}
+```
+
+### Simulate
+
+```{r}
+d <- tibble(corp_gov = rnorm(N, 0, 1)) %>%
+  mutate(acc_profit = rnorm(N, corp_gov, sd = 3),
+         market_return = rnorm(N, 2 * corp_gov + acc_profit,
+                               sd = 3))
+lm1 <- lm(acc_profit ~ corp_gov, data = d)
+lm2 <- lm(acc_profit ~ corp_gov + market_return, data = d)
+```
+
+
+### Results 
+
+```{r}
+msummary(list(lm1, lm2),
+         gof_omit = gof_omit, stars = stars)
+```
+
+:::::
+
+## Survival Bias {.smaller}
+
+::::: {.panel-tabset}
+### Simulate
+
+```{r}
+d <- mutate(d, survival = if_else(market_return > 5, 1, 0))
+```
+
+### Results
+```{r}
+lm1 <- lm(acc_profit ~ corp_gov, data = filter(d, survival == 1))
+lm2 <- lm(acc_profit ~ corp_gov * survival, data = d)
+msummary(list(lm1, lm2), gof_omit = gof_omit, stars = stars)
+```
+
+:::::
+
+::::{.notes}
+One interpretation is that a firm can survive by being lucky (and having high returns) and by having good corporate governance (which translates in high returns). The survivors all are more likely to be having good corporate governance and there is little that can be explained further.
+::::
+
+## Visualisation of Colliders (and Interactions) {.smaller}
+
+```{r}
+#| echo: false
+d <- mutate(d, survival2 = as.character(survival))
+plot_coll <- ggplot(d, aes(x = corp_gov, y = acc_profit))
+plot_coll1 <- plot_coll + geom_point(alpha = .5, colour = uwa_blue) +
+    geom_smooth(method = "lm", formula = y ~ x, colour = uwa_blue) +
+    ggtitle("Full Sample")
+plot_coll2 <- plot_coll +
+  geom_point(aes(colour = survival2), alpha = .5) +
+  geom_smooth(aes(colour = survival2, group = survival2),
+              method = "lm", formula = y ~ x) +
+  scale_colour_manual(values = c(uwa_blue, uwa_gold)) +
+  theme(legend.position = 'none') +
+  ggtitle("Survival vs No Survival")
+plot_coll3 <- ggplot(filter(d, survival == 1),
+                     aes(x = corp_gov, y = acc_profit)) +
+  geom_smooth(method = "lm", formula = y ~ x, colour = uwa_gold) +
+  geom_point(alpha = .5, colour = uwa_gold) +
+  ggtitle("Survival Only")
+```
+::::: {.panel-tabset}
+### Full Sample
+```{r}
+#| echo: false
+plot(plot_coll1)
+```
+### Survival Highlighted
+```{r}
+#| echo: false
+plot(plot_coll2)
+```
+### Survival Only
+```{r}
+#| echo: false
+plot(plot_coll3)
+```
+:::::
+
+# Pitching Template
+
+
+## Pitching Format {.smaller}
+
+:::: {.columns}
+::: {.column}
+1. Description (Important)
+    - Title
+    - Research Question
+    - Key Paper
+    - Motivation
+2. THREE (IDioT) (Important)
+    - Idea
+    - Data
+    - Tools
+:::
+::::
+
+## Pitching Format {.smaller}
+
+:::: {.columns}
+::: {.column}
+1. Description (Important)
+    - Title
+    - Research Question
+    - Key Paper
+    - Motivation
+2. THREE (IDioT) (Important)
+    - Idea
+    - Data
+    - Tools
+:::
+
+::: {.column}
+3. TWO
+    - What's new?
+    - So what?
+4. ONE contribution
+5. Other considerations.
+:::
+::::
+
+# References
+
+
