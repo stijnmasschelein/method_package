@@ -1,0 +1,111 @@
+---
+title: How to download the linking databases
+---
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(here)
+i_am("freaky_friday/download_linking.qmd")
+library(RPostgres)
+```
+
+
+# Connect to WRDS
+
+This code sets up the connection to WRDS. You need to have setup a file with your password before you can use this.
+
+```{r}
+#| label: setup-wrds
+wrds <- dbConnect(Postgres(),
+                  host='wrds-pgdata.wharton.upenn.edu',
+                  port=9737,
+                  dbname='wrds',
+                  user='stimas',
+                  sslmode='require')
+```
+
+# Linking Databases in WRDS
+
+See also this [WRDS tutorial](https://wrds-www.wharton.upenn.edu/pages/support/support-articles/ibes/merging-crsp-or-compustat-sa/).
+
+Get the linking tables. See this [WRDS tutorial](https://wrds-www.wharton.upenn.edu/pages/wrds-research/applications/linking-databases/linking-ibes-and-crsp-data/) for the documentation. For the [compustat and crsp links](https://wrds-www.wharton.upenn.edu/pages/wrds-research/applications/linking-databases/linking-crsp-and-compustat/)
+
+https://libguides.princeton.edu/MatchFinancial
+
+
+## I/B/E/S
+
+```{sql}
+--| connection: wrds
+--| label: ibes-ids
+--| output.var: ibes_query
+SELECT ticker, cusip, cname, sdates
+FROM ibes.idsum
+WHERE usfirm = 1
+```
+
+```{r}
+ibes_id <- as_tibble(ibes_query) %>%
+  rename_all(tolower)
+saveRDS(ibes_id, here("data", "wrds", "ibes_id.RDS"))
+```
+
+## CRSP
+
+```{sql}
+--| connection: wrds
+--| label: crsp-id
+--| output.var: crsp_query
+SELECT permno, ncusip, comnam, st_date, end_date
+FROM crsp.stocknames
+```
+
+```{r}
+#| label: write-crsp-id
+crsp_id <- as_tibble(crsp_query) %>%
+  rename_all(tolower)
+saveRDS(crsp_id, here("data", "wrds", "crsp_id.RDS"))
+```
+
+## Compustat with I/B/E/S
+
+```{sql}
+--| connection: wrds
+--| label: compu-ibes
+--| output.var: compu_security_query
+SELECT *
+FROM comp.security
+WHERE ibtic IS NOT NULL
+```
+
+```{r}
+#| label: write-compu-ibes
+compu_security <- as_tibble(compu_security_query) %>%
+  rename_all(tolower)
+saveRDS(compu_security, here("data", "wrds", "compu_security.RDS"))
+```
+
+## Compustat with CRSP
+
+
+```{sql}
+--| connection: wrds
+--| label: compu-id
+--| output.var: compu_query
+SELECT gvkey, linktype, usedflag, liid, lpermno, linkdt, linkenddt
+FROM crsp.Ccmxpf_linktable
+```
+
+```{r}
+#| label: clean-crsp-compu
+crsp_compu <- as_tibble(compu_query) %>%
+  rename_all(tolower) %>%
+  select(gvkey, linktype, usedflag, iid = liid, permno = lpermno, stdt = linkdt, enddt = linkenddt) %>%
+  filter(!is.na(permno), linktype %in% c("LU", "LC"), usedflag == 1) %>%
+  select(gvkey, permno, stdt, enddt) %>%
+  distinct()
+saveRDS(crsp_compu, here("data", "wrds", "crsp_compu.RDS"))
+```
+
+

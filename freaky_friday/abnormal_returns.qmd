@@ -1,0 +1,130 @@
+---
+title: Run the expected return regressions and calculate abnormal returns
+---
+
+
+# Setup
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(lubridate)
+library(here)
+i_am("freaky_friday/abnormal_returns.qmd")
+```
+
+The Fama-French 3 Factors via the [Kenneth French data library](https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html). We need to scale the returns by 100 because they are expressed in %s.
+
+```{r}
+#| label: data
+earn_ann <- readRDS(here("data", "freaky_friday", "earn_ann.RDS"))
+analyst <- readRDS(here("data", "freaky_friday", "analyst.RDS"))
+all_stocks <- readRDS(here("data", "freaky_friday", "all_stocks.RDS"))
+famafrench <- read_csv(file = here("data", "F-F_Research_Data_Factors_daily.csv"),
+                       col_names = c("date", "mkt_rf", "smb", "hml", "rf"),
+                       skip = 5, col_type = "ddddd") %>%
+  mutate(date = ymd(date)) %>%
+  mutate_if(is.numeric, ~ . / 100) %>%
+  mutate(mkt = mkt_rf + rf) %>% 
+  print()
+```
+
+::: {.aside}
+- `shrout` is shares outstanding in 1000
+- `market_value` is in million USD
+:::
+
+# Abnormal returns
+
+This is really fast!
+
+```{r}
+#| label: alpha-beta
+create_coefs <- function(n = 6){
+  earn_ann %>% head(n = n) %>%
+    distinct(permno, anndat) %>%
+    mutate(start = anndat - 300, end = anndat - 46) %>%
+    left_join(select(all_stocks, permno, date, ret),
+              by = join_by(permno == permno, start <= date, end >= date)) %>%
+    left_join(select(famafrench, mkt, rf, date),
+              by = join_by(date == date)) %>%
+    filter(!is.na(ret), !is.infinite(ret)) %>%
+    summarise(y = list(cbind(ret)), X = list(cbind(alpha = 1, beta = mkt)),
+              .by = c(permno, anndat)) %>%
+    mutate(coefs = pmap(list(X, y), ~ lm.fit(..1, ..2) %>% coef(), .progress = TRUE),
+           .by = c(permno, anndat)) %>%
+    select(-y, -X)
+}
+
+microbenchmark::microbenchmark(
+                  create_coefs(),
+                  create_coefs(100),
+                  create_coefs(1000),
+                  create_coefs(10000),
+                  times = 10)
+
+N <- nrow(earn_ann)
+results <- create_coefs(N)
+
+abnormal <- results %>%
+  unnest_wider(coefs) %>%
+  mutate(date75 = anndat + 75) %>%
+  left_join(select(all_stocks, permno, date, ret),
+            by = join_by(permno == permno,
+                         date75 >= date, anndat <= date)) %>%
+  left_join(select(famafrench,  mkt, rf, date),
+            by = join_by(date == date)) %>%
+  mutate(abnormal = ret - alpha + beta * mkt,
+         time_frame = if_else(date - anndat <= 1, "short", "long")) %>%
+  summarise(abnormal = prod(1 + abnormal), rf = prod(1 + rf),
+            .by = c(permno, anndat, time_frame, beta)) %>%
+  mutate(car = abnormal - 1 - beta * (rf - 1)) %>%
+  select(-beta, -abnormal, -rf) %>%
+  filter(!is.na(car)) %>%
+  pivot_wider(values_from = car, names_from = time_frame,
+              names_prefix = "car_") %>%
+  print()
+
+```
+
+# Putting it all together
+
+```{r}
+#| label: complete-dataset
+clean_prices <- all_stocks %>%
+  filter(prc > 0) %>%
+  select(permno, date, prc, shrout) %>%
+  mutate(market_value = prc * shrout) %>%
+  select(-shrout) %>%
+  print()
+
+surprise <- earn_ann %>%
+  left_join(analyst,
+            by = join_by(ticker, anndat, actual, pdf)) %>%
+  left_join(abnormal,
+            by = join_by(permno, anndat)) %>%
+  mutate(date_minus5 = anndat - 5) %>%
+  left_join(clean_prices,
+            by = join_by(permno, closest(date_minus5 <= date))) %>%
+  mutate(surprise = (actual - median) / prc) %>%
+  print()
+```
+
+# Data Cleaning
+
+```{r}
+winsorise <- 5/10000
+main <- surprise %>%
+  filter(!is.na(surprise)) %>% print(n = 0) %>%
+  filter(median < prc, actual < prc) %>% print(n = 0) %>%
+  filter(prc > 1) %>% print(n = 0) %>%
+  mutate(weekday = wday(anndat, label = TRUE)) %>%
+  filter(! weekday %in% c("Sat", "Sun")) %>% print(n = 0) %>%
+  filter(percent_rank(car_long) >= winsorise,
+         percent_rank(car_long) <= 1 - winsorise,
+         percent_rank(car_short) >= winsorise,
+         percent_rank(car_short) <= 1 - winsorise) %>%
+  print()
+
+saveRDS(main, here("data", "freaky_friday", "main.RDS"))
+```

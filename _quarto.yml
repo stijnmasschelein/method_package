@@ -8,6 +8,12 @@ project:
     - slides/slides3.qmd
     - slides/slides4.qmd
     - slides/slides5.qmd
+    - freaky_friday/index.qmd
+    - freaky_friday/download_linking.qmd
+    - freaky_friday/linking.qmd
+    - freaky_friday/download_data.qmd
+    - freaky_friday/download_stocks.qmd
+    - freaky_friday/abnormal_returns.qmd
 bibliography: citations.bib
 author: "Stijn Masschelein"
 

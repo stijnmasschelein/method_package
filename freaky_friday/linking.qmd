@@ -1,0 +1,119 @@
+---
+title: How to combine the linking databases
+---
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(here)
+i_am("freaky_friday/linking.qmd")
+```
+
+# Read the data
+
+```{r}
+#| label: read-ids-links
+ibes_id <- readRDS(here("data", "wrds", "ibes_id.RDS"))
+crsp_id <- readRDS(here("data", "wrds", "crsp_id.RDS"))
+crsp_compu <- readRDS(here("data", "wrds", "crsp_compu.RDS"))
+ibes_compu <- readRDS(here("data", "wrds", "compu_security.RDS"))
+```
+
+# Merging between IBES and Compustat
+
+- First, we need to compare the earnings announcement dates between IBES and Compustat
+- Second, we will need to add the data from the CRSP data which we can do via the link with Compustat
+
+```{r}
+#| label: create_links
+ibes_clean <- ibes_id %>%
+  mutate(first_date_ibes = min(sdates),
+         last_date_ibes = max(sdates),
+         .by = c(ticker, cusip)) %>%
+  filter(sdates == last_date_ibes) %>%
+  select(-sdates)
+```
+
+There are some problems with these two datasets.
+
+```{r}
+#| label: problems-ibes-compu
+ibes_clean %>%
+  summarise(ticker = n_distinct(ticker), cusip = n_distinct(cusip))
+ibes_clean %>%
+  transmute(lcusip = str_length(cusip)) %>%
+  summarise(N = n(), .by = lcusip)
+ibes_compu %>%
+  summarise(ibtic = n_distinct(ibtic), cusip = n_distinct(cusip))
+ibes_compu %>%
+  transmute(lcusip = str_length(cusip)) %>%
+  summarise(N = n(), .by = lcusip)
+```
+
+```{r}
+sum(ibes_compu$ibtic %in% ibes_clean$ticker)
+```
+
+My sense now is that the easiest is to use `ibes_compu` with `ibtic` as the variable equivalent to `ticker` in IBES to merge Compustat and IBES data.
+
+
+# Merging between Compustat and CRSP
+
+This goes via `crsp_compu` and the `permno` and `gvkey` variables
+
+```{r}
+#| label: check-crsp-compu
+crsp_compu %>%
+  summarise(permno = n_distinct(permno), gvkey = n_distinct(gvkey))
+```
+
+Unfortunately, we also have the problem that sometimes a the `permno` identifier for CRSP is associated with multiple `gvkeys`. This is more problematic, I think and we will need to make sure we don't run into trouble with this.
+
+```{r}
+crsp_compu %>%
+  summarise(stdt = min(stdt), enddt = max(enddt), .by = c(gvkey, permno)) %>%
+  mutate(N = n(), .by = permno) %>%
+  filter(N > 1) %>%
+  arrange(desc(N), permno, stdt)
+```
+
+It looks like sometimes the identifier for the company in compustat (`gvkey`) switches but the financial instrument is still the same (`permno`). That probably means that we will have to take into account the dates.
+
+# Full Linking Table
+
+For this study, we need the data from all three datasets, so we can make one table that links everything together. The two datasets have `gvkey` in common because of their link to Compustat.
+
+```{r}
+#| label: create-save-linking-table
+linking_table <- ibes_compu %>%
+  select(gvkey, ibtic, isin, cusip) %>%
+  inner_join(crsp_compu, by = join_by(gvkey == gvkey),
+             multiple = "all") %>%
+  rename(ticker = ibtic, start_date = stdt, end_date = enddt) %>%
+  distinct() %>%
+  print()
+saveRDS(linking_table, here("data", "freaky_friday", "linking_table.RDS"))
+```
+
+This linking table is a full linking table for all U.S. companies that are in I/B/E/S, Compustat, and CRSP.
+
+| variable name | data source    | description                                          |
+|---------------|----------------|------------------------------------------------------|
+| `gvkey`       | Compustat      | A company identifier                                 |
+| `ticker`      | I/B/E/S        | A security identifier                                |
+| `isin`        | Datastream     | A company identifier                                 |
+| `permno`      | CRSP           | A security identifier                                |
+| `start_date`  | Compustat/CRSP | The start date for a (`gvkey`, `permno`) combination |
+| `end_date`    | Compustat/CRSP | The start date for a (`gvkey`, `permno`) combination |
+
+## Linking I/B/E/S
+
+```{r}
+linking_table %>%
+  select(gvkey, ticker) %>%
+  distinct() %>%
+  summarise(N = n(), .by = ticker) %>%
+  filter(N > 1)
+```
+
+There are no `tickers` linked with multiple `gvkeys`. This means that `left_join` from I/B/E/S is the way to go.

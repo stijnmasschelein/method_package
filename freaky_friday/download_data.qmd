@@ -1,0 +1,155 @@
+---
+title: Download the earnings announcement data
+---
+
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(here)
+i_am("freaky_friday/download_data.qmd")
+library(RPostgres)
+library(dtplyr)
+linking_table <- readRDS(here("data", "freaky_friday", "linking_table.RDS"))
+```
+
+```{r}
+#| label: setup-wrds
+wrds <- dbConnect(Postgres(),
+                  host='wrds-pgdata.wharton.upenn.edu',
+                  port=9737,
+                  dbname='wrds',
+                  user='stimas',
+                  sslmode='require')
+```
+
+# Earnings Announcements
+## I/B/E/S
+
+We start with the earnings announcement data from IBES with the analyst information.
+
+We need [the last review date](https://wrds-www.wharton.upenn.edu/pages/support/support-articles/ibes/detail-history-file-meanings-date-variables/)
+
+```{r}
+#| label: sql-params-announcement
+begin_date <- "'1995-01-01'"
+end_date <- "'2006-07-01'"
+tickers <- unique(linking_table$ticker)
+tickers_sql <- glue::glue_sql("{tickers*}", .con = wrds)
+```
+
+For more information on how to pass data from R to sql see this [blogpost by Irene Steves](https://irene.rbind.io/post/using-sql-in-rstudio/). 
+
+```{sql}
+--| label: sql-ibes
+--| connection: wrds
+--| output.var: ibes_query
+SELECT ticker, cusip, fpi, anndats, revdats, pdf, value, anndats_act, actual, analys
+FROM ibes.det_epsus
+WHERE anndats_act BETWEEN ?begin_date AND ?end_date
+AND actual IS NOT NULL
+AND fpi IN ('6', '7', '8', '9')
+AND ticker IN (?tickers_sql)
+AND revdats + 90 >= anndats_act
+```
+
+```{R}
+ann_ibes <- as_tibble(ibes_query) %>%
+  rename_all(tolower) %>%
+  print()
+saveRDS(ann_ibes, here("data", "freaky_friday", "ann_ibes.RDS"))
+```
+
+## Compustat
+
+```{r}
+#| label: sql-params-2
+gvkeys <- unique(linking_table$gvkey)
+gvkeys_sql <- glue::glue_sql("{gvkeys*}", .con = wrds)
+```
+
+```{sql}
+--| label: sql-compu
+--| connection: wrds
+--| output.var: compu_query
+SELECT cusip, rdq, gvkey
+FROM comp.fundq
+WHERE rdq BETWEEN ?begin_date AND ?end_date
+AND gvkey IN (?gvkeys_sql)
+```
+
+```{R}
+ann_compu <- as_tibble(compu_query) %>%
+  rename_all(tolower) %>%
+  mutate(cusip = str_sub(cusip, 1, 8)) %>%
+  print()
+saveRDS(ann_compu, here("data", "freaky_friday", "ann_compu.RDS"))
+```
+
+## Combine Announcements
+
+I think some firms have two estimates because they have two types of shares. I link them twice through cusip as a check. I end up with slightly less earnings announcements but I am okay with this.
+
+```{r}
+#| label: simplify-ibes-merge
+simple_link <- linking_table %>%
+  select(ticker, gvkey, permno, cusip) %>%
+  mutate(cusip = str_sub(cusip, end = 8)) %>%
+  distinct()
+# ann_ibes <- readRDS(here("data", "freaky_friday", "ann_ibes.RDS"))
+# ann_compu <- readRDS(here("data", "freaky_friday", "ann_compu.RDS"))
+earn_ann <- ann_ibes %>% distinct(ticker, actual, pdf, cusip, anndats_act) %>%
+  left_join(simple_link, by = join_by(ticker)) %>%
+  filter(!is.na(gvkey), !(cusip.x != cusip.y)) %>%
+  select(-starts_with("cusip")) %>%
+  print() %>%
+  mutate(anndat_begin = anndats_act - 5, anndat_end = anndats_act + 5) %>%
+  left_join(ann_compu, by = join_by(gvkey == gvkey,
+                                    anndat_begin <= rdq,  anndat_end >= rdq)) %>%
+  filter(!is.na(rdq)) %>%
+  mutate(anndat = pmin(anndats_act, rdq)) %>%
+  select(-anndat_begin, -anndat_end) %>%
+  print()
+saveRDS(earn_ann, here("data", "freaky_friday", "earn_ann.RDS"))
+```
+
+`earn_ann` serves as a linking table to match different earnings announcements (as opposed to firms and their securities in `linking_table`)
+
+| variable    | data source | description              |
+|-------------|-------------|--------------------------|
+| ticker      | I/B/E/S     | Identifier               |
+| anndats_act | I/B/E/S     | Actual Announcement Date |
+| gvkey       | Compustat   | Identifier               |
+| permno      | CRSP        | Identifier               |
+| cusip       |             | Identifier of length 8   |
+| rdq         | Compustat   | Actual Announcement Date |
+| anndat      |             | `pmin(rdq, anndats_act)` |
+
+`anndat` is the validated way of calculating the announcement date. However, we need to keep the other dates around because we will need them to link back to the original databases.
+
+
+# Analyst Expectations
+
+TODO: Explanation on the use of dtplyr
+
+```{r}
+#| label: analyst-expectations
+earn_ann_lazy <- lazy_dt(earn_ann)
+ann_ibes_lazy <- lazy_dt(ann_ibes)
+analyst <- select(earn_ann_lazy, ticker, anndats_act, anndat) %>%
+  left_join(ann_ibes_lazy, by = c("ticker", "anndats_act")) %>%
+  filter(!is.na(anndat), anndat - 30 <= revdats, anndats < anndat) %>%
+  select(-anndats_act) %>%
+  group_by(ticker, anndat, actual, analys, pdf) %>%
+  arrange(revdats) %>%
+  summarise_all(~ last(.)) %>%
+  group_by(ticker, anndat, actual, pdf) %>%
+  summarise(N = n(), median = median(value, na.rm = T),
+            mean = mean(value, na.rm = T),
+            mean_days = mean(pmax(0, anndat - revdats))) %>%
+  ungroup() %>%
+  as_tibble() %>%
+  print()
+saveRDS(analyst, here("data", "freaky_friday", "analyst.RDS"))
+```
+

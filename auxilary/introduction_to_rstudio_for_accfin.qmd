@@ -11,7 +11,7 @@ This setup code loads a package, `here`, that helps to navigate the folder struc
 ```{r}
 #| label: setup
 library(here) 
-i_am("auxilary/introduction_to_rstudio_for_accfin.Rmd")
+i_am("auxilary/introduction_to_rstudio_for_accfin.qmd")
 library(tidyverse)
 ```
 
@@ -65,6 +65,7 @@ gvkeys <- unique(compensation$gvkey)
 length(gvkeys)
 key_string <- paste(gvkeys, collapse = "','")
 ```
+
 ```{r}
 #| eval: true
 #| label: wrds_fundamental
@@ -124,6 +125,7 @@ us_comp_small <-
   select(us_comp, year, coname, bonus,
        salary, total = tdc1) %>%
     mutate(salary_percentage = salary/total)
+print(us_comp_small)
 ```
 
 
@@ -138,5 +140,16 @@ group_by(us_comp, gvkey) %>%
               min = min(salary),
               max = max(salary)) %>%
     ungroup() %>%
+  filter(med > 1000)
+```
+
+```{r}
+summarise(us_comp, N = n(), N_CEO = n_distinct(execid),
+              average = mean(salary),
+              sd = sd(salary),
+              med = median(salary),
+              min = min(salary),
+              max = max(salary),
+          .by = gvkey) %>%
   filter(med > 1000)
 ```

@@ -1,0 +1,51 @@
+---
+title: How to download the stock price data.
+---
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(here)
+library(RPostgres)
+i_am("freaky_friday/download_stocks.qmd")
+surprise_ann <- readRDS(here("data", "freaky_friday", "surprise_ann.RDS"))
+```
+
+```{r}
+#| label: setup-wrds
+wrds <- dbConnect(Postgres(),
+                  host='wrds-pgdata.wharton.upenn.edu',
+                  port=9737,
+                  dbname='wrds',
+                  user='stimas',
+                  sslmode='require')
+```
+
+```{r}
+#| label: sql_params_crsp
+crsp_input <- surprise_ann %>%
+  summarise(begin = min(anndat) - 300, end = max(anndat) + 75, .by = permno) %>%
+  print()
+begin_date <- min(crsp_input$begin)
+end_date <- max(crsp_input$end)
+permno_sql <- glue::glue_sql("{crsp_input$permno*}", .con = wrds)
+```
+
+```{sql}
+--| label: crsp-query
+--| connection: wrds
+--| output.var: crsp_query
+SELECT permno, date, vol, ret, prc, shrout, cfacpr, cfacshr
+FROM crsp_a_stock.dsf
+WHERE permno IN (?permno_sql)
+AND date BETWEEN ?begin_date AND ?end_date
+```
+
+```{r}
+all_stocks <- as_tibble(crsp_query) %>%
+  rename_all(tolower)
+print(all_stocks)
+saveRDS(all_stocks, here("data", "freaky_friday", "all_stocks.RDS"))
+```
+
+TODO: negative stock prices documentation

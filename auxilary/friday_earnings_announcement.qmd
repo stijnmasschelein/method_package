@@ -100,16 +100,24 @@ Get the linking tables. See this [WRDS tutorial](https://wrds-www.wharton.upenn.
 
 https://libguides.princeton.edu/MatchFinancial
 
+
+```{sql}
+--| connection: wrds
+--| max.print: 10
+select *
+from ibes.idsum
+```
+
 ```{r}
 #| label: linking-tables
 sql <- "
     SELECT *
-    FROM ibes.idsum"
-res <- dbSendQuery(wrds, sql)
-fetch <- dbFetch(res)
+    FROM ibes.idsum
+    "
+fetch <- dbGetQuery(wrds, sql)
 ibes_id <- as_tibble(fetch) %>%
   rename_all(tolower)
-dbClearResult(res)
+
 sql <- "
     SELECT *
     FROM crsp.stocknames"
@@ -185,7 +193,7 @@ print(n_distinct(ibes_small$cusip))
 filter(link_table, st_date < '2006-04-01')
 ```
 
-One thing we can do as a sanity check is compare, the company name from both data sources. There is a function `tidy_stringdist` from the very similar package that helps with that. After some trial and error I found that a cutoff of .35 for the `jw` distance metric is reasonable. For now, I use that but there might be room for improvement. 
+One thing we can do as a sanity check is compare, the company name from both data sources. There is a function `tidy_stringdist` from the very similar package that helps with that. After some trial and error I found that a cutoff of .35 for the `jw` distance metric is reasonable. For now, I use that but there might be room for improvement.
 
 ```{r}
 select(link_table, cusip, permno, ticker, comnam, cname) %>%
@@ -208,7 +216,6 @@ final_link <- link_table %>%
   filter(str_sub(cusip, 1, 6) == str_sub(cusip_comp, 1, 6))
 saveRDS(final_link, here("data", "freaky_friday", "final_link.RDS"))
 ```
-
 
 ## Get the data we need.
 
@@ -412,7 +419,7 @@ all_stock <- pull(stock, stock) %>% bind_rows()
 analyst <- readRDS(here("data", "freaky_friday", "analyst.RDS"))
 ```
 
-The Fama-French 3 Factors via the [Kenneth French data library](https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html). We need to scale the returns by 100 because they are expressed in %s. 
+The Fama-French 3 Factors via the [Kenneth French data library](https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html). We need to scale the returns by 100 because they are expressed in %s.
 
 ```{r}
 famafrench <- read_csv(file = here("data", "F-F_Research_Data_Factors_daily.csv"),
@@ -421,6 +428,7 @@ famafrench <- read_csv(file = here("data", "F-F_Research_Data_Factors_daily.csv"
   mutate(date = ymd(date)) %>%
   mutate_if(is.numeric, ~ . / 100)
 ```
+
 ## Stock Price Five Days Before
 
 $$P_{t,k}$$
@@ -436,7 +444,7 @@ earn_ann <- earn_ann %>%
 
 $$e_{t,k} - \hat{e}_{t,k}$$
 
-Penny stocks are defined as stocks with a price lower than $5 per share.
+Penny stocks are defined as stocks with a price lower than \$5 per share.
 
 ```{r}
 #| earnings-suprise
@@ -473,8 +481,8 @@ key_date <- "2002-12-31"
 permno <- 82156
 get_coefs <- function(id, date, start = 150, end = 5){
   d <- ymd(date)
-  first = d - start
-  last = d - end
+  first <- d - start
+  last <- d - end
   data <- filter(all_stock, permno == id, date >= first,
                  date <= last) %>%
     left_join(select(famafrench, date, mkt_rf, rf),
@@ -489,12 +497,40 @@ get_coefs <- function(id, date, start = 150, end = 5){
 }
 get_coefs(permno, key_date)
 
+
+get_coefs2 <- function(id, date, start = 150, end = 5){
+  d <- ymd(date)
+  first <- d - start
+  last <- d - end
+  data <- filter(stock, permno == id) %>%
+    pull(stock) %>%
+    bind_rows() %>%
+    filter(date >= first, date <= last) %>%
+    left_join(select(famafrench, date, mkt_rf, rf),
+              by = "date")
+  alpha <- NA; beta <- NA
+  try(
+  {lm <- lm(ret ~ I(mkt_rf + rf), data = data)
+    alpha <- as.numeric(lm$coefficients[1])
+    beta <- as.numeric(lm$coefficients[2])}
+  )
+  return(list(alpha = alpha, beta = beta))
+}
+get_coefs2(permno, key_date)
+
+microbenchmark::microbenchmark(
+                  version1 = get_coefs(permno, key_date),
+                  version2 = get_coefs(permno, key_date),
+                  times = 100
+                )
+
 library(furrr)
 plan(multisession, workers = 6)
 abn_params <- surprise %>%
-  mutate(coefs = future_pmap(list(permno, anndat), ~ get_coefs(..1, ..2, 300, 46),
+  mutate(coefs = future_pmap(list(permno, anndat), ~ get_coefs2(..1, ..2, 300, 46),
                              .progress = TRUE)) %>%
   unnest_wider(coefs)
+
 saveRDS(abn_params, here("data", "freaky_friday", "abn_params.RDS"))
 ```
 
@@ -537,4 +573,3 @@ saveRDS(abn_returns, here("data", "freaky_friday", "abn_returns.RDS"))
 ```
 
 There is some data cleaning here as well.
-
