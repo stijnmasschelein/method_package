@@ -1,5 +1,6 @@
 project:
   title: "Method Package"
+  type: website
   output-dir: _output
   render:
     - auxilary/introduction_to_rstudio_for_accfin.qmd
@@ -14,6 +15,28 @@ project:
     - freaky_friday/download_data.qmd
     - freaky_friday/download_stocks.qmd
     - freaky_friday/abnormal_returns.qmd
+
+website:
+  sidebar:
+    style: docked
+    search: true
+    contents:
+      - section: "Slides"
+        contents:
+          - slides/slides1.qmd
+          - slides/slides2.qmd
+          - slides/slides3.qmd
+          - slides/slides4.qmd
+          - slides/slides5.qmd
+      - section: "Friday Earnings Announcements"
+        contents:
+          - freaky_friday/index.qmd
+          - freaky_friday/download_linking.qmd
+          - freaky_friday/linking.qmd
+          - freaky_friday/download_data.qmd
+          - freaky_friday/download_stocks.qmd
+          - freaky_friday/abnormal_returns.qmd
+
 bibliography: citations.bib
 author: "Stijn Masschelein"
 

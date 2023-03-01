@@ -1,3 +1,36 @@
 ---
-title: Welcome
+title: Replication of @dellavigna2009
 ---
+
+# Introduction
+
+This website is an attempt to replicate the main results in @dellavigna2009 from scratch. The paper is a good example because (1) it has an explicit theoretical model, (2) provides excellent descriptions on how the different measures are constructed, (3) uses the canonical finance design, an event study. I will focus most of my attention on (2) and (3) but (1) is important because it provides guidance to readers of the paper why the measures and the design is important.
+
+The basic argument of the paper is that firms will bury earnings announcements on Fridays if the earnings are bad because the market pays less attention to news on Fridays.
+
+# Research Design
+
+The research design is relatively easy: an event study. If you recall, this means that we are looking at the difference between our outcome measure before and after a certain event. The key assumption is that the measurement before the event is a good estimate of the counterfactual if the event had not happened at all. If that assumption is true, we can trust that the event is causing the difference between before and after. We can write out the full DAG as below. 
+
+```{dot}
+//|echo: false
+//|label: event-study-dag
+digraph event{
+node [shape = box]
+subgraph{
+  rank = same; "Event Happened", Treatment, Outcome
+}
+"Event Happened" -> Treatment -> Outcome
+Time -> {"Event Happened", Outcome}
+}
+```
+
+The way to think about this is that the event is the earnings announcement by the company and the outcome is the change in the market price. The treatment that we are interested in not the earnings announcement per se but the new information that it provides to the market. The traditional problem with these before-after designs is that time passes between the event and the after measurement and over time other things might have happened that have nothing to do with the treatment. Luckily, with financial markets, this is less of a worry because we can study big announcements and we can measure the market reaction shortly after the announcements.
+
+Unfortunately, time travel is possible in finance. Market prices are incredibly good at incorporating information that is publicly available and the earnings when announced will not come as a total surprise [@ball1968]. Market participants often already have a pretty good idea whether a company had a good year or not before they announce their earnings.
+
+E.g. Firms with very good earnings are already publicising, it's incorporated by the time of the earnings. We need to look at surprises.
+
+
+
+
