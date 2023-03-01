@@ -40,7 +40,7 @@ Empirical just means that some data in the broadest possible be sense will be co
 1. The research process and basic data skills in `R` (week 1 - 3)
 2. Research design (week 4 - 6) 
 3. Advanced regression (week 7 - 9)
-4. Time series analysis 10 - 12)
+4. Time series analysis (10 - 12)
 
 ::: {.notes}
 All modules work as stand-alone units and aim to cover a wide range of topics. Not all of them will in the end be relevant for everyone. However, it is probably a good idea to get to know the different statistical methods, their advantages, and disadvantages. Bringing a new methodology to an old topic can be a valuable contribution. Some problems have already been solved in other research streams.
@@ -80,7 +80,7 @@ We want you to (1) do some data analysis and (2) be well prepared to undertake (
 ## The first two weeks
 ### CEO compensation
 
-![This is not my area of expertise!](http://i0.kym-cdn.com/entries/icons/original/000/008/342/ihave.jpg){width=80%}
+![This is not my area of expertise!](https://i0.kym-cdn.com/entries/icons/original/000/008/342/ihave.jpg){width=80%}
 
 ::: {.notes}
 I am not a specialist in the topic nor in this type of data analysis. CEO compensation is something that people in finance, accounting, economics, and outside of academia are interested in. The topic is probably the one with the most commonality. I am comforable with these type of economic theories and I am going to stress the role of theory in data analysis a lot. Some of you will have a topic that is at first sight less theory driven or rely more strongly on very specific knowledge about your setting. I am going to try to convince you that it is going to be useful to think about the underlying story that you are testing.
@@ -293,7 +293,7 @@ following.
 
 ## Literature search
 
-- [Google Scholar](https://www.scholar.google.com)
+- [Google Scholar](https://scholar.google.com)
 - [UWA One Search](https://onesearch.library.uwa.edu.au)
 - [Web of Knowledge](https://apps.webofknowledge.com)
 - [EBSCOhost Research Databases](https://search.ebscohost.com/login.asp?defaultdb=bth&lang=en)
