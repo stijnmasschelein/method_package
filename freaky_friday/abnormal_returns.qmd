@@ -5,6 +5,8 @@ title: Run the expected return regressions and calculate abnormal returns
 
 # Setup
 
+The `lubridate` package is the `tidyverse` package that helps with time related data. Dates are a specific class of variables and the package helps with managing date variables.
+
 ```{r}
 #| label: setup
 library(tidyverse)
@@ -13,7 +15,9 @@ library(here)
 i_am("freaky_friday/abnormal_returns.qmd")
 ```
 
-The Fama-French 3 Factors via the [Kenneth French data library](https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html). We need to scale the returns by 100 because they are expressed in %s.
+In order to predict the expected market return reaction to earnings, we will want to take into account the general market reaction. @dellavigna2009 only adjust for the overall market return. There are other adjustments possible for specific risk factors. The original factor model is the Fama-French 3 Factors model and the data is available via the [Kenneth French data library](https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html). 
+
+I have downloaded the data as a `.csv` file. The code reads the data in skipping 5 lines and reading the variables as numbers (`d`ouble precision). We then need to transform the date variable to a date type with a function from the `lubridate` package. Finally, we need to scale the returns by 100 because they are expressed in percentages. For replicating the @dellavigna2009 paper, we only need the market return minus the risk free rate (`mkt_rf`) and the risk free rate (`rf`). If I read this paper correctly, we need to use the raw market return which is calculated as `mkt`.
 
 ```{r}
 #| label: data
@@ -36,7 +40,33 @@ famafrench <- read_csv(file = here("data", "F-F_Research_Data_Factors_daily.csv"
 
 # Abnormal returns
 
-This is really fast!
+Remember that we are interested in predicting the counterfactual of what the returns would have been if there were no earnings announcement. We use the following prediction model:
+
+$$ R_{u,k} = \alpha_{t,k} + \beta_{t,k} R_{u,m}$$
+
+That means that we need to estimate $\alpha$ and $\beta$ for each announcement based on the market return and firm return from 300 days before the earnings announcement to 46 days before the earnings announcements [@dellavigna2009]. This is a lot of computations!
+
+I played around with a lot of different implementations and finally settled on a completely `tidyverse` style implementation as the fastest on my machine. I did not include the other implementations in this document but I will show how you can test the timing of your code with the `microbenchmark` package.
+
+The first thing we need to do is to write the code as a function that we can call as many times as we need. [^function] I call this function `create_coefs`. The input of the function is `n`, the number of earnings announcements we want to run the code for. The output is a `tibble` with the coefficients $\alpha$ and $\beta$ for each `permno` and `anndat` combination.
+
+The actual function takes the earnings announcement data and keeps the unique `permno` and `anndat` combinations. Next, the `start` and `end` data for the return data is calculated based on the earnings announcement date. Next, we merge the return data and the Fama-French data and delete the missing or infinite observations for the return.
+
+::: {.callout-note}
+At this point, you can see the flexibility of my approach to keep the data sets separate until we need to join them. The earnings announcement data is one row per earnings announcement date per firm. The stock data has one observation per firm per day. The Fama-French data has one observation per day. Because these data have a different level of analysis, I have kept them separate until the point that we need to analyse the data. If I have to update  one of the datasets, I do not necessarily have to update all the other ones. I would strongly encourage you to do the same thing where you keep different parts of the data cleaning separate for as long as possible. This will make your code flexible and easy to adapt.
+:::
+
+The next two steps are the most advanced ones. First, remark that we have multiple rows for each earnings announcement. We use the summarise function to put all the returns in a vector `y` and we make a matrix `X` with all 1's in the first column and the mkt. Remark that we are wrapping `y` and `X` in a list so that we effectively make `y` and `X` list columns in our `tibble`. The `tidyverse` lets us put almost anything in a dataset as long as we wrap it in a list. Finally, we summarise the `y` and `X` not just for the whole dataset but for each combination of `permno` and `anndat`. Thus, we end up with a dataset with a row for each earnings announcement with the returns we want to predict (`y`) from before the earnings announcement and the market returns from the same time period (`X`).
+
+In the second step, we will run the regression for each row to estimate $\alpha$ and $\beta$. We do use a lightweight version of `lm` called `lm.fit` to speed up the estimation. `lm.fit` calculates less statistics like the standard errors that we need to calculate the p-values. Because ultimately, we need to this for 150,000 rows `lm.fit` will save considerable time compared to `lm`. `lm.fit` works slightly different in that now regression equation is specified. You need to give the predictors as the first argument and the outcome variable as the second argument. This is the reason why we formed the `y` and `X` variable in the previous step. We just need the coefficients form the fit object and we can use the `coef` function to extract them.
+
+Finally, we want to apply this `lm.fit` function to every row (i.e. for every earnings announcement). We use the [`map`-family](https://purrr.tidyverse.org/reference/map.html) to apply a function to every element of a column. The `pmap` function specifically let us apply a function to multiple columns if we wrap them in a list. So, `pmap` takes the list of columns `X` and `y` and applies (`~`) the function `lm.fit` to the first (`..1`) and second (`..2`) element of that list. At the end, we extract the coefficients.
+
+[^function]: `R` is fundamentally a programming language that is build around functions. The `tidyverse` partially works around that by making `tibbles` the primary object. Nevertheless, when you need to do some more advanced programming, creating functions is quite natural in `R`.
+
+The `microbenchmark` function allows us to test the time it takes to run this function for 100, 1000, and 10000 earnings announcements. The computations are done 10 times for each call to get an average/median estimate [^speed]. The surprising thing to me was that the function scales very well. The average time per announcement goes down with more announcements.
+
+[^speed]: For comparison on my 2020 Mac Mini, it takes about 1.5 seconds for 100 announcements and 4.0 seconds for 10000 announcements. On my 2014 Macbook pro, that is respectively 4.3 seconds and 11.2 seconds.
 
 ```{r}
 #| label: alpha-beta
@@ -51,18 +81,29 @@ create_coefs <- function(n = 6){
     filter(!is.na(ret), !is.infinite(ret)) %>%
     summarise(y = list(cbind(ret)), X = list(cbind(alpha = 1, beta = mkt)),
               .by = c(permno, anndat)) %>%
-    mutate(coefs = pmap(list(X, y), ~ lm.fit(..1, ..2) %>% coef(), .progress = TRUE),
+    mutate(coefs = pmap(list(X, y), ~ lm.fit(..1, ..2) %>% coef()),
            .by = c(permno, anndat)) %>%
     select(-y, -X)
 }
 
 microbenchmark::microbenchmark(
-                  create_coefs(),
                   create_coefs(100),
                   create_coefs(1000),
                   create_coefs(10000),
                   times = 10)
+```
 
+Next, we calculate the coefficients for all announcements and save them in the `results` object. Next, we need to calculate the abnormal returns based on the following formula in @dellavigna2009.
+
+$$ R_{t,k}^{(h, H)} = [\Pi_{j=h}^H (1 + R_{j,k})] - 1
+- \hat{\beta}_{t,k} [\Pi_{j=h}^H (1 + R_{j,m}) - 1]$$
+
+In the `results`, the `coef` column is a list column where each row has two elements: `alpha` and `beta`. The `unnest_wider` function splits the list columns in two columns `alpha` and `beta`. Next we create the date 75 days after the announcement because that is the longest time frame the paper is interested [@dellavigna2009]. Just like before, we add the relevant stock price data and Fama-French data. Our dataset now has a row for each day 0 to 75 days after the announcement date. @dellavigna2009 are interested in the short term abnormal return on the day of the announcement and the day after (0-1 days) and the long term abnormal return (2-75 days). I create the `time_frame` variable to denote whether a day should be counted in the short or long cumulative abnormal return. As an intermediate step, I calculate the products of the (market) returns + 1 (see the equation) by announcement and time frame (and `beta` because we need it for further calculations).
+
+Finally, I use the `pivot_wider` function to transform the dataset from the long format to a wider format. Specifically, each announcement has two rows one for the short term `car` and one for the long term `car`. The transformation will create a new dataset where every row has a different announcement with a `car_long` and a `car_short`. We do that by taking the values_from the `car` variable and the name for the column from the `time_frame` variable. 
+
+```{r}
+#| label: abnormal-returns
 N <- nrow(earn_ann)
 results <- create_coefs(N)
 
@@ -74,20 +115,26 @@ abnormal <- results %>%
                          date75 >= date, anndat <= date)) %>%
   left_join(select(famafrench,  mkt, rf, date),
             by = join_by(date == date)) %>%
-  mutate(abnormal = ret - alpha + beta * mkt,
-         time_frame = if_else(date - anndat <= 1, "short", "long")) %>%
-  summarise(abnormal = prod(1 + abnormal), rf = prod(1 + rf),
+  mutate(time_frame = if_else(date - anndat <= 1, "short", "long")) %>%
+  summarise(raw = prod(1 + ret), mkt = prod(1 + mkt),
             .by = c(permno, anndat, time_frame, beta)) %>%
-  mutate(car = abnormal - 1 - beta * (rf - 1)) %>%
-  select(-beta, -abnormal, -rf) %>%
+  mutate(car = raw - 1 - beta * (mkt - 1)) %>%
+  select(-beta, -raw, -mkt) %>%
   filter(!is.na(car)) %>%
   pivot_wider(values_from = car, names_from = time_frame,
-              names_prefix = "car_") %>%
-  print()
-
+              names_prefix = "car_")
+glimpse(abnormal)
 ```
 
+::: {.callout-note}
+The [`pivot_wider` and `pivot_longer`](https://tidyr.tidyverse.org/reference/pivot_longer.html) functions are really, really useful when you are working with poorly structured data. As a rule of thumb when you clean and summarise the data, you will want the data to be in a long format where each row is its own distinct unit of analysis [@wickham2014]. For instance, in this code we had a row for each return day after the announcement for each announcement. The big advantage is that we can easily, with code, change the groups of data that we want to summarise, mutate, or filter. If we want to change what the short time frame means, we can just change that one line of code (e.g. to `data - anndat <= 5`). The wider format is more useful to present the data. That is why I use it more often at the end of an analysis.
+:::
+
 # Putting it all together
+
+Finally, we want to put all the data together. You can see that we only merge all the data at the end. This is good practice. I would advise to not even try to build up a complete dataset by starting with for instance the I/B/E/S data and than to gradually add the variables that you need. This is a very error prone process and it is hard to make changes without redoing the whole data cleaning process.
+
+First, we need more stock price data and the market value from the CRSP data. We collect this in the `clean_prices` dataset. Remark that I remove the data where the price is negative because that means that there were no trades that day. @dellavigna2009 require the price and market value 5 days before the earnings announcement. My guess is that they are trying to avoid any effects of information leaking out into the market before the earnings announcement. I then merge the earnings announcement data with the analyst estimates data, the abnormal return data and the price and market value data. Finally, I calculate the earnings `surprise` as the difference between the actual and the median predicted earnings per share divided by the price per share to get the earnings surprise per dollar of market value.
 
 ```{r}
 #| label: complete-dataset
@@ -105,19 +152,27 @@ surprise <- earn_ann %>%
             by = join_by(permno, anndat)) %>%
   mutate(date_minus5 = anndat - 5) %>%
   left_join(clean_prices,
-            by = join_by(permno, closest(date_minus5 <= date))) %>%
-  mutate(surprise = (actual - median) / prc) %>%
-  print()
+            by = join_by(permno, closest(date_minus5 >= date))) %>%
+  mutate(surprise = (actual - median) / prc) 
+glimpse(surprise)
 ```
 
 # Data Cleaning
+
+Finally, I apply the data cleaning rules from @dellavigna2009. I also include the a print statement so that we can track how many observations are removed after each data cleaning step. The following rules are applied:
+
+    - Remove the observations where `surprise` is missing.
+    - Remove the observations where the median or actual estimate is larger than the price.
+    - Remove penny stocks which I arbitrarily and after some googling decide to be stocks with a price lower than $2 per stock.
+    - Remove the observations with earnings announcement on Saturday and Sunday.
+    - I remove the observations with a car in the top and bottom .05% of observations.
 
 ```{r}
 winsorise <- 5/10000
 main <- surprise %>%
   filter(!is.na(surprise)) %>% print(n = 0) %>%
-  filter(median < prc, actual < prc) %>% print(n = 0) %>%
-  filter(prc > 1) %>% print(n = 0) %>%
+  filter(abs(median) < prc, abs(actual) < prc) %>% print(n = 0) %>%
+  filter(prc > 2) %>% print(n = 0) %>%
   mutate(weekday = wday(anndat, label = TRUE)) %>%
   filter(! weekday %in% c("Sat", "Sun")) %>% print(n = 0) %>%
   filter(percent_rank(car_long) >= winsorise,
@@ -128,3 +183,13 @@ main <- surprise %>%
 
 saveRDS(main, here("data", "freaky_friday", "main.RDS"))
 ```
+
+# Overview of the datasets
+
+| File           | Description                                   |
+|----------------|-----------------------------------------------|
+| `earn_ann.RDS` | The information on the earnings announcements |
+| `analyst.RDS`  | The analyst estimates data                    |
+| `main.RDS`     | The main dataset to replicate the paper       |
+
+# References

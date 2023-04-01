@@ -1,5 +1,5 @@
 ---
-title: Replication of @dellavigna2009
+title: Replication of Dellavigna and Pollet (2009)
 ---
 
 # Introduction
@@ -27,9 +27,68 @@ Time -> {"Event Happened", Outcome}
 
 The way to think about this is that the event is the earnings announcement by the company and the outcome is the change in the market price. The treatment that we are interested in not the earnings announcement per se but the new information that it provides to the market. The traditional problem with these before-after designs is that time passes between the event and the after measurement and over time other things might have happened that have nothing to do with the treatment. Luckily, with financial markets, this is less of a worry because we can study big announcements and we can measure the market reaction shortly after the announcements.
 
-Unfortunately, time travel is possible in finance. Market prices are incredibly good at incorporating information that is publicly available and the earnings when announced will not come as a total surprise [@ball1968]. Market participants often already have a pretty good idea whether a company had a good year or not before they announce their earnings.
+Unfortunately, time travel is possible in finance [^time-travel]. Market prices are incredibly good at incorporating information that is publicly available and the earnings when announced will not come as a total surprise [@ball1968]. Market participants often already have a pretty good idea whether a company had a good year or not before they announce their earnings. For instance, the companies who are doing well are more likely to go on TV or twitter to explain how great their company is while companies who are not doing well might try to stay quiet. In that case, we would see a small or even no market reaction to good earnings (the market already knows) and a large negative reaction to bad earnings news (the market is surprised). This could make the average price reaction negative while the average earnings are positive.
 
-E.g. Firms with very good earnings are already publicising, it's incorporated by the time of the earnings. We need to look at surprises.
+[^time-travel]: Sort of. It can look like time travel to the empirical researcher because the earnings are released after the market reaction to it but ofcourse the economic facts happened before the market reacted. I am merely pointing out the implicit assumption that when news is officially announced is not necessarily when the market receives the information.
+
+That's why in the @dellavigna2009 paper, the authors do not measure the earnings in itself but they try to isolate the unexpected (by the market) component of earnings by deducting the earnings expectations by financial analysts.
+
+# The Key Equations
+
+The key equations on how to measure the two main variables (1) unexpected earnings and (2) the market reaction are on p.716. I am highlighting those two variables because the approaches are widely used in the accounting and finance literature but the assumptions are not always clearly stated. I will make the connection with the research design more explicit.
+
+## The Unexpected Component of Earnings
+
+$$ s_{t,k} = \frac{e_{t,k} - \hat{e}_{t,k}}{P_{t,k}} $$
+
+In this equation, $s_{t,k}$ is the surprise (i.e. the unexpected component) in earnings of company $k$ at time $t$. It is calculated by the actual earnings per share, $e_{t,k}$, minus the median expected earnings by analysts, $\hat{e}_{t,k}$, divided by the price of the stock 5 days before the earnings release, $P_{t,k}$. You will see over and over that empirical researchers are wary that the day(s) just before an announcement might be special, i.e. the news might have already leaked out, for good and less good reasons. So, instead of using the price the day before the earnings release, the paper picks a couple of days earlier [^conservatism].
+
+The most important part is that we try to filter out all the information in the earnings announcement that is already known to the market by subtracting the earnings estimates of analysts. The implicit assumption is that these earnings estimates are a good measure of the market's information on the company just before the earnings are announced.
+
+[^conservatism]: This is one of these forms of time travel. Remark that the if there is information leaked before the announcement, the market reaction after the announcement will be smaller than when that would not have happened. In a way, we are underestimating the effect of the earnings on stock price returns if we only look at what happened after the announcement. Most empirical researchers are ok with this because it means that they are less likely to find an effect. So they are not biasing their method towards finding something.
+
+## The Market Reaction
+
+The market reaction is calculated as the abnormal return from day $h$ to day $H$. [^abnormal]
+
+$$ R_{t,k}^{(h, H)} = [\Pi_{j=h}^H (1 + R_{j,k})] - 1
+- \hat{\beta}_{t,k} [\Pi_{j=h}^H (1 + R_{j,m}) - 1]$$
+
+This looks complicated but it is quite simple. The first part is the raw return of the stock over the period that we are interested in [^returns]. The second part is the return of the market times the sensitivity of the stock to the market. The latter, $\hat{\beta}_{t,k}$ is estimated with data from before the announcement. The goal of this approach is to filter out other reasons that the stock price might go up or down because of general economic or financial events that affect the stock market as a whole.
+
+[^abnormal]: In comparison with the paper I am simplifying the formula a little bit by setting $\tau = 0$. That is, the day of the announcement is day 0.
+
+[^returns]: Recall that if a stock goes up with 10% and goes down with 10% we can write the total return as $1.10 \times 0.90 - 1 = -0.01$.
+
+Specifically, we estimate the following regression model with data from days, $u$, with $u$ between 46 and 300 days before the earnings announcements. This is a regression of the market return on the firm return.
+
+$$ R_{u,k} = \alpha_{t,k} + \beta_{t,k} R_{u,m}$$
+
+Again, we are using data from long before the earnings announcement so that our estimate is not contaminated by the earnings announcement [^earlier-announcement].
+
+There are lot of different approaches in the literature to estimate these abnormal returns but they all have the same flavour of trying to filter out other reasons why the stock price might be moving. In a pure regression framework, we would include additional variables as control variables. Constructing variables like the abnormal returns and the earnings surprise like this serves exactly the same function. There are good reasons to use the approach of first constructing the measures as precise as possible in an event study design like this but there are some problem with applying this same logic in different research designs [@chen2018, @chen].
+
+[^earlier-announcement]: But it will be affected by the two previous earnings announcements ...
+
+# The Data
+
+The remainder of this replication is the actual implementation in `R`. The data is available through the [Wharton Research Data Services (WRDS)](https://wrds-www.wharton.upenn.edu). The data comes from three different data sources. The I/B/E/S data has information on earnings announcements and analyst forecasts. The Compustat data has information on earnings announcement dates. The CRSP data has information on the stock prices.
+
+The difficulty is that these data sources use different identifiers to refer to a firm or the stock of that firm. The first thing to do is to find a way to easily *merge* the different data sources with the family of `_join` functions in the `tidyverse`.
+
+In short, each data base has its preferred identifier. The table below provides an overview.
+
+| Data Source | Identifier |
+|-------------|------------|
+| I/B/E/S     | ticker     |
+| Compustat   | gvkey      |
+| CRSP        | permno     |
+
+The first thing we need to do is construct a dataset that makes it easy for us to figure out if we have data from a I/B/E/S with a given `ticker` what the corresponding `gvkey` for the same firm is. One complication is that `ticker` and `permno` refer to financial instrument (e.g. the firm's stock) while `gvkey` refers to the firm itself. So, for different time periods the same firm can be matched with different financial instruments. We will need to take this into account.
+
+# References
+
+
 
 
 

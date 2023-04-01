@@ -1,6 +1,11 @@
 ---
 title: How to combine the linking databases
+knitr:
+  opts_chunk:
+    eval: true 
 ---
+
+The packages are the same as before.
 
 ```{r}
 #| label: setup
@@ -10,6 +15,8 @@ i_am("freaky_friday/linking.qmd")
 ```
 
 # Read the data
+
+We first read in the linking databases that we have downloaded. Here, you can again see the that I am separating the code in different files and I am using the saved versions of the databases. The advantage is that I do not have to wait on the WRDS download to do the data cleaning in this file.
 
 ```{r}
 #| label: read-ids-links
@@ -21,8 +28,13 @@ ibes_compu <- readRDS(here("data", "wrds", "compu_security.RDS"))
 
 # Merging between IBES and Compustat
 
-- First, we need to compare the earnings announcement dates between IBES and Compustat
-- Second, we will need to add the data from the CRSP data which we can do via the link with Compustat
+We start with the `ibes_id` dataset where we can use the `ticker` and the `cusip` as an identifier.
+
+```{r}
+glimpse(ibes_id)
+```
+
+First, I simplify the dataset a little bit. For every observation, I calculate the first and the last date for every combination of `ticker` and `cusip`. We are going to use these variables to match observations by `ticker` in one dataset and by `cusip` in another dataset. So, we really care about the combinations of (`ticker`, `cusip`). Then, I only keep the observations where the `sdates` equals `last_data_ibes`. This restricts the sample just to the identifiers and the first and last date they appeared in the data.
 
 ```{r}
 #| label: create_links
@@ -32,9 +44,10 @@ ibes_clean <- ibes_id %>%
          .by = c(ticker, cusip)) %>%
   filter(sdates == last_date_ibes) %>%
   select(-sdates)
+glimpse(ibes_clean)
 ```
 
-There are some problems with these two datasets.
+Unfortunately, there are some problems with this data. The number of unique tickers is relatively low compared to the number of cusips and compared to the ones in the `ibes_compu` linking data. We also have to be careful because the cusip in the `ibes_clean` data is 8 characters long and the one in the `ibes_compu` is 9 characters long. That is one of the problems with the cusip identifier that you always have to check. See the code below for the details.
 
 ```{r}
 #| label: problems-ibes-compu
@@ -50,19 +63,22 @@ ibes_compu %>%
   summarise(N = n(), .by = lcusip)
 ```
 
+At this point, I decided that the best approach is to stick with the `ibes_compu` dataset to match I/B/E/S and Compustat data. I also checked the overlap between the two linking databases and it's decent. About 19000 of the 22000 unique identifiers in `ibes_id` are in the `ibes_compu` dataset.
+
 ```{r}
-sum(ibes_compu$ibtic %in% ibes_clean$ticker)
+glimpse(ibes_compu)
+sum(unique(ibes_clean$ticker) %in% unique(ibes_compu$ibtic))
 ```
 
-My sense now is that the easiest is to use `ibes_compu` with `ibtic` as the variable equivalent to `ticker` in IBES to merge Compustat and IBES data.
-
+The reason why I leave this false trail in is that is typically what happens when you are working on a bigger data project. You need to interrogate the data to check who reliable the data is and to be aware of its shortcomings.
 
 # Merging between Compustat and CRSP
 
-This goes via `crsp_compu` and the `permno` and `gvkey` variables
+This goes via `crsp_compu` and the `permno` and `gvkey` variables. There is no perfect match between the two variables but the number of distinct identifiers is close.
 
 ```{r}
 #| label: check-crsp-compu
+glimpse(crsp_compu)
 crsp_compu %>%
   summarise(permno = n_distinct(permno), gvkey = n_distinct(gvkey))
 ```
@@ -77,11 +93,13 @@ crsp_compu %>%
   arrange(desc(N), permno, stdt)
 ```
 
-It looks like sometimes the identifier for the company in compustat (`gvkey`) switches but the financial instrument is still the same (`permno`). That probably means that we will have to take into account the dates.
+It looks like sometimes the identifier for the company in compustat (`gvkey`) switches but the financial instrument is still the same (`permno`). That probably means that we will have to take into account the dates. That is we will have to match on the identifiers and the date when matching observations form Compustat and CRSP.
 
 # Full Linking Table
 
-For this study, we need the data from all three datasets, so we can make one table that links everything together. The two datasets have `gvkey` in common because of their link to Compustat.
+For this study, we need the data from all three datasets, so we can make one table that links everything together. The two datasets have `gvkey` in common because of their link to Compustat. I use an `inner_join` because we need observations of all three dataset for each observation. I also rename some of the variables to make them a little bit easier to work with for me. I specifically retained the `isin` identifier. It is not necessary for the replication but it can be useful for potential extensions.
+
+
 
 ```{r}
 #| label: create-save-linking-table
@@ -92,10 +110,11 @@ linking_table <- ibes_compu %>%
   rename(ticker = ibtic, start_date = stdt, end_date = enddt) %>%
   distinct() %>%
   print()
+glimpse(linking_table)
 saveRDS(linking_table, here("data", "freaky_friday", "linking_table.RDS"))
 ```
 
-This linking table is a full linking table for all U.S. companies that are in I/B/E/S, Compustat, and CRSP.
+This linking table is a full linking table for all U.S. companies that are in I/B/E/S, Compustat, and CRSP. It's always a good idea to make your own documentation for important datasets. So, I made an overview table.
 
 | variable name | data source    | description                                          |
 |---------------|----------------|------------------------------------------------------|
@@ -105,6 +124,10 @@ This linking table is a full linking table for all U.S. companies that are in I/
 | `permno`      | CRSP           | A security identifier                                |
 | `start_date`  | Compustat/CRSP | The start date for a (`gvkey`, `permno`) combination |
 | `end_date`    | Compustat/CRSP | The start date for a (`gvkey`, `permno`) combination |
+
+Going forward, we will only need the linking table. This makes it a good place to stop this file [^exception]. If for future code, we need the `linking_table`. We can just read it from our RDS file. If we need to make changes to the table, we make it in this file and rerun the code from here.
+
+[^exception]: Except for some checks on the linking table.
 
 ## Linking I/B/E/S
 
@@ -116,4 +139,4 @@ linking_table %>%
   filter(N > 1)
 ```
 
-There are no `tickers` linked with multiple `gvkeys`. This means that `left_join` from I/B/E/S is the way to go.
+There are no `tickers` linked with multiple `gvkeys`. This means that `left_join` from I/B/E/S is the way to start the joining process. That way, there will be no duplicate matches from Compustat.

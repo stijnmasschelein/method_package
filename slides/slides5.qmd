@@ -305,7 +305,7 @@ rd_did3_panel <- tibble(
       time == 2 & performance < cutoff2 ~ 0,
       time == 3 & performance < cutoff3[1] ~ 0,
       TRUE ~ 1),
-    noise <- rnorm(T*N, 0, 5),
+    noise = rnorm(T*N, 0, 5),
     profit_no_report = firm_effect + noise +
       case_when(
         time == 1 ~ profit1,

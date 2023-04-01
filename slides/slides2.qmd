@@ -630,7 +630,7 @@ coefficients(summary(regr_sens)) %>% print(dig = 2)
 
 ### Cheap Talk Model
 
-![Assumptions are important](https://www.dlsweb.rmit.edu.au/lsu/content/B_DSC/gsssp/graphics/iceberg.jpg)
+![Assumptions are important](https://www.myinterestingfacts.com/wp-content/uploads/2014/04/Iceberg.jpg)
 
 :::
 ::::

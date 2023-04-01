@@ -24,11 +24,12 @@ wrds <- dbConnect(Postgres(),
 ```
 
 # Earnings Announcements
+
 ## I/B/E/S
 
-We start with the earnings announcement data from IBES with the analyst information.
+We start with the earnings announcement data from I/B/E/S with the analyst estimates. According to the method section in @dellavigna2009, we need the data from the start of 1995 to the middle of 2006. We will want the analyst estimates for all the firms with a ticker in the master `linking_table`.
 
-We need [the last review date](https://wrds-www.wharton.upenn.edu/pages/support/support-articles/ibes/detail-history-file-meanings-date-variables/)
+I am going to use parameters that we can calculate or set in `R` and then pass them on to the `SQL` query. The details are explained in this [blogpost by Irene Steves](https://irene.rbind.io/post/using-sql-in-rstudio/).
 
 ```{r}
 #| label: sql-params-announcement
@@ -38,7 +39,9 @@ tickers <- unique(linking_table$ticker)
 tickers_sql <- glue::glue_sql("{tickers*}", .con = wrds)
 ```
 
-For more information on how to pass data from R to sql see this [blogpost by Irene Steves](https://irene.rbind.io/post/using-sql-in-rstudio/). 
+The dates of the estimate and the actual earnings announcement will be critical to construct unexpected component of the earnings and to determine the exact event data, i.e. the date that (the unexpected component of) the earnings are announced. Thankfully, WRDS provides a [description of the date variables](https://wrds-www.wharton.upenn.edu/pages/support/support-articles/ibes/detail-history-file-meanings-date-variables/). `anndats` is the first day that an analyst set their estimate for the earnings per share and the `revdats` is the last day that the analyst confirmed their estimate. We will use `revdats` as the defacto date that the analyst provided the estimate. `anndats_act` is the earnings announcement date. `value` is the estimated EPS by the analyst and `actual` is the actual EPS as announced by the firm. `pdf` is flag whether the EPS if for the primary share class or on a diluted basis. I included both and that is probably appropriate for this paper. `fpi` is the forecast period indicator if we set this to "6", we get the earnings estimates that are done in the quarter before the earnings announcements. All these variables can be verified in the data descriptions on WRDS. As you can see, it's quite important if you work with data that you have not collected yourself to read the data descriptions.
+
+In the actual `sql` query you can see that the I use the parameters that I constructed before in `R` by adding an `?` infront of the parameter name when using them.
 
 ```{sql}
 --| label: sql-ibes
@@ -48,25 +51,30 @@ SELECT ticker, cusip, fpi, anndats, revdats, pdf, value, anndats_act, actual, an
 FROM ibes.det_epsus
 WHERE anndats_act BETWEEN ?begin_date AND ?end_date
 AND actual IS NOT NULL
-AND fpi IN ('6', '7', '8', '9')
+AND fpi = '6'
 AND ticker IN (?tickers_sql)
-AND revdats + 90 >= anndats_act
 ```
+
+We save the data with `R`. See the previous page for how to get the output of an `sql` query into `R`.
 
 ```{R}
 ann_ibes <- as_tibble(ibes_query) %>%
-  rename_all(tolower) %>%
-  print()
+  rename_all(tolower)
 saveRDS(ann_ibes, here("data", "freaky_friday", "ann_ibes.RDS"))
+glimpse(ann_ibes)
 ```
 
 ## Compustat
+
+Following the paper, we will verify the earnings announcement date in I/B/E/S with the earnings announcement date in Compustat. Given the importance of finding the exact date for an event study, it is not surprising that @dellavigna2009 spent a lot of effort to make sure that they have the date right. 
 
 ```{r}
 #| label: sql-params-2
 gvkeys <- unique(linking_table$gvkey)
 gvkeys_sql <- glue::glue_sql("{gvkeys*}", .con = wrds)
 ```
+
+`rdq` is the earnings announcement data in Compustat.
 
 ```{sql}
 --| label: sql-compu
@@ -81,56 +89,63 @@ AND gvkey IN (?gvkeys_sql)
 ```{R}
 ann_compu <- as_tibble(compu_query) %>%
   rename_all(tolower) %>%
-  mutate(cusip = str_sub(cusip, 1, 8)) %>%
-  print()
+  mutate(cusip = str_sub(cusip, 1, 8))
 saveRDS(ann_compu, here("data", "freaky_friday", "ann_compu.RDS"))
+glimpse(ann_compu)
 ```
 
 ## Combine Announcements
 
-I think some firms have two estimates because they have two types of shares. I link them twice through cusip as a check. I end up with slightly less earnings announcements but I am okay with this.
+To combine the two datasets, we will link them through a simplified version of the larger linking table. I will also enforce that the first 6 characters of cusip are the same. I don't think it is strictly necessary to do that but it does gives us more confidence that the links are of higher quality. We need to match the I/B/E/S data and the Compustat data based on the firm and its earnings announcement date. However, if you read the paper [@dellavigna2009], you will notice that the reason why want to combine is because the date in both datasets does not always match. The paper gets around that by matching earnings announcements if the date is not more than 5 days apart in the two data sources. This is why I create `anndat_begin` and `anndat_end` to define the interval in which we want to match the data. Finally, we can calculate the actual event date as the minimum of the date in the I/B/E/S data and the Compustat data [@dellavigna2009] [^pmin].
+
+[^pmin]: We need to use `pmin` so that the mutate statement knows that it needs to take the minimum between the two columns for each row and not over the whole dataset.
+
+You can also see that I have two lines of commented code. In these lines, I read in the datasets again. This is not strictly necessary to make this file fully reproducible but it does make debugging the code easier. If I want to make some changes to the code I do not have to download the data again from WRDS. I can just use the one in the data folder.
 
 ```{r}
 #| label: simplify-ibes-merge
-simple_link <- linking_table %>%
-  select(ticker, gvkey, permno, cusip) %>%
-  mutate(cusip = str_sub(cusip, end = 8)) %>%
-  distinct()
 # ann_ibes <- readRDS(here("data", "freaky_friday", "ann_ibes.RDS"))
 # ann_compu <- readRDS(here("data", "freaky_friday", "ann_compu.RDS"))
+simple_link <- linking_table %>%
+  select(ticker, gvkey, permno, cusip) %>%
+  mutate(cusip = str_sub(cusip, end = 6)) %>%
+  distinct()
 earn_ann <- ann_ibes %>% distinct(ticker, actual, pdf, cusip, anndats_act) %>%
+  mutate(cusip = str_sub(cusip, end = 6)) %>%
   left_join(simple_link, by = join_by(ticker)) %>%
   filter(!is.na(gvkey), !(cusip.x != cusip.y)) %>%
   select(-starts_with("cusip")) %>%
-  print() %>%
   mutate(anndat_begin = anndats_act - 5, anndat_end = anndats_act + 5) %>%
   left_join(ann_compu, by = join_by(gvkey == gvkey,
                                     anndat_begin <= rdq,  anndat_end >= rdq)) %>%
   filter(!is.na(rdq)) %>%
   mutate(anndat = pmin(anndats_act, rdq)) %>%
-  select(-anndat_begin, -anndat_end) %>%
-  print()
+  select(-anndat_begin, -anndat_end)
 saveRDS(earn_ann, here("data", "freaky_friday", "earn_ann.RDS"))
+glimpse(earn_ann)
 ```
 
 `earn_ann` serves as a linking table to match different earnings announcements (as opposed to firms and their securities in `linking_table`)
 
-| variable    | data source | description              |
-|-------------|-------------|--------------------------|
-| ticker      | I/B/E/S     | Identifier               |
-| anndats_act | I/B/E/S     | Actual Announcement Date |
-| gvkey       | Compustat   | Identifier               |
-| permno      | CRSP        | Identifier               |
-| cusip       |             | Identifier of length 8   |
-| rdq         | Compustat   | Actual Announcement Date |
-| anndat      |             | `pmin(rdq, anndats_act)` |
+| variable    | data source | description                   |
+|-------------|-------------|-------------------------------|
+| ticker      | I/B/E/S     | Identifier                    |
+| anndats_act | I/B/E/S     | Actual Announcement Date      |
+| gvkey       | Compustat   | Identifier                    |
+| permno      | CRSP        | Identifier                    |
+| cusip       |             | Identifier of length 6,8 or 9 |
+| rdq         | Compustat   | Actual Announcement Date      |
+| anndat      |             | `pmin(rdq, anndats_act)`      |
 
 `anndat` is the validated way of calculating the announcement date. However, we need to keep the other dates around because we will need them to link back to the original databases.
 
+The paper states that they have 154,051 earnings announcements [@dellavigna2009]. We have `r nrow(earn_ann)` earnings announcements.
 
 # Analyst Expectations
 
-TODO: Explanation on the use of dtplyr
+Finally, we have to calculate the median analyst earnings per share estimate for each company in the 30 days before the earnings announcement [@dellavigna2009]. I will use the `dtplyr` package to do the calculations. I like the `tidyverse` for its expressiveness and readability but for some computations it can be slow [^slow]. The `data.table` and the general [`fastverse`](https://fastverse.github.io/fastverse/) can help speed up computations but the code syntax is less intuitive for beginner programmers. A nice intermediate step is to use the `dtplyr` package which translates `tidyverse` code into `data.table` code. We only have to make our datasets ready for the `data.table` code with `lazy_dt()`. The rest of the code should look like regular old `tidyverse` code. First, we only keep the last observation for every analyst in the 30 days before the earnings announcement. Second, we calculate the median estimate and some other statistics about the analyst estimates. In the last step, we convert the dataset back to a `tidyverse` `tibble` so that we can make use of our regular tidyverse functions.
+
+[^slow]: Nevertheless, with some smart programming you can get the `tidyverse` to be very speedy as well. See further when we calculate the abnormal returns.
 
 ```{r}
 #| label: analyst-expectations
@@ -148,8 +163,8 @@ analyst <- select(earn_ann_lazy, ticker, anndats_act, anndat) %>%
             mean = mean(value, na.rm = T),
             mean_days = mean(pmax(0, anndat - revdats))) %>%
   ungroup() %>%
-  as_tibble() %>%
-  print()
+  as_tibble()
 saveRDS(analyst, here("data", "freaky_friday", "analyst.RDS"))
+glimpse(analyst)
 ```
 
