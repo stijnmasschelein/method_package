@@ -32,10 +32,8 @@ famafrench <- read_csv(file = here("data", "F-F_Research_Data_Factors_daily.csv"
   print()
 ```
 
-::: {.aside}
 - `shrout` is shares outstanding in 1000
 - `market_value` is in million USD
-:::
 
 # Abnormal returns
 
@@ -160,11 +158,11 @@ glimpse(surprise)
 
 Finally, I apply the data cleaning rules from @dellavigna2009. I also include the a print statement so that we can track how many observations are removed after each data cleaning step. The following rules are applied:
 
-    - Remove the observations where `surprise` is missing.
-    - Remove the observations where the median or actual estimate is larger than the price.
-    - Remove penny stocks which I arbitrarily and after some googling decide to be stocks with a price lower than $2 per stock.
-    - Remove the observations with earnings announcement on Saturday and Sunday.
-    - I remove the observations with a car in the top and bottom .05% of observations.
+- Remove the observations where `surprise` is missing.
+- Remove the observations where the median or actual estimate is larger than the price.
+- Remove penny stocks which I arbitrarily and after some googling decide to be stocks with a price lower than $2 per stock.
+- Remove the observations with earnings announcement on Saturday and Sunday.
+- I remove the observations with a car in the top and bottom .05% of observations.
 
 ```{r}
 winsorise <- 5/10000
