@@ -15,6 +15,8 @@ project:
     - freaky_friday/download_data.qmd
     - freaky_friday/download_stocks.qmd
     - freaky_friday/abnormal_returns.qmd
+    - freaky_friday/descriptive.qmd
+    - freaky_friday/regressions.qmd
 
 website:
   sidebar:
@@ -39,6 +41,8 @@ website:
         - freaky_friday/download_data.qmd
         - freaky_friday/download_stocks.qmd
         - freaky_friday/abnormal_returns.qmd
+        - freaky_friday/descriptive.qmd
+        - freaky_friday/regressions.qmd
 
 bibliography: citations.bib
 author: "Stijn Masschelein"

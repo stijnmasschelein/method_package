@@ -110,7 +110,7 @@ quantiles <- main %>%
                           surprise == 0 ~ "zero")) %>%
   mutate(
     quintile = ntile(surprise, 5),
-    .by = c(group, sign, year)) %>%
+    .by = c(sign, year)) %>%
   mutate(
     quantile = case_when(sign == "positive" ~ 6 + quintile,
                          sign == "negative" ~ quintile,

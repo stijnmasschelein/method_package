@@ -1,0 +1,170 @@
+---
+title: Create the regression tables
+---
+
+# Setup
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(lubridate)
+library(here)
+library(fixest)
+library(modelsummary)
+gof_omit <- "Adj|RMS|IC"
+i_am("freaky_friday/regressions.qmd")
+```
+
+# Data
+
+```{r}
+#| label: data
+main <- readRDS(here("data", "freaky_friday", "main.RDS")) %>%
+  mutate(friday = if_else(weekday == "Fri", 1, 0),
+         year = year(anndat),
+         month = month(anndat),
+         quarter = (month - 1) %/% 3 + 1) %>%
+  mutate(sign = case_when(surprise > 0 ~ "positive",
+                          surprise < 0 ~ "negative",
+                          surprise == 0 ~ "zero")) %>%
+  mutate(
+    quintile = ntile(surprise, 5),
+    .by = c(sign, year)) %>%
+  mutate(
+    quantile = case_when(sign == "positive" ~ 6 + quintile,
+                         sign == "negative" ~ quintile,
+                         sign == "zero" ~ 6
+                         )
+  ) %>%
+  glimpse()
+```
+
+The main regression table only compares the bottom quintile to the top quintile. @dellavigna2009 also specify a number of indicator variables based on year, month, and the size of the firm (adjusted for the average of the logarithm of the size).
+
+@dellavigna2009 also control for the volatility of earnings surprises where volatility is measured by the standard deviation in the 4 years before the earnings announcement. It turns out that this is a quite computational expensive exercise. Below, I first write a function with to select the necessary earnings surprises and than calculate the standard deviation. Than, I use the function making use of the `dtplyr` package which makes use of the faster `data.table` package to do data cleaning. The only extra step we need to make is to make the `main` data compatible with the package through the `lazy_dt` function and use the new compatible `main_dt` in our function. You can see that the two functions give the same result on a test firm and that we decrease the run time of the function by a factor of 2.
+
+```{r}
+#| label: get-volatility
+get_volatility <- function(gvkey_in, anndat_in, lag = 4){
+  anndat_min_lag <- anndat_in - lag * 365 - 1
+  surprises <- main %>%
+    filter(gvkey == gvkey_in, anndat < anndat_in,
+           anndat >= anndat_min_lag) %>%
+    filter(!is.na(surprise)) %>%
+    pull(surprise)
+  volatility <- if_else(length(surprises) >= 4, sd(surprises),
+                        NA_real_)
+  return(volatility)
+}
+library(dtplyr)
+main_dt <- lazy_dt(main)
+get_volatility_dt <- function(gvkey_in, anndat_in, lag = 4){
+  anndat_min_lag <- anndat_in - lag * 365 - 1
+  surprises <- main_dt %>%
+    filter(gvkey == gvkey_in, anndat < anndat_in,
+           anndat >= anndat_min_lag) %>%
+    filter(!is.na(surprise)) %>%
+    pull(surprise)
+  volatility <- if_else(length(surprises) >= 4, sd(surprises),
+                        NA_real_)
+  return(volatility)
+}
+test_key <- "001081"
+test_anndat <- ymd("2006-02-15")
+get_volatility(gvkey = test_key, anndat_in = test_anndat)
+get_volatility_dt(gvkey = test_key, anndat_in = test_anndat)
+
+microbenchmark::microbenchmark(vol = get_volatility(gvkey = test_key, anndat_in = test_anndat),
+                               vol_dt = get_volatility_dt(gvkey = test_key, anndat_in = test_anndat),
+                               times = 20)
+```
+
+We can now use the faster function to calculate the volatility measures with the other control variables.
+
+```{r}
+#| label: subset-for-regressions
+#| output: false
+subset <- main %>%
+  filter(quantile %in% c(1,11)) %>%
+  mutate(top = if_else(quantile == 11, 1, 0),
+         log_size = log(market_value),
+         volatility = pmap_dbl(list(gvkey, anndat),
+                               ~ get_volatility_dt(..1, ..2),
+                               .progress = TRUE)) %>%
+  mutate(log_size_adj = log_size - mean(log_size, na.rm = T),
+         .by = c(quarter, year)) %>%
+  mutate(size_decile = ntile(log_size_adj, 10)) %>%
+  mutate(vol_decile = ntile(volatility, 10),
+         .by = year)
+saveRDS(subset, here("data", "freaky_friday", "subset.RDS"))
+```
+
+# Regressions
+
+## Table 2
+
+The tables do not really replicate which is interesting to me. For a number of reasons.
+
+- The results are more consistent. I wonder whether I got rid of more outliers earlier. Remember I did end up with less observations. One interpretation is that I have cleaned the data better, the other is that I got rid of important, influential observations by being too strict when cleaning the data.
+- The results for the short term CAR are consistent with the figure. Friday market reactions to bottom quantile surprises are more positive than non-friday market reactions and the sign flips for top quantile surprises.
+- I also lose substantially more observations due to the inclusion of the volatility measures. I do not know exactly why that is the case.
+
+### Panel A: Short Term CAR
+
+```{r}
+subset <- readRDS(here("data", "freaky_friday", "subset.RDS"))
+#| label: table2a
+model1a <- feols(car_short ~ friday * top,
+                 cluster = "anndat",
+                 data = subset)
+model2a <- feols(car_short ~ friday * top | (year + month + size_decile) : top,
+                 cluster = "anndat",
+                 data = subset)
+model3a <- feols(car_short ~ friday * top | (year + month + size_decile + vol_decile) : top,
+                 cluster = "anndat",
+                 data = subset)
+msummary(list(model1a, model2a, model3a), gof_omit = gof_omit, stars = TRUE)
+```
+
+### Panel B: Long Term CAR
+
+```{r}
+#| label: table2b
+model1b <- feols(car_long ~ friday * top,
+                 cluster = "anndat",
+                 data = subset)
+model2b <- feols(car_long ~ friday * top | (year + month + size_decile) : top,
+                 cluster = "anndat",
+                 data = subset)
+model3b <- feols(car_long ~ friday * top | (year + month + size_decile + vol_decile) : top,
+                 cluster = "anndat",
+                 data = subset)
+msummary(list(model1b, model2b, model3b), gof_omit = gof_omit, stars = TRUE)
+```
+
+## Table 3
+
+```{r}
+#| label: table3
+main_extra <- main %>%
+  mutate(log_size = log(market_value))  %>%
+  mutate(log_size_adj = log_size - mean(log_size, na.rm = T),
+         .by = c(quarter, year)) %>%
+  mutate(size_decile = ntile(log_size_adj, 10))
+
+model1 <- feols(car_short ~ friday * quantile,
+                cluster = "anndat",
+                data = main_extra)
+model2 <- feols(car_short ~ friday + friday : quantile
+                | (year + month + size_decile) : quantile,
+                cluster = "anndat",
+                data = main_extra)
+model3 <- feols(car_long ~ friday * quantile,
+                cluster = "anndat",
+                data = main_extra)
+model4 <- feols(car_long ~ friday  + friday : quantile
+                | (year + month + size_decile) : quantile,
+                cluster = "anndat",
+                data = main_extra)
+msummary(list(model1, model2, model3, model4), gof_omit = gof_omit, stars = TRUE)
+```
