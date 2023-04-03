@@ -1,8 +1,8 @@
 ---
-title: How to download the linking databases
+title: WRDS linking data
 knitr:
   opts_chunk:
-    eval: true 
+    eval: true
 ---
 
 I use three packages on this page and two of them require some more explanation. The `here` package helps with managing the different files in this larger project. I can refer to different files relative to the root folder all the files are in. The only thing that I need to do is to say where this file is compared to the root folder with the `i_am` function. The second package is the `RPostgres` package that helps make a connection with the WRDS data sources.

@@ -1,7 +1,19 @@
 ---
-title: "method_package"
+title: "Content"
 ---
 
-## Quarto
+## Slides
 
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+The slides contain the lecture slides for the first half of the semester.
+
+- [Slides 1](slides/slides1.qmd)
+- [Slides 2](slides/slides2.qmd)
+- [Slides 3](slides/slides3.qmd)
+- [Slides 4](slides/slides4.qmd)
+- [Slides 5](slides/slides5.qmd)
+
+## Freaky Friday
+
+Contains an attempt at a replication from downloading the data to analyzing for @dellavigna2009. 
+
+[Introduction to the Replication](freaky_friday/index.qmd)

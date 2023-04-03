@@ -1,7 +1,6 @@
 ---
-title: Run the expected return regressions and calculate abnormal returns
+title: Abnormal returns
 ---
-
 
 # Setup
 

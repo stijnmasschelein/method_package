@@ -1,5 +1,5 @@
 ---
-title: How to download the stock price data.
+title: Stock price data
 ---
 
 On this page, we download the stock price data so that we can later calculate the abnormal return after the earnings announcements.

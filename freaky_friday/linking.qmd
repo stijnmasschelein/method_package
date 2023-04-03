@@ -1,8 +1,8 @@
 ---
-title: How to combine the linking databases
+title: Combining databases
 knitr:
   opts_chunk:
-    eval: true 
+    eval: true
 ---
 
 The packages are the same as before.

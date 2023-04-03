@@ -1,5 +1,5 @@
 ---
-title: Create descriptive statistics
+title: Descriptive statistics
 ---
 
 # Setup
@@ -37,7 +37,7 @@ summarise(main, .by = weekday,
                       across(c(Number, Fraction), sum)) %>%
             mutate(weekday = "All")) %>%
   mutate(Fraction = format(Fraction, digits = 2),
-         Number = format(Number, digits = 0)) %>%
+         Number = format(Number)) %>%
   pivot_longer(-weekday) %>%
   pivot_wider(names_from = weekday) %>%
   select(All, Mon, Tue, Wed, Thu, Fri) %>%
@@ -141,7 +141,7 @@ quantiles %>%
   mutate(fig_name = if_else(window == "car_short", "Figure 1a", "Figure 1b")) %>%
   ggplot(aes(y = car, x = quantile, group = group, colour = group)) +
   stat_summary(fun.data = mean_se, geom = "errorbar", width = .2) +
-  stat_summary(fun.y = mean, geom = "line") +
+  stat_summary(fun = mean, geom = "line") +
   scale_color_grey() +
   facet_wrap(~ fig_name, nrow = 2)
 ```
