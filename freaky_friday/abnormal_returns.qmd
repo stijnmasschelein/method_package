@@ -77,7 +77,7 @@ create_coefs <- function(n = 6){
               by = join_by(date == date)) %>%
     filter(!is.na(ret), !is.infinite(ret)) %>%
     summarise(y = list(cbind(ret)), X = list(cbind(alpha = 1, beta = mkt)),
-              .by = c(permno, anndat)) %>%
+               .by = c(permno, anndat)) %>%
     mutate(coefs = pmap(list(X, y), ~ lm.fit(..1, ..2) %>% coef()),
            .by = c(permno, anndat)) %>%
     select(-y, -X)
@@ -102,6 +102,7 @@ Finally, I use the `pivot_wider` function to transform the dataset from the long
 ```{r}
 #| label: abnormal-returns
 N <- nrow(earn_ann)
+results <- create_coefs()
 results <- create_coefs(N)
 
 abnormal <- results %>%
@@ -110,11 +111,11 @@ abnormal <- results %>%
   left_join(select(all_stocks, permno, date, ret),
             by = join_by(permno == permno,
                          date75 >= date, anndat <= date)) %>%
-  left_join(select(famafrench,  mkt, rf, date),
+  left_join(select(famafrench, mkt, rf, date),
             by = join_by(date == date)) %>%
   mutate(time_frame = if_else(date - anndat <= 1, "short", "long")) %>%
   summarise(raw = prod(1 + ret), mkt = prod(1 + mkt),
-            .by = c(permno, anndat, time_frame, beta)) %>%
+            .by = c(permno, anndat, time_frame, beta)) %>% 
   mutate(car = raw - 1 - beta * (mkt - 1)) %>%
   select(-beta, -raw, -mkt) %>%
   filter(!is.na(car)) %>%

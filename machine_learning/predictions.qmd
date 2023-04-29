@@ -1,0 +1,29 @@
+---
+title: Predictions
+---
+
+# Introduction
+
+So far in the course, I have made the assumption that our research is mainly interested in estimating a certain parameter of interest, i.e. we want to know the effect of a certain variable on a certain outcome variable. For instance, we are interested in the effect of a policy uncertainty on a firm's investment decisions [@falk2018], or the use of options in CEO compensation on risk taking [@shue2017]. In terms of a regression model, $y_i = \alpha + \beta x_i + \gamma z_i + \epsilon_i$, we are interested in $\beta$, the effect of $x$ on $y$ after controlling for $z$. All the statistical and conceptual tools in the lectures had the aim of making sure that the estimate $\hat{\beta}$ is the best possible estimate of the true underlying and unobserved $\beta$ [@mullainathan2017].
+
+In contrast, some research questions focus on building a model to predict the outcomes. In that case, we are not interested in the estimated parameter $\beta$ (or $\alpha$ or $\gamma). We are interested in the prediction $\hat{y}$, especially for future or unobserved cases [@mullainathan2017]. One of the biggest risks for prediction tasks is that our model excels at predicting the outcomes in the data that we have but it is rubbish at predicting for new data. In that case, our model is *overfitting*. The strength of a lot of machine learning applications is that they excel at incorporating a lot of variables while at the same time guard against overfitting. If prediction is the research question these are the methods we should turn to.
+
+# Content
+
+For this course, I will give a very gentle introduction to the `tidymodels` framework from the same team as the `tidyverse`. The framework provides a unified workflow to work with different machine learning (and traditional regression) models for prediction tasks. I will not use it for a typical prediction task. I will use it for the research question whether (initial) stock price reactions to Friday earnings announcements are muted [@dellavigna2009].
+
+For that research question, we want to estimate the abnormal return after a company's earnings announcement. That means that we need to *predict* what the counterfactual return would have been in the absence of an announcement. That is a prediction task! We did not really care whether we correctly estimated the market beta or the effect of the factors. We cared whether we predicted the expected returns correctly. When we only have one or three predictors the advantage of the machine learning methods is likely to be minimal but we could use more predictors. The market return and the factors are essentially stand ins for controlling for other factors besides that announcement that could effect the return. A straight forward extension of the factor models would be to include the returns of a number of peer firms as predictors and allow the weight (i.e. the betas) to vary [@baker2020]. In this case, we might have a lot of predictors and only a limited amount of observations to estimate the betas. This is a classical case where we might be at risk of overfitting.
+
+# Other Applications
+
+The inclusion of abnormal returns is a specific application of a more general use case for machine learning techniques in accounting and finance research. Sometimes, we are not interested in some parameters. We just want to include (control) predictors to remove some potential confounding effect. For instance, in my original regression model, if we have a lot of variables $z$ but we don't care about the parameters $\gamma$, we can use machine learning techniques to include more variables than a typical regression would allow [@mullainathan2017].
+
+$$
+y_i = \alpha + \beta x_i + \gamma z_i + \epsilon_i
+$$
+
+One way to think about this is that we are splitting up the regression in two steps. First, we *predict* the outcome variable, $\hat{y}$ based on the many predictors $z$. Second, we estimate the parameter $\beta$ with $y - \hat{y}$ as the dependent variable [@mullainathan2017].
+
+Another related application is that we want to use the machine learning techniques to predict the causal variable of interest with the predictors z, so that we can use $x - \hat{x}$ as the new causal variable and estimate it's effect on $y - \hat{y}$. For some research questions, it will be appropriate to say that after we removed the influence of a bunch of observable factors, we are more confident that the remaining variation in $x$ and $y$ is the capturing the causal effect we are interested in. However, remember that sometimes the opposite is true. In the [@shue2017] paper, we wanted to predict the changes in the option awards that followed a predictable schedule. The paper essentially used a very simple prediction model to predict the option awards that we could treat as if they are random (or exogenous).
+
+A final application is when you want to increase the dataset when you need to collect some variable by manually labelling or categorising some data. Sometimes it is possible to collect the data manually for a subset of the data. You can then use the machine learning tools to predict what variable based on the relation between predictors and your measure in the manually collected data.

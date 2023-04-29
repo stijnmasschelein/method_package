@@ -1,0 +1,236 @@
+---
+title: Assignment
+---
+
+For the assignment, you can just copy the code in the assignment and make the necessary changes where indicated. Do not forget to copy all the code. Not just the one where you change something.
+
+# Setup
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(lubridate)
+library(cowplot)
+theme_set(theme_cowplot(font_size = 18))
+library(here)
+i_am("freaky_friday/assignment.qmd")
+```
+
+Let's restrict the data to two years. So that the computations do not take too long.
+
+```{r}
+#| label: date-parameters
+begin <- ymd("2003-01-01")
+end <- ymd("2005-12-31")
+```
+
+I keep the full stock price data for now. This code is a slightly adapted version of the [Abnormal returns](abnormal_returns.qmd) page on the website. There are two changes: (1) we have to filter only the announcements between `begin` and `end` and (2) we add more factors from the French data. I will not go into the theoretical details here. The basic idea is that stock return are not only sensitive to one set of economic factors which are captured in the market return, but also to more specific factors such as the size (`smb`) and whether the company is value or growth company (`hml`). In what follows, we will treat the returns to these factors exactly the same as the market return, i.e. as predictors for the returns of the company that we are interested in.
+
+```{r}
+#| label: data
+earn_ann <- readRDS(here("data", "freaky_friday", "earn_ann.RDS")) %>%
+  filter(anndat >= begin, anndat <= end)
+analyst <- readRDS(here("data", "freaky_friday", "analyst.RDS")) %>%
+  filter(anndat >= begin, anndat <= end)
+all_stocks <- readRDS(here("data", "freaky_friday", "all_stocks.RDS"))
+famafrench <- read_csv(file = here("data", "F-F_Research_Data_Factors_daily.csv"),
+                       col_names = c("date", "mkt_rf", "smb", "hml", "rf"),
+                       skip = 5, col_type = "ddddd") %>%
+  mutate(date = ymd(date)) %>%
+  mutate_if(is.numeric, ~ . / 100) %>%
+  mutate(mkt = mkt_rf + rf) %>%
+  print()
+```
+
+# Three-Factor model
+
+The following code is almost identical to the [Abnormal returns](abnormal_returns.qmd) page. However, for the three-factor model we need to run the following regression for each announcement.
+
+$$ R_{u,k} = \alpha_{t,k} + beta^{mkt}_{t,k} R_{u,m}
++ \beta^{size}_{t,k} smb_{u,m} + \beta^{value}_{t,k} hlm_{u,m} + \epsilon_{u,k}$$
+
+That is, we include two more factors (`smb`, and `hlm`) in the regression model that we run for each announcement. The three-factor model typically works with the stock return and market return adjusted for the risk free rate (i.e. `ret - rf` and `mkt_rf` respectively). The code will give us a column `coefs` with the 4 estimated parameters `alpha`, `beta_mkt`, `beta_size`, `beta_value`.
+
+You need to change the code below in two parts as indicated by the comments in the code.
+
+The code first creates a function `creat_coefs_3factor` for `n` earnings announcements where the default value for `n` is 6. You can test whether your function works by creating the test object which should be a data set with 6 rows. One for each of the 6 earnings announcements at the top of the `earn_ann`
+
+```{r}
+#| label: three-factor-estimate
+#| eval: false
+create_coefs_3factor <- function(n = 6){
+  earn_ann %>% head(n = n) %>%
+    distinct(permno, anndat) %>%
+    mutate(start = anndat - 300, end = anndat - 46) %>%
+    left_join(select(all_stocks, permno, date, ret),
+              by = join_by(permno == permno, start <= date, end >= date)) %>%
+    # Changes are necessary in the following lines
+    # ... needs to be changed
+    left_join(select(famafrench, ...),
+              by = join_by(date == date)) %>%
+    filter(!is.na(ret), !is.infinite(ret)) %>%
+    # Changes are necesary in the following lines:
+    # .x, .y., .z need to be changed
+    summarise(y = list(cbind(ret - rf)),
+              X = list(cbind(alpha = 1, beta_mkt = .x,
+                             beta_size = .y, beta_value = .z)),
+              .by = c(permno, anndat)) %>%
+    mutate(coefs = pmap(list(X, y), ~ lm.fit(..1, ..2) %>% coef()),
+           .by = c(permno, anndat)) %>%
+    select(-y, -X)
+}
+
+test <- create_coefs_3factor()
+
+microbenchmark::microbenchmark(
+                  create_coefs_3factor(1000),
+                  times = 10)
+```
+
+If it takes on average (noticeably) more than 10 seconds to run the three-factor model on 1000 observations, it is ok to limit the sample to 1 year. You can change the `start` and `end` date above and rerun the code.
+
+# Abnormal Returns
+
+In the first parts of the next code, we will calculate the coefficients for all announcements in the 2 year dataset. This is computationally the most intensive step and I could take up to two minutes to finish. When finished, we have an object `results` that contains the `alphas` and `betas`, we need to calculate the abnormal returns.
+
+In the next step, we need to calculate the abnormal returns for every announcement in our data based on the three factors (`mkt`, `smb`, `hlm`). That is, we have to subtract the actual return on a day, $h$, after the announcement from the expected return based on the three-factor model.
+
+$$ R_{t,k} ^ {h} = R_{h, k} - \alpha_{t,k} - \beta^{mkt}_{t,k} R_{h,m}
++ \beta^{size}_{t,k} smb_{h,m} - \beta^{value}_{t,k} hlm_{h,m}$$
+
+$R_{t,k}^h$ is the abnormal return on day $h$ after the announcement, $R_{h,m}$ is the market return on day $h$, $smb_{h,m}$ is the size factor and $hlm_{h,m}$ is the value factor.
+
+In the last change, you need to add up the abnormal returns for the days 0 and 1 for the short window after the announcement and the for the days 2-75 after the announcement. That is you need to calculate `car_sum`
+
+I also give the accumulation with the product which is more correct but the literature typically works with the sum as far as I could discern. You will also see further in the code that it does not really matter for our results even in the restricted dataset. You can use `car_prod` as an example for `car_sum` where `car_sum` is simpler.
+
+```{r}
+#| label: abnormal-returns
+#| eval: false
+N <- nrow(earn_ann)
+results <- create_coefs_3factor(N)
+
+abnormal <- results %>%
+  unnest_wider(coefs) %>%
+  mutate(date75 = anndat + 75) %>%
+  left_join(select(all_stocks, permno, date, ret),
+            by = join_by(permno == permno,
+                         date75 >= date, anndat <= date)) %>% print %>%
+  # Changes are necessary in the following lines
+  # ... needs to be changed
+  left_join(select(famafrench, ...),
+            by = join_by(date == date)) %>%
+  # Changes are necessary in the following lines
+  # ... needs to be changed
+  mutate(ar = ...,
+         time_frame = if_else(date - anndat <= 1, "short", "long")) %>%
+  # Changes are necessary in the following lines
+  # .x needs to be changed
+  summarise(car_sum = ...,
+            car_prod = prod(1 + ar) - 1,
+            .by = c(permno, anndat, time_frame)) %>%
+  filter(!is.na(car_sum), !is.na(car_prod)) %>%
+  pivot_wider(values_from = c(car_sum, car_prod), names_from = time_frame)
+glimpse(abnormal)
+```
+
+# Putting it all together
+
+The next two code blocks gather the necessary market price and market value information. Next we combine the earning announcement data with the analyst expectations data, the abnormal returns, and the stock price data. Finally, we calculate the earnings surprise scaled by the stock price.
+
+You can just include this code as is.
+
+```{r}
+#| label: clean-stock-prices
+clean_prices <- all_stocks %>%
+  filter(prc > 0) %>%
+  select(permno, date, prc, shrout) %>%
+  mutate(market_value = prc * shrout) %>%
+  select(-shrout) %>%
+  print()
+```
+
+```{r}
+#| label: merging-everything
+#| eval: false
+surprise <- earn_ann %>%
+  left_join(analyst,
+            by = join_by(ticker, anndat, actual, pdf)) %>%
+  left_join(abnormal,
+            by = join_by(permno, anndat)) %>%
+  mutate(date_minus5 = anndat - 5) %>%
+  left_join(clean_prices,
+            by = join_by(permno, closest(date_minus5 >= date))) %>%
+  mutate(surprise = (actual - median) / prc)
+glimpse(surprise)
+```
+
+The last code block here further cleans the data following the rules set in the paper and as used by me in the [Abnormal returns](abnormal_returns.qmd) page. You can just include the code as is.
+
+```{r}
+#| label: data-cleaning
+#| eval: false
+winsorise <- 5/10000
+main <- surprise %>%
+  filter(!is.na(surprise)) %>%
+  filter(abs(median) < prc, abs(actual) < prc) %>%
+  filter(prc > 2) %>%
+  mutate(weekday = wday(anndat, label = TRUE)) %>%
+  filter(! weekday %in% c("Sat", "Sun")) %>%
+  filter(percent_rank(car_sum_long) >= winsorise,
+         percent_rank(car_sum_long) <= 1 - winsorise,
+         percent_rank(car_sum_short) >= winsorise,
+         percent_rank(car_sum_short) <= 1 - winsorise) %>%
+  mutate(group = if_else(weekday == "Fri", "Friday", "Non-Friday"),
+         year = year(anndat))
+```
+
+# Descriptive Plot
+
+The next code block creates the quantiles in the new `main` dataset so that we can recreate [one of the figures](descriptive.qmd).
+
+```{r}
+#| label: quantiles
+#| eval: false
+quantiles <- main %>%
+  mutate(sign = case_when(surprise > 0 ~ "positive",
+                          surprise < 0 ~ "negative",
+                          surprise == 0 ~ "zero")) %>%
+  mutate(
+    quintile = ntile(surprise, 5),
+    .by = c(sign, year)) %>%
+  mutate(
+    quantile = case_when(sign == "positive" ~ 6 + quintile,
+                         sign == "negative" ~ quintile,
+                         sign == "zero" ~ 6
+                         )
+  ) %>%
+  glimpse()
+```
+
+The last part you need to do is to recreate the quick version of [Figure 1a in the descriptives page](descriptive.qmd#figure-1)
+
+```{r}
+#| label: descriptive-plot
+#| eval: false
+ggplot(quantiles,
+       aes(...)) +
+  stat_summary(fun.data = mean_se, geom = "errorbar", width = .2) +
+  stat_summary(fun = mean, geom = "line") +
+  scale_color_grey()
+```
+
+This is some free code just to demonstrate how easy it is to combine `pivot_longer` and `ggplot` to create similar plots for a bunch of similar variables where the variables are originally in different columns.
+
+```{r}
+#| label: all-plots
+#| eval: false
+quantiles %>%
+  pivot_longer(c(car_sum_short, car_prod_short, car_sum_long, car_prod_long),
+               values_to = "car", names_to = "window") %>%
+  ggplot(aes(y = car, x = quantile, group = group, colour = group)) +
+  stat_summary(fun.data = mean_se, geom = "errorbar", width = .2) +
+  stat_summary(fun = mean, geom = "line") +
+  scale_color_grey() +
+  facet_wrap(~ window, nrow = 2)
+```

@@ -18,13 +18,15 @@ project:
     - freaky_friday/abnormal_returns.qmd
     - freaky_friday/descriptive.qmd
     - freaky_friday/regressions.qmd
+    - freaky_friday/assignment.qmd
+    - machine_learning/*.qmd
 
 website:
+  page-navigation: true
   sidebar:
     style: docked
     search: true
     collapse-level: 1
-    page-navigation: true
     contents:
       - section: "Introduction"
         contents:
@@ -47,6 +49,12 @@ website:
         - freaky_friday/abnormal_returns.qmd
         - freaky_friday/descriptive.qmd
         - freaky_friday/regressions.qmd
+        - freaky_friday/assignment.qmd
+      - section: "Machine Learning"
+        contents:
+        - machine_learning/predictions.qmd
+        - machine_learning/theory.qmd
+        - machine_learning/application.qmd
 
 bibliography: citations.bib
 author: "Stijn Masschelein"

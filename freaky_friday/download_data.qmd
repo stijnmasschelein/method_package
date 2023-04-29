@@ -24,7 +24,6 @@ wrds <- dbConnect(Postgres(),
 ```
 
 # Earnings Announcements
-
 ## I/B/E/S
 
 We start with the earnings announcement data from I/B/E/S with the analyst estimates. According to the method section in @dellavigna2009, we need the data from the start of 1995 to the middle of 2006. We will want the analyst estimates for all the firms with a ticker in the master `linking_table`.
@@ -110,14 +109,15 @@ simple_link <- linking_table %>%
   select(ticker, gvkey, permno, cusip) %>%
   mutate(cusip = str_sub(cusip, end = 6)) %>%
   distinct()
-earn_ann <- ann_ibes %>% distinct(ticker, actual, pdf, cusip, anndats_act) %>%
+earn_ann <- ann_ibes %>%
+  distinct(ticker, actual, pdf, cusip, anndats_act) %>%
   mutate(cusip = str_sub(cusip, end = 6)) %>%
   left_join(simple_link, by = join_by(ticker)) %>%
   filter(!is.na(gvkey), !(cusip.x != cusip.y)) %>%
   select(-starts_with("cusip")) %>%
   mutate(anndat_begin = anndats_act - 5, anndat_end = anndats_act + 5) %>%
   left_join(ann_compu, by = join_by(gvkey == gvkey,
-                                    anndat_begin <= rdq,  anndat_end >= rdq)) %>%
+                                    anndat_begin <= rdq,  anndat_end >= rdq)) %>% 
   filter(!is.na(rdq)) %>%
   mutate(anndat = pmin(anndats_act, rdq)) %>%
   select(-anndat_begin, -anndat_end)
