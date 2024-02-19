@@ -13,6 +13,7 @@ This setup code loads a package, `here`, that helps to navigate the folder struc
 library(here) 
 i_am("auxilary/introduction_to_rstudio_for_accfin.qmd")
 library(tidyverse)
+library(dbplyr)
 ```
 
 
@@ -33,6 +34,18 @@ wrds <- dbConnect(Postgres(),
 ```
 
 With an SQL string, we define which data we want. This is one of the cool things of these kind of files. You can combine different programming languages. Behind the scene, I have given the code a name, `wrds_data` for the output of the SQL query. You can see this if you are looking at the `.qmd` file.
+
+```{r}
+#| label: query_execcomp
+wrds_data <- tbl(wrds, in_schema("execcomp", "anncomp")) %>%
+  filter(year > 2010 & ceoann == "CEO") %>%
+  select(year, gvkey, cusip, exec_fullname, coname, ceoann,
+    execid, bonus, salary, stock_awards_fv, stock_unvest_val,
+    eip_unearn_num, eip_unearn_val, option_awards,
+    option_awards_blk_value, option_awards_num, tdc1, tdc2,
+    shrown_tot_pct, becameceo, joined_co, reason) %>%
+  collect()
+```
 
 ```{sql}
 --| label: sql_query_execcomp
