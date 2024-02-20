@@ -8,9 +8,17 @@ format:
 
 # Research tools - Data Analysis
 
+```{r}
+#| label: setup
+#| echo: false
+#| include: false
+library(here) 
+i_am("auxilary/introduction_to_r_rstudio_tidyverse.qmd")
+```
+
 ## Data analysis tools
 
-Our main tool for data analysis is the R statistical software [@R-base]. R is free software specifically aimed at statistical analysis and graphical representation. It is a fully developed programming language that allows to extend it with new packages with new capabilities. We are going to heavily rely on some of those packages.^[You can download R [from this CRAN server](https://cran.curtin.edu.au/)]
+Our main tool for data analysis is the R statistical software. R is free software specifically aimed at statistical analysis and graphical representation. It is a fully developed programming language that allows to extend it with new packages with new capabilities. We are going to heavily rely on some of those packages.^[You can download R [from this CRAN server](https://cran.curtin.edu.au/)]
 
 We are going to interact with the R software through Rstudio.^[You can download [from the Rstudio website](https://www.rstudio.com/products/rstudio/download/#download)] Rstudio is an integrated development environment for R. It allows you to easily write, test, and run R code, and integrate the results with explanations. One advantage of R and Rstudio is that you can install them on as many computers as you want.  You do not need a special license. This means that you do not have to be affiliated with the university to use the sofware. 
 
@@ -26,7 +34,8 @@ For larger projects, you should use a project in its own separate folder.^[See t
 
 In Rstudio, you can use the R console directly. I mainly use the R console to test the code I have written in my scripts and I would advice you to do the same thing. If you want to understand how R works. You can experiment by typing the following lines in the console.^[It is tempting to copy and paste the code but retyping the code is a surprising powerful way of learning to code. I would advise you to try to type as much of the code as possible when you are trying to figure out how R works.]
 
-```{r console, echo=TRUE}
+```{r}
+#| label: console
 x <- 1
 x
 x <- x + 1
@@ -57,79 +66,58 @@ R packages are additions to R that give R extra functionality.  One of the selli
 
 ## Finally some useful code! {#useful-code}
 
-Let's run some code. First, we have to tell R to use the packages
-in the `tidyverse`.
+Let's run some code. First, we have to tell R to use the packages in the `tidyverse`.
 
-```{r first_packages, echo = TRUE, eval = FALSE}
+```{r first_packages}
+#| label: first_package 
 library(tidyverse)
 ```
 
-Next, we have a look at the data of the compensation of CEOs of S&P500
-companies. First, we have to assign the file with the data to an object,
-`us_comp` in this case.  ^[The data is available on LMS or through the code in
-the ] The glimpse function gives an overview of the
-variables in the data, the type of the variables, and a couple of examples of
-the values for that variable.
+Next, we have a look at the data of the compensation of CEOs of S&P500 companies. First, we have to assign the file with the data to an object, `us_comp` in this case. ^[The data is available on LMS or through the code in the [detailed introduction file](../auxilary/introduction_to_rstudio_for_accfin.qmd)] The `glimpse` function gives an overview of the variables in the data, the type of the variables, and a couple of examples of the values for that variable.
 
-```{r first_data, echo = TRUE, warnings = FALSE}
-us_comp <- readRDS("data/us-compensation.RDS")
+```{r first_data}
+#| label: first_data
+us_comp <- readRDS(here("data", "us-compensation-new.RDS"))
 glimpse(us_comp)
 ```
 
-We can also look at a subset of the observations, i.e. we filter
-the observations from the company that has the key `001045`.
+We can also look at a subset of the observations, i.e. we filter the observations from the company that has the key `001045`.
 
-```{r filter, echo = TRUE}
+```{r}
+#| label: filter
 filter(us_comp, gvkey == "001045")
 ```
 
-You can see that the company, American Airlines, has had three
-CEOs since 2011. I used the `gvkey` to select a company and not
-its name. You will often use an id or a database key especially 
-if you are working with multiple datasets and you want to link
-observations from one dataset to observations in the other
-dataset.
+You can see that the company, American Airlines, has had four CEOs since 2011. I used the `gvkey` to select a company and not its name. You will often use an id or a database key especially if you are working with multiple datasets and you want to link observations from one dataset to observations in the other dataset.
 
-We can also filter data based on other variables. For instance,
-the below filters the observations from 2014 where the CEO had
-a salary over $1,000,000. 
+We can also filter data based on other variables. For instance, the below filters the observations from 2014 where the CEO had a salary over $1,000,000. 
 
-```{r filter-2, echo = TRUE}
+```{r}
+#| label: filter2
 filter(us_comp, salary > 1000, year == 2014)
 ```
 
-You can also select some variables if you are only interested in 
-those. If a variable has an undescriptive name, you can use
-select to rename the variable. For instance, `tdc1` is the total
-compensation of a the CEO. A more descriptive name will help you
-to remember what the variable actually means.
+You can also select some variables if you are only interested in those. If a variable has an undescriptive name, you can use select to rename the variable. For instance, `tdc1` is the total compensation of a the CEO. A more descriptive name will help you to remember what the variable actually means.
 
-```{r select, echo = TRUE}
+```{r}
+#| label: select
 select(us_comp, year, coname, bonus, salary, total = tdc1)
 ```
 
-You can also create new variables with the `mutate` function. I 
-created a variable that calculates what percentage of total 
-compensation is the CEO's salary.
+You can also create new variables with the `mutate` function. I created a variable that calculates what percentage of total compensation is the CEO's salary.
 
-```{r mutate, echo = TRUE}
+```{r}
+#| label: mutate
 select(us_comp, year, coname, bonus, salary, total = tdc1) %>%
   mutate(salary_percentage = salary / total)  
 ```
 
-Remark how the `select` statement from before is chained together
-with the `mutate` statement through the pipe operator (`%>%`). 
-This operator pipes the results from the first statemetn to the
-second statement. The second statement implicitly uses the result
-from the first statement as the data it is going to work with.
+Remark how the `select` statement from before is chained together with the `mutate` statement through the pipe operator (`%>%`).  This operator pipes the results from the first statemetn to the second statement. The second statement implicitly uses the result from the first statement as the data it is going to work with.
 
-You can use pipe statement to make your own descriptive
-statistics table. I created a table with some statistics for each
-firm. I first group the observations based on the `gvkey` and 
-then summarise each group with the same key by defining a number
-of new variables.
+You can use pipe statement to make your own descriptive statistics table. I created a table with some statistics for each firm. I first group the observations based on the `gvkey` and then summarise each group with the same key by defining a number of new variables.
 
-```{r summary, echo = TRUE}
+```{r}
+#| label: summary
 group_by(us_comp, gvkey) %>%
   summarise(N = n(), N_CEO = n_distinct(execid), 
             average = mean(salary), sd = sd(salary),
@@ -138,51 +126,31 @@ group_by(us_comp, gvkey) %>%
   ungroup()
 ```
 
+Recent updates allow you to write the same code in a shorter manner.
+
+```{r}
+#| label: summary_with_by
+summarise(us_comp, N = n(), N_CEO = n_distinct(execid), 
+          average = mean(salary), sd = sd(salary),
+          med = median(salary), minimum = min(salary), 
+          maximum = max(salary),
+          .by = gvkey) 
+```
+
 ## Looking for help
+Programming is hard work. You will make mistakes. You will get error messages. An important programming skill is to efficiently debug your code and find out what is going wrong. 
 
-Programming is hard work. You will make mistakes. You will get
-error messages. An important programming skill is to efficiently 
-debug your code and find out what is going wrong. 
+- The most important technique is trial and error. Change one thing in your code and see what the output is. Do you get an error message? What does the error message tell you? If you are carefull and do not change everything at once, this should at least help you to find out which part of the code does not work. This is one reason why scripts are so important. Because a script contains your entire analyis, you can always go back and (let your computer) redo the analysis from the start. 
 
-- The most important technique is trial and error. Change one
-  thing in your code and see what the output is. Do you get an 
-  error message? What does the error message tell you? If you 
-  are carefull and do not change everything at once, this should
-  at least help you to find out which part of the code does not
-  work. This is one reason why scripts are so important. Because
-  a script contains your entire analyis, you can always go back 
-  and (let your computer) redo the analysis from the start. 
+- If you are not sure how you should use a certain function in R, you can read its help files in the Rstudio *Help* window. You can search for more information what a function is doing. 
 
-- If you are not sure how you should use a certain function in R,
-  you can read its help files in the Rstudio *Help* window. You 
-  can search for more information what a function is doing. 
+- R is a very popular language. If you have a problem it is likely that someone else had the same problem before you. If you [Google](https://www.google.com) the error message, there is a decent chance you will find a solution to your problem.
 
-- R is a very popular language. If you have a problem it is likely 
-  that someone else had the same problem before you. If you 
-  [Google](https://www.google.com) the error message, there is a
-  decent chance you will find a solution to your problem.
-  
-- A specific website where a lot of these questions are asked is       
-  [StackOverflow](https://www.stackoverflow.com). You can often 
-  directly search for your error on the website and find multiple
-  solutions. You can improve your chances of finding a related
-  answer to your problem by adding the `[r]`, `[tidyverse]`, 
-  `[dplyr]`, `[ggplot]` tags to your error message.
+- A specific website where a lot of these questions are asked is       [StackOverflow](https://www.stackoverflow.com). You can often directly search for your error on the website and find multiple solutions. You can improve your chances of finding a related answer to your problem by adding the `[r]`, `[tidyverse]`, `[dplyr]`, `[ggplot]` tags to your error message.
 
-- You can also ask me directly for help on LMS. I set up a forum
-  for questions and I promise to help you with any R questions 
-  you might have for the unit and for your thesis.
+## Quarto = Markdown + R + (a bunch of other programming languages)
 
-## RMarkdown = Markdown + R
-
-One of the big advantages of the R world is that you can 
-easily combine explanations with your analysis in `.Rmd` files. 
-The assignements can all be completed in Rmarkdown. You can find
-a lot of good resources on 
-[Rmarkdown on the Rstudio website](https://rmarkdown.rstudio.com/).  
-In short, markdown is a simple markup language^[This means that you can 
-add little bits of code to your text that indicate how the text
-should look] that lets you include R code.
+One of the big advantages of the R world is that you can easily combine explanations with your analysis in `.qmd` files.  The assignements can all be completed in Quarto. You can find a lot of good resources on [the Quarto website](https://quarto.org/docs/authoring/markdown-basics.html). In short, markdown is a simple markup language ^[This means that you can add little bits of code to your text that indicate how the text should look] that lets you include R code.  
 
 ### Markdown
 
@@ -218,9 +186,7 @@ You can write enumerations and lists.
 - three 
 ```
 
-You can also write tables. You will rarely have to use tables.
-Typically, you can directly create the tables from R without the
-need to type in the results of your analysis.
+You can also write tables. You will rarely have to use tables.  Typically, you can directly create the tables from R without the need to type in the results of your analysis.
 
 ```
 First Header  | Second Header
@@ -232,18 +198,10 @@ Content Cell  | Content Cell
 
 ### R-code in markdown: R chunks
 
-The largest advantage of Rmarkdown files is that we can include
-pieces of R code.[^ Again, all these notes are written in 
-Rmarkdown. Code chuncks go between three backticks and we tell
-Rmarkdown that the language we are using is `{r}`. The example
-below creates a code chuck where we create a random vector `x`
-with then elements where the elements are drawn from a random
-distribution with mean 4 and standard deviation 3.
+The largest advantage of Rmarkdown files is that we can include pieces of R code. ^[ Again, all these notes are written in Rmarkdown.] Code chuncks go between three backticks and we tell Rmarkdown that the language we are using is `{r}`. The example below creates a code chuck where we create a random vector `x` with then elements where the elements are drawn from a random distribution with mean 4 and standard deviation 3.
 
-`````markdown
-`r ''````{r}
+```{{r}}
 x <- rnorm(n = 10, mean = 4, sd = 3)
 ```
-`````
 
 

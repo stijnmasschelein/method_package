@@ -5,21 +5,25 @@ project:
   render:
     - method_package.qmd
     - auxilary/introduction_to_rstudio_for_accfin.qmd
+    - auxilary/introduction_to_r_rstudio_tidyverse.qmd
+    - auxilary/matching_theory.qmd
     - slides/slides1.qmd
     - slides/slides2.qmd
     - slides/slides3.qmd
     - slides/slides4.qmd
     - slides/slides5.qmd
-    - freaky_friday/index.qmd
-    - freaky_friday/download_linking.qmd
-    - freaky_friday/linking.qmd
-    - freaky_friday/download_data.qmd
-    - freaky_friday/download_stocks.qmd
-    - freaky_friday/abnormal_returns.qmd
-    - freaky_friday/descriptive.qmd
-    - freaky_friday/regressions.qmd
-    - freaky_friday/assignment.qmd
-    - machine_learning/*.qmd
+    # - freaky_friday/index.qmd
+    # - freaky_friday/download_linking.qmd
+    # - freaky_friday/linking.qmd
+    # - freaky_friday/download_data.qmd
+    # - freaky_friday/download_stocks.qmd
+    # - freaky_friday/abnormal_returns.qmd
+    # - freaky_friday/descriptive.qmd
+    # - freaky_friday/regressions.qmd
+    # - freaky_friday/assignment.qmd
+    # - machine_learning/*.qmd
+    # - generalised/*.qmd
+    # - generated/*.qmd
 
 website:
   page-navigation: true
@@ -31,6 +35,7 @@ website:
       - section: "Introduction"
         contents:
         - method_package.qmd
+        - auxilary/introduction_to_r_rstudio_tidyverse.qmd
         - auxilary/introduction_to_rstudio_for_accfin.qmd
       - section: "Slides"
         contents:
@@ -39,6 +44,7 @@ website:
         - slides/slides3.qmd
         - slides/slides4.qmd
         - slides/slides5.qmd
+        - auxilary/matching_theory.qmd
       - section: "Friday Earnings Announcements"
         contents:
         - freaky_friday/index.qmd
@@ -55,6 +61,20 @@ website:
         - machine_learning/predictions.qmd
         - machine_learning/theory.qmd
         - machine_learning/application.qmd
+        - machine_learning/assignment.qmd
+      - section: "Generalised Linear Models"
+        contents:
+        - generalised/introduction.qmd
+        - generalised/interpretation.qmd
+        - generalised/poisson.qmd
+      - section: "Generated Variables"
+        contents:
+        - generated/introduction.qmd
+        - generated/residual_dependent.qmd
+        - generated/inverse_probability_weight.qmd
+
+execute:
+  cache: true
 
 bibliography: citations.bib
 author: "Stijn Masschelein"

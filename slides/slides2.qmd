@@ -41,10 +41,10 @@ See also [Chapter 15 in @huntington-klein2021](https://theeffectbook.net/ch-Simu
 #| label: random-number
 N <- 1000
 random <- tibble(
-  normal = rnorm(N, 2, 5),
-  uniform = runif(N, 1, 5),
-  binomial = rbinom(N, 1, .25),
-  sample = sample(1:10, N, replace = T)
+  normal = rnorm(N, mean = 2, sd = 5),
+  uniform = runif(N, min = 1, max = 5),
+  binomial = rbinom(N, size = 1, prob = .25),
+  sample = sample(1:10, size = N, replace = T)
 )
 glimpse(random)
 ```
@@ -128,7 +128,7 @@ plot_grid(p1, p2, p3, p4, ncol = 4)
 :::
 
 ::: {.aside}
-The model is the second one presented in @edmans2016. A more rigorous proof is shown in @tervio2008. A simplified explanation is in [Chapter 5 of my lecture notes](https://stijn-masschelein.netlify.app/teaching/just_enough/maths-sim.htm)
+The model is the second one presented in @edmans2016. A more rigorous proof is shown in @tervio2008. A simplified explanation is in [the supplementary reading on theory and simulations](../auxilary/matching_theory.html)
 :::
 
 ## Visualisation of matching theory
@@ -352,8 +352,7 @@ us_comp <- readRDS(here("data", "us-compensation-new.RDS")) %>%
     rename(total_comp = tdc1, shares = shrown_tot_pct) %>%
     select(gvkey, execid, year, shares, total_comp)
 us_value <- readRDS(here("data", "us-value-new.RDS")) %>%
-    rename(year = fyear, market_value = mkvalt) %>%
-    select(-ni) 
+    rename(year = fyear, market_value = mkvalt)
 us_comp_value <- left_join(
     us_comp, us_value, by = c("year", "gvkey")) %>%
     filter(!is.na(market_value) & !(is.na(shares))) %>%
@@ -621,7 +620,7 @@ coefficients(summary(regr_sens)) %>% print(dig = 2)
 
 ### Signaling Model 
 
-![Peacock's tail as a signal](https://www.arts.uwa.edu.au/__data/assets/image/0010/117973/Peacock-165px.jpg)
+![Peacock's tail as a signal](https://upload.wikimedia.org/wikipedia/commons/b/b1/Peacock_at_Warwick_Castle.jpg){height=50%}
 
 
 :::
@@ -630,7 +629,7 @@ coefficients(summary(regr_sens)) %>% print(dig = 2)
 
 ### Cheap Talk Model
 
-![Assumptions are important](https://www.myinterestingfacts.com/wp-content/uploads/2014/04/Iceberg.jpg)
+![Assumptions are important](https://www.myinterestingfacts.com/wp-content/uploads/2014/04/Iceberg.jpg){height=35%}
 
 :::
 ::::

@@ -19,11 +19,12 @@ library(dbplyr)
 
 # Get the data
 
-We establish a connection with the WRDS databases with my account. [WRDS](https://wrds-www.wharton.upenn.edu/) is the data provider the university subscribes to and it has a lot of good tutorials on how to connect to their databases from R. The website. However, you will first have to ask for an account from the person in charge of the databases in the department. I will give a more extensive example later in the unit.
+We establish a connection with the WRDS databases with my account. [WRDS](https://wrds-www.wharton.upenn.edu/) is the data provider the university subscribes to and it has a lot of good tutorials on how to connect to their databases from R. Important, you will first have to ask for an account from the person in charge of the databases in the department. I will give a more extensive example later in the unit to really go over some of the details. This is meant as an illustration of what is possible with these type of files and code.
+
+The code below establishes a connection with the WRDS servers under my username. The [WRDS website](https://wrds-www.wharton.upenn.edu/pages/support/programming-wrds/programming-r/r-from-your-computer/) has instructions on how to do set up the connection and how you can safely store your WRDS password so you do not have to type it. The settings I used here are all given by the WRDS instructions. 
 
 ```{r}
 #| label: wrds_connection
-#| eval: true
 library(RPostgres)
 wrds <- dbConnect(Postgres(),
               host='wrds-pgdata.wharton.upenn.edu',
@@ -33,7 +34,7 @@ wrds <- dbConnect(Postgres(),
               sslmode='require')
 ```
 
-With an SQL string, we define which data we want. This is one of the cool things of these kind of files. You can combine different programming languages. Behind the scene, I have given the code a name, `wrds_data` for the output of the SQL query. You can see this if you are looking at the `.qmd` file.
+Next, I download the data that we need from the `wrds` connection that I established before. I use the `tbl` function from the `dbplyr` package. This basically allows me to use the `tidyverse` verbs to to interact with almost any database. I give the downloaded data a name `wrds_data` so that I can use it further down the line. The only thing to remember with the `tbl` function is that you need to run the `collect` function at the end of the query so that the data is downloaded. Obviously, you need to know where the data is on the servers and how the variables are named. Sometimes, you can ask colleagues but other times, you will have to read the documentation on the WRDS website.  
 
 ```{r}
 #| label: query_execcomp
@@ -47,19 +48,7 @@ wrds_data <- tbl(wrds, in_schema("execcomp", "anncomp")) %>%
   collect()
 ```
 
-```{sql}
---| label: sql_query_execcomp
---| eval: true
---| connection: wrds
---| output.var: wrds_data
-SELECT year, gvkey, cusip, exec_fullname, coname, ceoann,
-execid, bonus, salary, stock_awards_fv, stock_unvest_val,
-eip_unearn_num, eip_unearn_val, option_awards,
-option_awards_blk_value, option_awards_num, tdc1, tdc2,
-shrown_tot_pct, becameceo, joined_co, reason
-FROM EXECCOMP.ANNCOMP
-WHERE year > 2010 AND ceoann = 'CEO'
-```
+Here, I clean up the data and have a quick look after which I save it in my `data` folder to share it with you.
 
 ```{r}
 #| label: wrds_execcomp
@@ -70,26 +59,23 @@ compensation <- as_tibble(wrds_data) %>%
 glimpse(compensation)
 saveRDS(compensation, here("data", "us-compensation-new.RDS"))
 ```
-Now, we do the same for the market value of the company. Unfortunately, we need to do it the old fashioned way, completely in `R`. The reason is that I don't want to download all market values. Only for the firms that are already in our compensation data. The firms are 
+Now, we do the same for the market value of the company. Again, we can do this completely in `R`. I don't want to download all market values. Only for the firms that are already in our compensation data. What I do is to extract all the identifiers of the firms in our original data.
+
 
 ```{r}
 #| label: gvkeys
 gvkeys <- unique(compensation$gvkey)
 length(gvkeys)
-key_string <- paste(gvkeys, collapse = "','")
 ```
 
+The remainder of the code follows a fairly similar pattern as before. I extract three variables from the WRDS databases `fyear` and `gvkey` so that we can match it with the compensation data and the `mkvalt` at the end of the fiscal year. 
+
 ```{r}
-#| eval: true
 #| label: wrds_fundamental
-sql2 <- paste0("SELECT fyear, gvkey, mkvalt, ni ",
-            "FROM COMP.FUNDA ",
-            "WHERE fyear > 2010 ",
-            "AND gvkey in ('", key_string, "')"
-           )
-value <- dbGetQuery(wrds, sql2) %>%
-  as_tibble() %>%
-  rename_all(tolower)
+value <-  tbl(wrds, in_schema("comp", "funda")) %>%
+  filter(gvkey %in% gvkeys, fyear > 2010) %>%
+  select(fyear, gvkey, mkvalt) %>%
+  collect()
 glimpse(value)
 value <- distinct(value)
 glimpse(value)
