@@ -9,12 +9,14 @@ On this page, we download the stock price data so that we can later calculate th
 library(tidyverse)
 library(here)
 library(RPostgres)
+library(dbplyr)
 i_am("freaky_friday/download_stocks.qmd")
-earn_ann <- readRDS(here("data", "freaky_friday", "earn_ann.RDS"))
+earn_ann <- readRDS(here("data", "freaky_friday", "earn_ann.RDS")) 
 ```
 
 ```{r}
 #| label: setup-wrds
+#| 
 wrds <- dbConnect(Postgres(),
                   host='wrds-pgdata.wharton.upenn.edu',
                   port=9737,
@@ -23,37 +25,30 @@ wrds <- dbConnect(Postgres(),
                   sslmode='require')
 ```
 
-This section sets the `sql` parameters. The beginning date is 300 days before the first earnings announcement and the end date is 75 days after the last earnings announcement. Finally, I keep the `permno` identifiers because these are the only stocks we want the data from. 
+This section sets the parameters that we will need to limit the download. Following @dellavigna2009, the beginning date is 300 days before the first earnings announcement and the end date is 75 days after the last earnings announcement. I could have done this for every earnings announcement specificially but Finally, I keep the `permno` identifiers because these are the only stocks we want the data from. 
 
 ```{r}
-#| label: sql_params_crsp
+#| label: params_crsp
 crsp_input <- earn_ann %>%
   summarise(begin = min(anndat) - 300, end = max(anndat) + 75, .by = permno) %>%
   glimpse()
+permnos <- crsp_input$permno
 begin_date <- min(crsp_input$begin)
 end_date <- max(crsp_input$end)
-permno_sql <- glue::glue_sql("{crsp_input$permno*}", .con = wrds)
 ```
 
 I use the same syntax as before to call the WRDS databases as before with `sql` interspersed with the `R` parameters created in the previous code block. We get the daily volume, return, price, shares outstanding, cumulative factor to adjust price, and cumulative factor to adjust shares. The latter two are adjustment factors for stock splits and dividends which we probably will not need but if we do we have them.
 
 This is by far the largest download from WRDS and this is why it has it's own page. We do not want to rerun this more than strictly necessary.
 
-```{sql}
---| label: crsp-query
---| connection: wrds
---| output.var: crsp_query
-SELECT permno, date, vol, ret, prc, shrout, cfacpr, cfacshr
-FROM crsp_a_stock.dsf
-WHERE permno IN (?permno_sql)
-AND date BETWEEN ?begin_date AND ?end_date
-```
-
 ```{r}
-all_stocks <- as_tibble(crsp_query) %>%
-  rename_all(tolower)
-print(all_stocks)
+#| label: crsp-query
+crsp_query <- tbl(wrds, in_schema("crsp_a_stock", "dsf")) %>%
+  filter(permno %in% permnos, date >= begin_date, date <= end_date) %>%
+  select(permno, date, vol, ret, prc, shrout, cfacpr, cfacshr)
+all_stocks <- collect(crsp_query)
 saveRDS(all_stocks, here("data", "freaky_friday", "all_stocks.RDS"))
+print(all_stocks)
 ```
 
 One important footnote is that the price is negative on days where there were no trades. This might be important going forward.

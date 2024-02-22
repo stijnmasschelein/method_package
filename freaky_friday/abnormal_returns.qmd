@@ -4,7 +4,7 @@ title: Abnormal returns
 
 # Setup
 
-The `lubridate` package is the `tidyverse` package that helps with time related data. Dates are a specific class of variables and the package helps with managing date variables.
+The `lubridate` package is the `tidyverse` package that helps with time related data. Dates are a specific class of variables and the package helps with managing date variables. There are a bunch of other packages out there that can help with managing date variables. I just picked one.
 
 ```{r}
 #| label: setup
@@ -14,9 +14,9 @@ library(here)
 i_am("freaky_friday/abnormal_returns.qmd")
 ```
 
-In order to predict the expected market return reaction to earnings, we will want to take into account the general market reaction. @dellavigna2009 only adjust for the overall market return. There are other adjustments possible for specific risk factors. The original factor model is the Fama-French 3 Factors model and the data is available via the [Kenneth French data library](https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html). 
+In order to predict the expected market return reaction to earnings, we will want to take into account the general market reaction. @dellavigna2009 only adjust for the overall market return. There are other adjustments possible for specific risk factors. The original factor model is the Fama-French 3 Factors model and the data to run those models is available via the [Kenneth French data library](https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html). 
 
-I have downloaded the data as a `.csv` file. The code reads the data in skipping 5 lines and reading the variables as numbers (`d`ouble precision). We then need to transform the date variable to a date type with a function from the `lubridate` package. Finally, we need to scale the returns by 100 because they are expressed in percentages. For replicating the @dellavigna2009 paper, we only need the market return minus the risk free rate (`mkt_rf`) and the risk free rate (`rf`). If I read this paper correctly, we need to use the raw market return which is calculated as `mkt`.
+I have downloaded the data as a `.csv` file. The code reads the data in skipping 5 lines and reading the variables as numbers (`d`ouble precision). We then need to transform the date variable to a date type with a function from the `lubridate` package. Finally, we need to scale the returns by 100 because they are expressed in percentages. For replicating the @dellavigna2009 paper, we only need the market return minus the risk free rate (`mkt_rf`) and the risk free rate (`rf`). If I read the paper correctly, we need to use the raw market return which is calculated as `mkt`.
 
 ```{r}
 #| label: data
@@ -32,7 +32,7 @@ famafrench <- read_csv(file = here("data", "F-F_Research_Data_Factors_daily.csv"
   print()
 ```
 
-- `shrout` is shares outstanding in 1000
+- `shrout` is shares outstanding in 1000 shares
 - `market_value` is in million USD
 
 # Abnormal returns
@@ -41,21 +41,21 @@ Remember that we are interested in predicting the counterfactual of what the ret
 
 $$ R_{u,k} = \alpha_{t,k} + \beta_{t,k} R_{u,m}$$
 
-That means that we need to estimate $\alpha$ and $\beta$ for each announcement based on the market return and firm return from 300 days before the earnings announcement to 46 days before the earnings announcements [@dellavigna2009]. This is a lot of computations!
+That means that we need to estimate $\alpha$ and $\beta$ for each announcement based on the market return and firm return from 300 days before the earnings announcement to 46 days before the earnings announcements [@dellavigna2009]. That is a lot of computations!
 
 I played around with a lot of different implementations and finally settled on a completely `tidyverse` style implementation as the fastest on my machine. I did not include the other implementations in this document but I will show how you can test the timing of your code with the `microbenchmark` package.
 
 The first thing we need to do is to write the code as a function that we can call as many times as we need. [^function] I call this function `create_coefs`. The input of the function is `n`, the number of earnings announcements we want to run the code for. The output is a `tibble` with the coefficients $\alpha$ and $\beta$ for each `permno` and `anndat` combination.
 
-The actual function takes the earnings announcement data and keeps the unique `permno` and `anndat` combinations. Next, the `start` and `end` data for the return data is calculated based on the earnings announcement date. Next, we merge the return data and the Fama-French data and delete the missing or infinite observations for the return.
+The actual function takes the earnings announcement data and keeps the distinct or unique `permno` and `anndat` combinations. Next, the `start` and `end` data for the return data is calculated based on the earnings announcement date. Next, we merge the return data and the Fama-French data and delete the missing or infinite observations for the return.
 
 ::: {.callout-note}
 At this point, you can see the flexibility of my approach to keep the data sets separate until we need to join them. The earnings announcement data is one row per earnings announcement date per firm. The stock data has one observation per firm per day. The Fama-French data has one observation per day. Because these data have a different level of analysis, I have kept them separate until the point that we need to analyse the data. If I have to update  one of the datasets, I do not necessarily have to update all the other ones. I would strongly encourage you to do the same thing where you keep different parts of the data cleaning separate for as long as possible. This will make your code flexible and easy to adapt.
 :::
 
-The next two steps are the most advanced ones. First, remark that we have multiple rows for each earnings announcement. We use the summarise function to put all the returns in a vector `y` and we make a matrix `X` with all 1's in the first column and the mkt. Remark that we are wrapping `y` and `X` in a list so that we effectively make `y` and `X` list columns in our `tibble`. The `tidyverse` lets us put almost anything in a dataset as long as we wrap it in a list. Finally, we summarise the `y` and `X` not just for the whole dataset but for each combination of `permno` and `anndat`. Thus, we end up with a dataset with a row for each earnings announcement with the returns we want to predict (`y`) from before the earnings announcement and the market returns from the same time period (`X`).
+The next two steps are the most advanced ones. First, remark that we have multiple rows for each earnings announcement. We use the summarise function to put all the returns in a vector `y` and we make a matrix `X` with all 1's in the first column and the mkt return in the second column. Remark that we are wrapping `y` and `X` in a list so that we effectively make `y` and `X` list columns in our `tibble`. The `tidyverse` lets us put almost anything in a dataset as long as we wrap it in a list. Finally, we summarise the `y` and `X` not just for the whole dataset but for each combination of `permno` and `anndat`. Thus, we end up with a dataset with a row for each earnings announcement with the returns we want to predict (`y`) from before the earnings announcement and the market returns from the same time period (`X`).
 
-In the second step, we will run the regression for each row to estimate $\alpha$ and $\beta$. We do use a lightweight version of `lm` called `lm.fit` to speed up the estimation. `lm.fit` calculates less statistics like the standard errors that we need to calculate the p-values. Because ultimately, we need to this for 150,000 rows `lm.fit` will save considerable time compared to `lm`. `lm.fit` works slightly different in that now regression equation is specified. You need to give the predictors as the first argument and the outcome variable as the second argument. This is the reason why we formed the `y` and `X` variable in the previous step. We just need the coefficients form the fit object and we can use the `coef` function to extract them.
+In the second step, we will run the regression for each row to estimate $\alpha$ and $\beta$. We  use a lightweight version of `lm` called `lm.fit` to speed up the estimation. `lm.fit` calculates less statistics like the standard errors that we need to calculate the p-values. Because ultimately, we need to this for 150,000 rows `lm.fit` will save considerable time compared to `lm`. `lm.fit` works slightly different in that no regression equation is specified. You need to give the predictors as the first argument and the outcome variable as the second argument. This is the reason why we formed the `y` and `X` variable in the previous step. We just need the coefficients form the fit object and we can use the `coef` function to extract them from the regression.
 
 Finally, we want to apply this `lm.fit` function to every row (i.e. for every earnings announcement). We use the [`map`-family](https://purrr.tidyverse.org/reference/map.html) to apply a function to every element of a column. The `pmap` function specifically let us apply a function to multiple columns if we wrap them in a list. So, `pmap` takes the list of columns `X` and `y` and applies (`~`) the function `lm.fit` to the first (`..1`) and second (`..2`) element of that list. At the end, we extract the coefficients.
 
@@ -90,10 +90,13 @@ microbenchmark::microbenchmark(
                   times = 10)
 ```
 
+
 Next, we calculate the coefficients for all announcements and save them in the `results` object. Next, we need to calculate the abnormal returns based on the following formula in @dellavigna2009.
 
-$$ R_{t,k}^{(h, H)} = [\Pi_{j=h}^H (1 + R_{j,k})] - 1
-- \hat{\beta}_{t,k} [\Pi_{j=h}^H (1 + R_{j,m}) - 1]$$
+$$
+R_{t,k}^{(h, H)} = [\Pi_{j=h}^H (1 + R_{j,k})] - 1
+- \hat{\beta}_{t,k} [\Pi_{j=h}^H (1 + R_{j,m}) - 1]
+$$
 
 In the `results`, the `coef` column is a list column where each row has two elements: `alpha` and `beta`. The `unnest_wider` function splits the list columns in two columns `alpha` and `beta`. Next we create the date 75 days after the announcement because that is the longest time frame the paper is interested [@dellavigna2009]. Just like before, we add the relevant stock price data and Fama-French data. Our dataset now has a row for each day 0 to 75 days after the announcement date. @dellavigna2009 are interested in the short term abnormal return on the day of the announcement and the day after (0-1 days) and the long term abnormal return (2-75 days). I create the `time_frame` variable to denote whether a day should be counted in the short or long cumulative abnormal return. As an intermediate step, I calculate the products of the (market) returns + 1 (see the equation) by announcement and time frame (and `beta` because we need it for further calculations).
 
@@ -102,8 +105,8 @@ Finally, I use the `pivot_wider` function to transform the dataset from the long
 ```{r}
 #| label: abnormal-returns
 N <- nrow(earn_ann)
-results <- create_coefs()
 results <- create_coefs(N)
+#results <- create_coefs(100)
 
 abnormal <- results %>%
   unnest_wider(coefs) %>%

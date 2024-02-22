@@ -8,15 +8,15 @@ author: Stijn Masschelein
 
 In this section, I will show how you can code a prediction model for the return of a company's stock price based on the returns of a number of peer companies. I loosely follow the same approach as in @baker2020. In that paper, peer firms are identified based on the SIC code in the Compustat data which indicates what the industry is of the firm's primary product.
 
-We are using the `tidymodel` package for the application and I will follow the [introduction to tidymodels](https://www.tidymodels.org/start/). The advantage of the tidymodels approach is that you can follow a very similar workflow for other machine learning methods than the one I will be showing here.
+We are using the `tidymodel` package for the application and I will follow the [introduction to tidymodels](https://www.tidymodels.org/start/). The advantage of the tidymodels approach is that you can follow a very similar workflow for other machine learning methods than the one I will be showing here. The code itself is not that important. The goal is more to give you a starting point.
 
-To understand the machine learning approach that we are using, I need to start of with some theory. The fundamental idea is that we want to avoid overfitting in the data that we have, so that when we use the model to predict on new data we still have good predictions. This means that when we estimate our model we *do not* want to have a model that fits the data as good as possible. We want to regularize the parameters in the model so that we do not get perfect fit but better out-of-sample predictions. For instance, if we use 200 trading days and have 200 peer firms, we can perfectly predict within the sample of 200 days [^1] but there are no guarantee that we will get good predictions from that model out-of-sample (i.e. after the earnings announcement).
+To understand the machine learning approach that we are using, I need to start of with some theory. The fundamental idea is that we want to avoid overfitting in the data that we have, so that when we use the model to predict on new data we still have good predictions. This means that when we estimate our model we *do not* want to have a model that fits the current data as good as possible. We want to regularize the parameters in the model so that we do not get a perfect fit in the current sample and a better out-of-sample predictions. For instance, if we use 200 trading days and have 200 peer firms, we can perfectly predict within the sample of 200 days [^1] but there are no guarantees that we will get good predictions from that model out-of-sample (i.e. after the earnings announcement).
 
 [^1]: It's a system of linear equations with 200 unknown parameters (the $\beta$s) and 200 observations (the trading days).
 
-For the linear model to predict stock returns based on peers, we will use a the elastic net regularizer to bias the estimates within the sample data to make it more likely that the linear model will give good predictions within the sample. One way to think about the linear model with peers as predictors is that we are creating a bespoke market return for each firm as a weighted average of its peers.
+For the linear model to predict stock returns based on peers, we will use a the elastic net regularizer to bias the estimates within the sample data to make it more likely that the linear model will give good predictions out-of-sample. One way to think about the linear model with peers as predictors is that we are creating a bespoke market index for each firm as a weighted average of its peers.
 
-A regular linear model works estimates the $\beta$s by minimising the following equation where we minimise the sum of the squared difference between the outcome ($y_i$) and prediction ($X_i \beta$) for each observation i.
+A regular linear model estimates the $\beta$s by minimising the following equation where we minimise the sum of the squared difference between the outcome ($y_i$) and prediction ($X_i \beta$) for each observation i.
 
 $$
 \sum^N_{i=1} (y_i - X_i \beta)^2
@@ -31,6 +31,10 @@ $$
 The size of the penalty is given by the parameters $\lambda > 0$ and consists of two parts: the sum of the squared $\beta$s and the sum of the absolute values of the $\beta$s. The first term is the ridge reguliser and the second one is the LASSO regulariser. They both have been shown to have useful properties as regulisers and thus they are often used together with the weight $1 \geq \alpha \geq 0$. With $\alpha = 1$, we only use ridge regression and with $\alpha = 0$, we only use the LASSO.
 
 The final step is that we need to choose the right values for $\lambda$ and $\alpha$. A common approach is to use cross validation where we split the data that we have in roughly equal sized partitions or folds. For instance, you have 10 folds with each 10% of the data. With cross validation, we will use the 90% of the remaining data, use a number of different values for $\lambda$ and $\alpha$ to estimate $\beta$s and predict the 10% fold that we did not use for estimation. In other words, we use the data that we have to do a prediction task with the advantage that we can evaluate which $\lambda$ and $\alpha$ gives us the best predictions.
+
+:::{::: {.callout-important}
+The key insight is that if we care about a prediction task, we can use some of the data and pretend it is data that we have never seen when we estimate our prediction model. We can then test which model is actually good at predicting on data that it has never seen.
+:::}
 
 We do need a measure to evaluate the quality of the predictions. A common choice is the Root Mean Squared Error (RMSE) which is defined as the square root of the squared difference between the actual value of the outcome and the predictions for the outcome.
 

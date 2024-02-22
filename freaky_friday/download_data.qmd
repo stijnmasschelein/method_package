@@ -10,6 +10,7 @@ library(here)
 i_am("freaky_friday/download_data.qmd")
 library(RPostgres)
 library(dtplyr)
+library(dbplyr)
 linking_table <- readRDS(here("data", "freaky_friday", "linking_table.RDS"))
 ```
 
@@ -26,39 +27,24 @@ wrds <- dbConnect(Postgres(),
 # Earnings Announcements
 ## I/B/E/S
 
-We start with the earnings announcement data from I/B/E/S with the analyst estimates. According to the method section in @dellavigna2009, we need the data from the start of 1995 to the middle of 2006. We will want the analyst estimates for all the firms with a ticker in the master `linking_table`.
-
-I am going to use parameters that we can calculate or set in `R` and then pass them on to the `SQL` query. The details are explained in this [blogpost by Irene Steves](https://irene.rbind.io/post/using-sql-in-rstudio/).
+We start with the earnings announcement data from I/B/E/S with the analyst estimates. According to the method section in @dellavigna2009, we need the data from the start of 1995 to the middle of 2006. We will want the analyst estimates for all the firms with a ticker in the master `linking_table`. I am going to use parameters that we can calculate or set in `R` and then pass them on to the database query. 
 
 ```{r}
-#| label: sql-params-announcement
+#| label: params-announcement
 begin_date <- "'1995-01-01'"
 end_date <- "'2006-07-01'"
 tickers <- unique(linking_table$ticker)
-tickers_sql <- glue::glue_sql("{tickers*}", .con = wrds)
 ```
 
 The dates of the estimate and the actual earnings announcement will be critical to construct unexpected component of the earnings and to determine the exact event data, i.e. the date that (the unexpected component of) the earnings are announced. Thankfully, WRDS provides a [description of the date variables](https://wrds-www.wharton.upenn.edu/pages/support/support-articles/ibes/detail-history-file-meanings-date-variables/). `anndats` is the first day that an analyst set their estimate for the earnings per share and the `revdats` is the last day that the analyst confirmed their estimate. We will use `revdats` as the defacto date that the analyst provided the estimate. `anndats_act` is the earnings announcement date. `value` is the estimated EPS by the analyst and `actual` is the actual EPS as announced by the firm. `pdf` is flag whether the EPS if for the primary share class or on a diluted basis. I included both and that is probably appropriate for this paper. `fpi` is the forecast period indicator if we set this to "6", we get the earnings estimates that are done in the quarter before the earnings announcements. All these variables can be verified in the data descriptions on WRDS. As you can see, it's quite important if you work with data that you have not collected yourself to read the data descriptions.
 
-In the actual `sql` query you can see that the I use the parameters that I constructed before in `R` by adding an `?` infront of the parameter name when using them.
-
-```{sql}
---| label: sql-ibes
---| connection: wrds
---| output.var: ibes_query
-SELECT ticker, cusip, fpi, anndats, revdats, pdf, value, anndats_act, actual, analys
-FROM ibes.det_epsus
-WHERE anndats_act BETWEEN ?begin_date AND ?end_date
-AND actual IS NOT NULL
-AND fpi = '6'
-AND ticker IN (?tickers_sql)
-```
-
-We save the data with `R`. See the previous page for how to get the output of an `sql` query into `R`.
-
-```{R}
-ann_ibes <- as_tibble(ibes_query) %>%
-  rename_all(tolower)
+```{r}
+#| label: annual-ibes 
+ibes_query <- tbl(wrds, in_schema("ibes", "det_epsus")) %>%
+  select(ticker, cusip, fpi, anndats, revdats, pdf, value, anndats_act, actual, analys) %>%
+  filter(fpi == "6", ticker %in% tickers, !is.null(actual)) %>%
+  filter(anndats_act >= begin_date, anndats_act <= end_date)
+ann_ibes <- collect(ibes_query)
 saveRDS(ann_ibes, here("data", "freaky_friday", "ann_ibes.RDS"))
 glimpse(ann_ibes)
 ```
@@ -70,24 +56,16 @@ Following the paper, we will verify the earnings announcement date in I/B/E/S wi
 ```{r}
 #| label: sql-params-2
 gvkeys <- unique(linking_table$gvkey)
-gvkeys_sql <- glue::glue_sql("{gvkeys*}", .con = wrds)
 ```
 
-`rdq` is the earnings announcement data in Compustat.
+`rdq` is the earnings announcement date in Compustat. It does not make it easier that different databases use different variable names. That is why it so important to read the documentation of the database.
 
-```{sql}
---| label: sql-compu
---| connection: wrds
---| output.var: compu_query
-SELECT cusip, rdq, gvkey
-FROM comp.fundq
-WHERE rdq BETWEEN ?begin_date AND ?end_date
-AND gvkey IN (?gvkeys_sql)
-```
-
-```{R}
+```{r}
+#| label: annual-compustat
+compu_query <- tbl(wrds, in_schema("comp", "fundq")) %>%
+  filter(rdq >= begin_date, rdq <= end_date, gvkey %in% gvkeys) %>%
+  select(cusip, rdq, gvkey)
 ann_compu <- as_tibble(compu_query) %>%
-  rename_all(tolower) %>%
   mutate(cusip = str_sub(cusip, 1, 8))
 saveRDS(ann_compu, here("data", "freaky_friday", "ann_compu.RDS"))
 glimpse(ann_compu)
@@ -95,16 +73,16 @@ glimpse(ann_compu)
 
 ## Combine Announcements
 
-To combine the two datasets, we will link them through a simplified version of the larger linking table. I will also enforce that the first 6 characters of cusip are the same. I don't think it is strictly necessary to do that but it does gives us more confidence that the links are of higher quality. We need to match the I/B/E/S data and the Compustat data based on the firm and its earnings announcement date. However, if you read the paper [@dellavigna2009], you will notice that the reason why want to combine is because the date in both datasets does not always match. The paper gets around that by matching earnings announcements if the date is not more than 5 days apart in the two data sources. This is why I create `anndat_begin` and `anndat_end` to define the interval in which we want to match the data. Finally, we can calculate the actual event date as the minimum of the date in the I/B/E/S data and the Compustat data [@dellavigna2009] [^pmin].
+To combine the two datasets, we will link them through a simplified version of the larger linking table. I will also enforce that the first 6 characters of cusip are the same. I don't think it is strictly necessary to do that but it does gives us more confidence that the links are of higher quality. We need to match the I/B/E/S data and the Compustat data based on the firm and its earnings announcement date. However, if you read the paper [@dellavigna2009], you will notice that the reason why we want to combine the I/B/E/S and Compustat data is because the date in both datasets does not always match. The paper gets around that by matching earnings announcements if the date is not more than 5 days apart in the two data sources. This is why I create `anndat_begin` and `anndat_end` to define the interval in which we want to match the data. Finally, we can calculate the actual event date as the minimum of the date in the I/B/E/S data and the Compustat data [@dellavigna2009] [^pmin].
 
 [^pmin]: We need to use `pmin` so that the mutate statement knows that it needs to take the minimum between the two columns for each row and not over the whole dataset.
 
-You can also see that I have two lines of commented code. In these lines, I read in the datasets again. This is not strictly necessary to make this file fully reproducible but it does make debugging the code easier. If I want to make some changes to the code I do not have to download the data again from WRDS. I can just use the one in the data folder.
+You can also see that I have two lines of code at the start to read in the datasets again. This is not strictly necessary to make this file fully reproducible but it does make debugging the code easier. If I want to make some changes to the code I do not have to download the data again from WRDS. I can just use the one in the data folder.
 
 ```{r}
 #| label: simplify-ibes-merge
-# ann_ibes <- readRDS(here("data", "freaky_friday", "ann_ibes.RDS"))
-# ann_compu <- readRDS(here("data", "freaky_friday", "ann_compu.RDS"))
+ann_ibes <- readRDS(here("data", "freaky_friday", "ann_ibes.RDS"))
+ann_compu <- readRDS(here("data", "freaky_friday", "ann_compu.RDS"))
 simple_link <- linking_table %>%
   select(ticker, gvkey, permno, cusip) %>%
   mutate(cusip = str_sub(cusip, end = 6)) %>%

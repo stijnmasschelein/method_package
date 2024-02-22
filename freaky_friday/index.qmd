@@ -10,7 +10,7 @@ The basic argument of the paper is that firms will bury earnings announcements o
 
 # Research Design
 
-The research design is relatively easy: an event study. If you recall, this means that we are looking at the difference between our outcome measure before and after a certain event. The key assumption is that the measurement before the event is a good estimate of the counterfactual if the event had not happened at all. If that assumption is true, we can trust that the event is causing the difference between before and after. We can write out the full DAG as below. 
+The research design is relatively easy: an event study. If you recall, this means that we are looking at the difference between our outcome measure before and after a certain event. The key assumption is that the measurement before the event is a good estimate of the counterfactual if the event had not happened at all. If that assumption is true, we can trust that the event is causing the difference between before and after. We can write out the full DAG below. 
 
 ```{dot}
 //|echo: false
@@ -25,7 +25,7 @@ Time -> {"Event Happened", Outcome}
 }
 ```
 
-The way to think about this is that the event is the earnings announcement by the company and the outcome is the change in the market price. The treatment that we are interested in not the earnings announcement per se but the new information that it provides to the market. The traditional problem with these before-after designs is that time passes between the event and the after measurement and over time other things might have happened that have nothing to do with the treatment. Luckily, with financial markets, this is less of a worry because we can study big announcements and we can measure the market reaction shortly after the announcements.
+The way to think about this is that the event is the earnings announcement by the company and the outcome is the change in the market price. The treatment that we are interested in not the earnings announcement per se but the new information that it provides to the market. The traditional problem with these before-after designs is that time passes between the event and the measurement of the outcome. Over time other things might have happened that have nothing to do with the treatment. Luckily, with financial markets, this is less of a worry because we can study big announcements and we can measure the market reaction in a short window around the announcement so that we are relatively sure that nothing else of importance has happened.
 
 Unfortunately, time travel is possible in finance [^time-travel]. Market prices are incredibly good at incorporating information that is publicly available and the earnings when announced will not come as a total surprise [@ball1968]. Market participants often already have a pretty good idea whether a company had a good year or not before they announce their earnings. For instance, the companies who are doing well are more likely to go on TV or twitter to explain how great their company is while companies who are not doing well might try to stay quiet. In that case, we would see a small or even no market reaction to good earnings (the market already knows) and a large negative reaction to bad earnings news (the market is surprised). This could make the average price reaction negative while the average earnings are positive.
 
@@ -66,7 +66,7 @@ $$ R_{u,k} = \alpha_{t,k} + \beta_{t,k} R_{u,m}$$
 
 Again, we are using data from long before the earnings announcement so that our estimate is not contaminated by the earnings announcement [^earlier-announcement].
 
-There are lot of different approaches in the literature to estimate these abnormal returns but they all have the same flavour of trying to filter out other reasons why the stock price might be moving. In a pure regression framework, we would include additional variables as control variables. Constructing variables like the abnormal returns and the earnings surprise like this serves exactly the same function. There are good reasons to use the approach of first constructing the measures as precise as possible in an event study design like this but there are some problem with applying this same logic in different research designs [@chen2018, @chen].
+There are lot of different approaches in the literature to estimate these abnormal returns but they all have the same flavour of trying to filter out other reasons why the stock price might be moving. In a pure regression framework, we would include additional variables as control variables. Constructing variables like the abnormal returns and the earnings surprise like this serves exactly the same function. There are good reasons to use the approach of first constructing the measures as precise as possible in an event study design like this but there are some problem with applying this same logic in different research designs [@chen2018, @chen]. See also [the section on generated variables](../generated/introduction.qmd). 
 
 [^earlier-announcement]: But it will be affected by the two previous earnings announcements ...
 

@@ -96,7 +96,7 @@ In the first parts of the next code, we will calculate the coefficients for all 
 In the next step, we need to calculate the abnormal returns for every announcement in our data based on the three factors (`mkt`, `smb`, `hlm`). That is, we have to subtract the actual return on a day, $h$, after the announcement from the expected return based on the three-factor model.
 
 $$ R_{t,k} ^ {h} = R_{h, k} - \alpha_{t,k} - \beta^{mkt}_{t,k} R_{h,m}
-+ \beta^{size}_{t,k} smb_{h,m} - \beta^{value}_{t,k} hlm_{h,m}$$
+- \beta^{size}_{t,k} smb_{h,m} - \beta^{value}_{t,k} hlm_{h,m}$$
 
 $R_{t,k}^h$ is the abnormal return on day $h$ after the announcement, $R_{h,m}$ is the market return on day $h$, $smb_{h,m}$ is the size factor and $hlm_{h,m}$ is the value factor.
 

@@ -70,7 +70,7 @@ glimpse(ibes_compu)
 sum(unique(ibes_clean$ticker) %in% unique(ibes_compu$ibtic))
 ```
 
-The reason why I leave this false trail in is that is typically what happens when you are working on a bigger data project. You need to interrogate the data to check who reliable the data is and to be aware of its shortcomings.
+The reason why I leave this false trail in is that is typically what happens when you are working on a bigger data project. You need to interrogate the data to check how reliable the data is and to be aware of its shortcomings.
 
 # Merging between Compustat and CRSP
 
@@ -83,7 +83,7 @@ crsp_compu %>%
   summarise(permno = n_distinct(permno), gvkey = n_distinct(gvkey))
 ```
 
-Unfortunately, we also have the problem that sometimes a the `permno` identifier for CRSP is associated with multiple `gvkeys`. This is more problematic, I think and we will need to make sure we don't run into trouble with this.
+Unfortunately, we also have the problem that sometimes the `permno` identifier for CRSP is associated with multiple `gvkeys`. This is more problematic, I think we will need to make sure we don't run into trouble with this.
 
 ```{r}
 crsp_compu %>%
@@ -93,13 +93,11 @@ crsp_compu %>%
   arrange(desc(N), permno, stdt)
 ```
 
-It looks like sometimes the identifier for the company in compustat (`gvkey`) switches but the financial instrument is still the same (`permno`). That probably means that we will have to take into account the dates. That is we will have to match on the identifiers and the date when matching observations form Compustat and CRSP.
+It looks like sometimes the identifier for the company in compustat (`gvkey`) switches but the financial instrument is still the same (`permno`). That probably means that we will have to take into account the dates. That is, we will have to match on the identifiers and the date when matching observations form Compustat and CRSP.
 
 # Full Linking Table
 
 For this study, we need the data from all three datasets, so we can make one table that links everything together. The two datasets have `gvkey` in common because of their link to Compustat. I use an `inner_join` because we need observations of all three dataset for each observation. I also rename some of the variables to make them a little bit easier to work with for me. I specifically retained the `isin` identifier. It is not necessary for the replication but it can be useful for potential extensions.
-
-
 
 ```{r}
 #| label: create-save-linking-table

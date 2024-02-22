@@ -26,7 +26,7 @@ glimpse(main)
 # Panel A
 
 
-The actual calculations are just in the `summarise` and the `mutate` statement. I then calculate the totals and add them to the data with `bind_rows`. The numerical values get rounded to present them a bit nicer. The double pivot transposes the table so that rows become columns. Finally, I fix the order of the columns and use `kable` to present the table.
+The actual calculations are just in the `summarise` and the first `mutate` statement. I then calculate the totals and add them to the data with `bind_rows`. The numerical values get rounded to present them a bit nicer. The double pivot transposes the table so that rows become columns. Finally, I fix the order of the columns and use `kable` to present the table.
 
 ```{r}
 #| label: Panel-A
@@ -44,7 +44,7 @@ summarise(main, .by = weekday,
   kable(format = "markdown")
 ```
 
-Overall, my data has more than 10,000 observations less but the percentage of announcements per weekday matches the table in the paper pretty closely. That means I did something right.
+Overall, my data has more than 10,000 fewer observations but the percentage of announcements per weekday matches the table in the paper pretty closely. That means I did something right.
 
 # Panel B: Baseline Sample
 
@@ -86,7 +86,7 @@ summarise(panelb, .by = c(group, month_quarter),
   kable(format = "markdown", digits = 3)
 ```
 
-@dellavigna2009 also report the same statistic for the a homogeneous sample with at least 10% of the observations on Friday and on non-Fridays. This is an example of asking the question where the variation is coming from in the sample and what the true comparison is that we want to make. In the full sample, we could be comparing *firms* that report on Friday to firms that do not. In the homogeneous sample, we are more likely to compare *years* where the same firm reports on Friday and *years* where they do not. The same question came up when we talked about complies, always treated and never treated observations in the context of instrumental variables.
+@dellavigna2009 also report the same statistic for the a homogeneous sample with at least 10% of the observations on Friday and on non-Fridays. This is an example of asking the question where the variation is coming from in the sample and what the true comparison is that we want to make. In the full sample, we could be comparing *firms* that report on Friday to firms that do not. In the homogeneous sample, we are more likely to compare *years* where the same firm reports on Friday and *years* where they do not. The same question came up when we talked about compliers, always treated and never treated observations in the context of instrumental variables.
 
 ```{r}
 homogeneous <- main %>%

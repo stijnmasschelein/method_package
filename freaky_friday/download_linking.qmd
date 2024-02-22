@@ -5,7 +5,7 @@ knitr:
     eval: true
 ---
 
-I use three packages on this page and two of them require some more explanation. The `here` package helps with managing the different files in this larger project. I can refer to different files relative to the root folder all the files are in. The only thing that I need to do is to say where this file is compared to the root folder with the `i_am` function. The second package is the `RPostgres` package that helps make a connection with the WRDS data sources.
+I use four packages on this page and three of them require some more explanation. The `here` package helps with managing the different files in this larger project. I can refer to different files relative to the root folder all the files are in. The only thing that I need to do is to say where this file is compared to the root folder with the `i_am` function. You can see the simplified folder structure below for this website. By telling `R` which file this is, I can easily refer to other files and save the data we are going to download and clean in the data folder. If it is specific to the replication it will go into the `data/freaky_friday` folder as an `.RDS` file which is an efficient way of storing `R` objects. 
 
 ```{r}
 #| label: setup
@@ -13,7 +13,32 @@ library(tidyverse)
 library(here)
 i_am("freaky_friday/download_linking.qmd")
 library(RPostgres)
+library(dbplyr)
 ```
+
+```
+|-- auxilary
+|-- data
+    |-- freaky_friday
+        |-- ... .RDS
+    |-- machine_learning
+    |-- wrds
+|-- freaky_friday
+    |-- abnormal_returns.qmd
+    |-- descriptive.qmd
+    |-- download_data.qmd
+    |-- download_linking.qmd
+    |-- download_stocks.qmd
+    |-- index.qmd
+    |-- linking.qmd
+    |-- regressions.qmd
+|-- generalised
+|-- generated
+|-- machine_learning
+|-- slides
+```
+
+The second package is the `RPostgres` package that helps make a connection with the WRDS data sources. The final package is `dbplyr` which allows us to interact with almost any database with the `tidyverse` verbs. I'll demonstrate how below.
 
 # Connect to WRDS
 
@@ -37,36 +62,28 @@ The code sets up a connection to the WRDS database under my account name. Do not
 
 # Linking Databases in WRDS
 
-
 [WRDS](https://wrds-www.wharton.upenn.edu/pages/support/support-articles/ibes/merging-crsp-or-compustat-sa/) provides really good documentation on how to best combine I/B/E/S with other data sources. In doubt, you should check their tutorials. This would also be my general advice for working with any database. It is always a good idea to read through the documentation of the database and try to understand how the data is constructed. There is a [similar tutorial](https://wrds-www.wharton.upenn.edu/pages/wrds-research/applications/linking-databases/linking-crsp-and-compustat/) on how to merge Compustat with other sources. Most of the decisions I made below follow directly from those tutorials. The long and short of it is that both I/B/E/S and Compustat have a dataset with identifiers for other databases and we are going to download those datasets [^more-identifiers].
 
 [^more-identifiers]: There are some [other overviews](https://libguides.princeton.edu/MatchFinancial) available for identifiers that you can use to merge datasets. I am only using the best practice advice according to WRDS.
 
-In what follows I will use some code blocks that have `SQL` code and not `R` code. One of the really nice things about quarto files is that you can combine different programming languages if necessary and the `wrds` connection we have made before understands `SQL` which is a query language used for proper databases. You will see that the basics of the `SQL` queries feel similar to the `tidyverse` code and that is not a coincidence because `dplyr` a subset of the `tidyverse` was modelled after `SQL` and there are [packages](https://dbplyr.tidyverse.org/index.html) that provide direct `dplyr` to `SQL` translations.
-
-For these `SQL` blocks to work, we need to specify to important options in the code blocks. You cannot see these in the html output but you can see them in the raw code file. You can see an example below for the first code block. The options mean that we want to use the connection we setup earlier and we want the output of the query to be saved in a data frame called `ibes_query`.
-
-```
---| connection: wrds
---| output.var: ibes_query
-```
+I use the `tbl` function from the `dbplyr` package. I give the downloaded data a name `ibes_query` so that I can use it further to clean it and save it. The only thing to remember with the `tbl` function is that you need to run the `collect` function at the end of the query so that the data is downloaded. Obviously, you need to know where the data is on the servers and how the variables are named. Sometimes, you can ask colleagues but other times, you will have to read the documentation on the WRDS website.  
 
 ## I/B/E/S
 
-The `SQL` code instructs the WRDS data base to get the variables `ticker`, `cusip` (another identifier), `cname` (company name), and `sdates` (the start date for this ticker) from the `ibes.idsum` (IBES ID summary) database of WRDS. In this paper, we only want U.S. firms.
+The code instructs the WRDS database to get the variables `ticker`, `cusip` (another identifier), `cname` (company name), and `sdates` (the start date for this ticker) from the `ibes.idsum` (IBES ID summary) database of WRDS. In this paper, we only want U.S. firms which we do by filtering by `usfirm == 1`.
 
-```{sql}
---| connection: wrds
---| label: ibes-ids
---| output.var: ibes_query
-SELECT ticker, cusip, cname, sdates
-FROM ibes.idsum
-WHERE usfirm = 1
+```{r}
+#| label: ibes-ids
+ibes_query <- tbl(wrds, in_schema("ibes", "idsum")) %>%
+  filter(usfirm == 1) %>%
+  select(ticker, cusip, cname, sdates) %>%
+  collect()
 ```
 
 With some R code, we clean the data and save it as a file in the `data > wrds` folder in our main folder.
 
 ```{r}
+#| label: write-ibes-ids
 ibes_id <- as_tibble(ibes_query) %>%
   rename_all(tolower)
 saveRDS(ibes_id, here("data", "wrds", "ibes_id.RDS"))
@@ -76,12 +93,11 @@ saveRDS(ibes_id, here("data", "wrds", "ibes_id.RDS"))
 
 From the CRSP data, we get the `permno` and `ncusip` identifier where `ncusip` stands for the same `cusip` identifier as mentioned above. We also have the company name, start date, and end date.
 
-```{sql}
---| connection: wrds
---| label: crsp-id
---| output.var: crsp_query
-SELECT permno, ncusip, comnam, st_date, end_date
-FROM crsp.stocknames
+```{r}
+#| label: crsp-id
+crsp_query <- tbl(wrds, in_schema("crsp", "stocknames")) %>%
+  select(permno, ncusip, comnam, st_date, end_date) %>%
+  collect()
 ```
 
 ```{r}
@@ -95,13 +111,11 @@ saveRDS(crsp_id, here("data", "wrds", "crsp_id.RDS"))
 
 From Compustat we use the security file which has all the financial securities (and their identifiers) that are linked to the firms in Compustat. We select all the variables from that dataset. We only select the ones where the `ib`es `tic`ker is available so that we can match via the ticker in the I/B/E/S files.
 
-```{sql}
---| connection: wrds
---| label: compu-ibes
---| output.var: compu_security_query
-SELECT *
-FROM comp.security
-WHERE ibtic IS NOT NULL
+```{r}
+#| label: compu-ibes
+compu_security_query <- tbl(wrds, in_schema("comp", "security")) %>%
+  filter(!is.null(ibtic)) %>%
+  collect()
 ```
 
 ```{r}
@@ -115,25 +129,16 @@ saveRDS(compu_security, here("data", "wrds", "compu_security.RDS"))
 
 Finally, we get the linking file in compustat. According to the documentation, not all the links are reliable and they advice to use the `linktype` variable and the `usedflag` variable to filter only the links that are most reliable. I have implemented the rules that follow best practice according to this tutorial (https://wrds-www.wharton.upenn.edu/pages/wrds-research/applications/linking-databases/linking-crsp-and-compustat/)
 
-```{sql}
---| connection: wrds
---| label: compu-id
---| output.var: compu_query
-SELECT gvkey, linktype, usedflag, liid, lpermno, linkdt, linkenddt
-FROM crsp.Ccmxpf_linktable
-```
-
 ```{r}
-#| label: clean-crsp-compu
-crsp_compu <- as_tibble(compu_query) %>%
-  rename_all(tolower) %>%
+#| label: compu-id
+# compu_query
+compu_query <- tbl(wrds, in_schema("crsp", "ccmxpf_linktable")) %>%
   select(gvkey, linktype, usedflag, iid = liid, permno = lpermno, stdt = linkdt, enddt = linkenddt) %>%
   filter(!is.na(permno), linktype %in% c("LU", "LC"), usedflag == 1) %>%
   select(gvkey, permno, stdt, enddt) %>%
   distinct()
-saveRDS(crsp_compu, here("data", "wrds", "crsp_compu.RDS"))
+saveRDS(crsp_query, here("data", "wrds", "crsp_compu.RDS"))
 ```
-
 
 # Summary
 

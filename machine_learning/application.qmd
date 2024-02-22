@@ -47,8 +47,6 @@ Maybe surprisingly [^surprise] one of the biggest issue is to construct the data
 
 [^surprise]: Or maybe it should not be that surprising anymore at this point.
 
-I am using a package [`dbplyr`](https://dbplyr.tidyverse.org/index.html) which allows us to access the WRDS databases with the `tidyverse` functions, without any need for SQL code. As before, we need to establish a connection with WRDS first.
-
 ```{r}
 #| label: wrds
 wrds <- dbConnect(Postgres(),
@@ -57,6 +55,7 @@ wrds <- dbConnect(Postgres(),
                   dbname='wrds',
                   user='stimas',
                   sslmode='require')
+
 ```
 
 I will roughly follow the approach in @baker2020 and use the [SIC industry](https://wrds-www.wharton.upenn.edu/pages/support/support-articles/compustat/north-america/compfunda-tables-unable-access-sic-and-naics-variables/) classification codes. We require at least 5 peer firms within the same 4 digit SIC category or if necessary within the same 3 digit category.
@@ -130,7 +129,7 @@ microbenchmark::microbenchmark(
 
 In the next step, we will collect the peers data for `N_announce` (1000) earnings announcements. I use the `furrr` package which allows us to run some of the computations in parallel with the `future_pmap` function which is the parallel version of `pmap`. If you have a computer with multiple cores this will drastically speed up the computations in this code block.
 
-Most of the initial steps are just joining the earnings announcement data, with the SIC data, and the linking table with some cleaning steps for missing data in between. We add the SIC codes twice. The first time we add the SIC code that for each firm based on the `gvkey`. The second time we add each `gvkey` as a `gvkey_peer` when they are in the same SIC code. Next, we use the `linking_table` to add the `permno_peer`. Finally, we summarise the table so that all the peers are in one list for each earnings announcement. This than enables us to get the returns of the peers in the mutate step after we made sure that there are enough peers available. The final data has a `data` column with all the return data for the focal company and it's peers. This is how we deal with the issue that there might be a different number of peers for difference firms. We have one row for each firm with a variable `data` that contains all the return data necessary for the prediction for each announcement.
+Most of the initial steps are just joining the earnings announcement data, with the SIC data, and the linking table with some cleaning steps for missing data in between. We add the SIC codes twice. The first time we add the SIC code that for each firm based on the `gvkey`. The second time we add each `gvkey` as a `gvkey_peer` when they are in the same SIC code. Next, we use the `linking_table` to add the `permno_peer`. Finally, we summarise the table so that all the peers are in one list for each earnings announcement. This than enables us to get the returns of the peers in the mutate step after we made sure that there are enough peers available. The final data has a `data` column with all the return data for the focal company and its peers. This is how we deal with the issue that there might be a different number of peers for difference firms. We have one row for each firm with a variable `data` that contains all the return data necessary for the prediction for each announcement.
 
 ```{r}
 #| label: construct-the-data
@@ -186,8 +185,7 @@ print(data_ml)
 
 ## Linear model
 
-We first going to run a traditional linear model within the [`tidymodels`](https://www.tidymodels.org/start/) framework. The approach is overkill for just running a linear model but it will help us to build up the full workflow. In the code, I first split the data in a proportion $\frac{N - 20}{N}$ of training data and a proportion $
-frac{20}{N}$ of test data, where $N$ is the number of days of data available. As a result, we will use the training data to determine the parameters and than use that model to predict the last 20 days as test data. Next, we set which type of model we want to use, a linear model. We than fit the model where we specify the return variable as the outcome variable and we use the dot `.` to indicate that we want to use all the other variables as predictors. Finally, the `tidy` function gives the estimates and statistics for the estimates in a format that works with the `tidyverse`.
+We first going to run a traditional linear model within the [`tidymodels`](https://www.tidymodels.org/start/) framework. The approach is overkill for just running a linear model but it will help us to build up the full workflow. In the code, I first split the data in a proportion $\frac{N-20}{N}$ of training data and a proportion $\frac{20}{N}$ of test data, where $N$ is the number of days of data available. As a result, we will use the training data to determine the parameters and than use that model to predict the last 20 days as test data. Next, we set which type of model we want to use, a linear model. We than fit the model where we specify the return variable as the outcome variable and we use the dot `.` to indicate that we want to use all the other variables as predictors. Finally, the `tidy` function gives the estimates and statistics for the estimates in a format that works with the `tidyverse`.
 
 ```{r}
 #| label: tidy-lm
