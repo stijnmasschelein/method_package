@@ -1,0 +1,160 @@
+---
+title: Poisson Regression
+toc: true
+---
+
+## Setup
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(here)
+library(fixest)
+library(cowplot)
+library(modelsummary)
+theme_set(theme_cowplot(font_size = 18))
+i_am("generalised/introduction.qmd")
+```
+
+```{r}
+#| label: parameters
+set.seed(830323)
+N <- 4000
+n_firm <- 500
+gof_omit <- "Adj|Lik|IC|RMSE"
+```
+
+## Introduction
+
+In the [previous section](interpretation.qmd), I made the case for using OLS regressions even when the outcome variable is a discrete variable. This is especially true in the case that we are interested in estimating the effect of an intervention. The coefficient that we are getting can easily be interpreted as the difference in the probability of getting one outcome over the other.
+
+## A multiplicative process
+
+There is an exception for count and count-like data. The type of outcome variables I have in mind are the result of a stable multiplicative process. In [earlier lectures](../slides/slides2.qmd), I have made the point that we can think of the contribution of a CEO to the firm as a multiplicative effect. The CEO's ability has a larger contribution to firm value if they are working in a larger firm. So, if they grow the value of the firm by making the right decisions, the effect will be larger for a large firm. 
+
+Probably the most basic example in finance of a multiplicative process is compound interest. If we start with $100 and the yearly interest rate is 5\%, we can write our wealth as a function of time $T$ (in number of years).
+
+$$
+W(T) = 100 (1 + 0.05)^T
+$$
+
+Now, imagine that we divide the interest by $N > 1$. That is, imagine that we pay an interest of $\frac{0.05}{N}$ every period with $N$ periods per year.
+
+$$
+W(T) = 100 (1 + \frac{0.05}{N})^{T N}
+$$
+
+In the where we have a lot of small periods ($N \to \infty$), we can write our wealth as follows.
+
+$$
+W(T) = 100 e^{0.05 T}
+$$
+
+In general, if we have a variable $V$ that is the results of a multiplicative process of small components with a rate of change $r$ and $S$ steps and a starting value $V_0$, we can write $V(S)$ as follows.
+
+$$
+\begin{aligned}
+V(S) &= V_0 e^{rS} \\
+\textrm{log} (V(S)) &= \textrm{log} (V_0) + rS \\
+\frac{V(S)}{V_0} &= e^{rS} \\
+\textrm{log} \frac{V(S)}{V_0} &= rS \\
+\end{aligned}
+$$
+
+The Poisson distribution itself is the discrete equivalent of this idea. The distribution models the number of events, $V(S)$, for a population, $V_0$, when the underlying process follows a fixed occurrence rate $r$ per unit of time and per element of the population. For instance, the number of patents a firm has can be expected to be higher when the firm is larger. The theoretical case for the Poisson regression is that the coefficients on the linear scale targets, $r$, the instantaneous rate of change or the rate of occurrences [^elasticity] has a meaningful economic interpretation for non-negative variables such as number of corporate patents, carbon emissions, or distance between companies [@cohn2022]. For instance, it allows us to ask the question what the effect is of increasing R&D investments with a certain percentage to the percentage change in the number of patents. The Poisson approach also make sense for variables that naturally grow like firm size, revenues, or CEO wealth and income.
+
+[^elasticity]: A semi-elasticity in economics terms [@cohn2022].
+
+## The Case for a Poisson regression
+
+### Intuition
+
+The statistical case for the Poisson regression is extensively documented in @cohn2022. Here I will just list the main advantages and shortly demonstrate them with a simulated example. There are a number of alternative approaches that we could use to model these type of variables. The obvious alternative is to model the variable $\textrm{log}(V)$ in a linear regression. However, this does not work if we have a lot of observations where $V = 0$. One proposed solution in the literature is then to use the transformation $\textrm{log}(V + 1)$. @cohn2022 show that the coefficients with the log plus 1 approach are hard to interpret and can have a different sign than with a poisson regression, where the poisson regression has a more straightforward interpretation. A further strength of the Poisson approach is that it allows for the inclusion of fixed effects in the regression without changing the interpretation of the coefficients. Remember that [with generalised linear models in general](../generalised/interpretation.qmd) the effect depends on other parts of the model if we are interested in the non-transformed scale, $V$. The concession that we have to make is that we are interpreting the effects on the transformed scale of $r$ (the change) and not on the scale of $V_0$ (the size). As I explained above, this can often be a reasonable assumption to make.
+
+One criticism of the Poisson regression is that it assumes that the variation around the mean is proportional to the mean. However, if this assumption does not hold, the estimates of the coefficients will not be biased and (cluster) robust standard errors are robust against violations of this assumption.
+
+A last point is that, just like in [the binomial case](../generalised/interpretation.qmd), we could just use a linear model on $V$ or $\frac{V}{V_0}$. However, because with multiplicative effects (or exponential growth) $V$ can vary by multiple orders of magnitude, the estimates of the coefficients can be noisy and have large standard errors.
+
+@cohn2022 retest six published papers that use a log transformed dependent variable and compare it to a Poisson regression. They find that in all six cases the coefficient is markedly different and in three cases the sign changes. Moreover, the change in the coefficient is larger than removing any control variables. The type of regression matters more than the control variables.
+
+:::{.callout-note}
+In my view, @cohn2022 makes a strong case that for a lot of non-negative outcome variables in accounting and finance research designs, the Poisson regression should be the default. This is also my recommendation.
+:::
+
+### Simulation
+
+In the simulation below, I create a dataset for a discrete and a continuous $y$ where the expected value of $y$ is given by
+
+$$
+E(y|x_1, x_2) = e^{-0.3 x_1 + x_2}
+$$
+
+This is the data generating process that we associate with a multiplicative process or from a Poisson count process. We will be interested in estimating the effect of $x_1$ on $y$ which in the Poisson regression should give an estimate of $-0.3$.
+
+The data generating process also includes fixed effects and additional variation around this expected value which violates the assumptions of the naive Poisson regression. The details of this approach are not important and require knowledge of the negative binomial distribution(`rnbinom`) to get count data and the chi-squared distribution (`rchisq`) for the continuous case.
+
+```{r}
+#| label: simulate-count-data
+overdispersion <- 0.5
+hetero <- 1
+beta <- - 0.3
+firm <-
+  tibble(
+    firm = 1:n_firm,
+    fixed = rnorm(n_firm, 0, .5))
+panel <-
+  tibble(
+    firm = sample(1:100, N, replace = TRUE),
+    x1_noise = rnorm(N, 0, .5),
+    noise = rnorm(N, 0, .5)) %>%
+  left_join(firm) %>%
+  mutate(
+    x1 = fixed + x1_noise,
+    x2 = rnorm(N, x1 + x1^2, 2),
+    ydiscrete = rnbinom(n = N, mu = exp(beta * x1 + x2),
+                        size = 1/overdispersion),
+    ycontinuous = rchisq(n = N, ydiscrete))
+```
+
+I plot the data on log + 1 scale and you can see that the figure looks distorted or weird for lower values of `ydiscrete` or `ycontinuous`. This is by now means proof but it is indicative of some of the problems with the log or log plus 1 transformation.
+
+```{r}
+panel %>%
+  pivot_longer(c(ydiscrete, ycontinuous), values_to = "y") %>%
+  ggplot(aes(y = y + 1, x = x1)) +
+  geom_point() +
+  scale_y_log10() +
+  facet_wrap(~name)
+```
+
+For both the continuous and count variable, I run four regression models with fixed effects.
+
+- The Poisson regression with $y$ as dependent variable.
+- An OlS regression with $\textrm{log}(y + 1)$ as dependent variable.
+- An OLS regression with $y$ as dependent variable. Because this regression is not on the rate of change scale, we do not expect a coefficient of -0.3 here. The main purpose is to show how noisy the estimate is.
+- An OLS regression with $\frac{y/x_2$ as dependent variable. This approach will suffer from the same noisy estimates.
+
+```{r}
+poisson_disc <- feglm(ydiscrete ~ x1 + x2 | firm,
+                      family = "poisson", data = panel)
+poisson_cont <- feglm(ycontinuous ~ x1 + x2 | firm,
+                      family = "poisson", data = panel)
+log_plus1_disc <- feols(log(ydiscrete + 1) ~ x1 + x2 | firm,
+                        data = panel)
+log_plus1_cont <- feols(log(ycontinuous + 1) ~ x1 + x2 | firm,
+                        data = panel)
+ols_disc <-feols(ydiscrete ~ x1 + x2 | firm, data = panel)
+ols_cont <-feols(ycontinuous ~ x1 + x2 | firm, data = panel)
+rate_disc <-feols(I(ydiscrete / exp(x2)) ~ x1 | firm, data = panel)
+rate_cont <-feols(I(ycontinuous / exp(x2)) ~ x1 | firm, data = panel)
+msummary(list(poisson = poisson_disc, log1 = log_plus1_disc,
+              ols = ols_disc, rate = rate_disc),
+         gof_omit = gof_omit)
+
+msummary(list(poisson = poisson_cont, log1 = log_plus1_cont,
+              ols = ols_cont, rate = rate_cont),
+         gof_omit = gof_omit)
+
+```
+
+You can see that the Poisson regression is pretty close to recovering the true estimate of -0.3 both for the count as for the continuous case with small standard errors. The rate estimate with OLS is also pretty good but this only works if we know the scale variable `exp(x2)` before hand. The log plus 1 approach gives a considerably different estimate and the OLS estimates are positive instead of negative but with large standard errors.

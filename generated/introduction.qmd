@@ -1,0 +1,149 @@
+---
+title: Introduction
+toc: true
+---
+
+## Introduction
+
+This last section is going to bring everything full circle to an extent. The topic of this section is generated variables which are variables that are the result of a regression. For instance, we could use the residuals or predicted values of one regression and use them as variables in an other regression. This is the idea behind two-stage least squares with an instrumental variable, models of abnormal returns, models of abnormal accruals, and a lot of matching approaches and many more in the accounting and finance literature.
+
+The issue is that these generated variables might violate some of the implicit or explicit assumptions in the second regression model. I will go over some of the issues that are specific to certain models such as two-stage least squares on this page and the use of generated variables on the next page. The main message of this section is that the properties of these models that exists of more than one regression are not always well understood: the estimates could be biased or the standard software packages could give the wrong standard errors. The solutions I propose in this setting is to use *simulations* of many datasets to understand whether an approach gives biased estimates and use *bootstrapped standard errors* to check whether the multi-step approach gives reasonable standard errors. I use plenty of coding examples to illustrate these points.
+
+## Setup
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(here)
+library(modelsummary)
+gof_map <- c("nobs", "r.squared")
+library(fixest)
+library(bayesboot)
+i_am("generated/introduction.qmd")
+set.seed(230383)
+```
+
+## An example: 2SLS
+
+In this example, we are using a standard setting where an instrumental variable, `iv`, is used to identify the effect of a variable `x` on `y` in the presence of annoying confounding. Note that I generate the data in two steps. The initial `tibble` step simulates the variables that are exogenous and not affected by other parts of the model while the second `mutate` step simulates the endogenous variables that are causally affected by other parts of the model.
+
+```{r}
+#| label: data-2sls
+N <- 1e4
+data_2sls <-
+  tibble(
+    iv = rbinom(N, 1, 0.5),
+    annoying = rnorm(N)
+  ) %>%
+  mutate(
+    x = rnorm(N, 2 * iv - 3 * annoying, 5),
+    y = rnorm(N, 3 * annoying + x, 5)
+  )
+```
+
+Next, we run four different models with this data.
+
+- `lm1` is the confounded regression.
+- `lm2` controls for the annoying confounding factor and provides the best possible answer to the question. Unfortunately, in reality we often are not sure that we have all the confounding factors.
+- `tsls` is the standard two-stage least squares estimate with `iv` as the instrumental variable.
+- `tsls_manual1` and `tsls_manual2` run the two regressions of two-stage least squares manually. 
+
+```{r}
+#| label: lm-2sls
+lm1 <- lm(y ~ x, data = data_2sls)
+lm2 <- lm(y ~ x + annoying, data = data_2sls)
+tsls <- feols(y ~ 1 | 0 | x ~ iv, data = data_2sls)
+tsls_manual1 <- lm(x ~ iv, data = data_2sls)
+data_2sls <- data_2sls %>%
+  mutate(fit_x = fitted(tsls_manual1))
+tsls_manual2 <- lm(y ~ fit_x, data = data_2sls)
+coef_map <- c('x' = 'x', 'annoying' = 'annoying',
+              'fit_x' = 'x')
+msummary(list(confounded = lm1, ideal = lm2, tsls = tsls,
+              manual = tsls_manual2),
+         gof_map = gof_map, coef_map = coef_map)
+```
+
+In the results, you can notice the following. The confounded regression is biased. We do not get the correct coefficient of $\beta = 1$. The ideal regression estimates the coefficient precisely with a low standard error. Despite the high number of observations (`r N`), the two-stage least squares estimates also have an unbiased estimate but the standard error is substantially larger. The manual two-stage least squares model gets exactly the same coefficient but the standard error is larger again.
+
+It turns out that the standard error is wrong in the manual version [@gelman2006, pp.223]. That is why we should use the `fixest` package to estimate the two-stage least squares model. The problem is that in our second stage regression we use `fit_x` as the independent variable which is the predicted value of `x` in the first stage regression. When `lm` calculates the standard error of the coefficient, it uses the standard deviation of the residuals in the regression, i.e. the difference between `y` and the predicted `y` based on `x_fit`. However, we know that we should actually use `x` to predict `y`. So, we need to adjust the standard errors of the coefficient and that is what the following code does manually.
+
+The following code shows how to do that adjustment [^adjustment]. First, we get the coefficient table from the summary which is just a matrix, where we can access the values based on the name or row/column number of the values that we need. I am extracting the coefficient and the standard error that we are interested in. We can also extract the unadjusted standard deviation of the residuals which is called `sigma` in the summary. Finally, we calculate the adjusted standard deviation if we use `x` instead of `fit_x` to predict `y`. The last line adjusts the standard error.
+
+[^adjustment]: Which you should never have to do!
+
+```{r}
+#| label: lm-adj
+coef_table <- summary(tsls_manual2)$coef
+intercept <- coef_table["(Intercept)", 1]
+beta <- coef_table["fit_x", 1]
+se <- coef_table["fit_x", 2]
+sd_unadj <- summary(tsls_manual2)$sigma
+sd_adj <- data_2sls %>%
+  mutate(e = y - intercept - beta * x) %>%
+  summarise(sd = sd(e)) %>%
+  pull(sd)
+se * sd_adj / sd_unadj
+```
+
+::: {.callout-note}
+With two-stage least squares, statisticians and econometricians have figured out the correct adjustments to standard errors and they are build into the software packages. For more complicated models with multiple steps this might not always be possible. One possible solution is to bootstrap the standard errors.
+:::
+
+## Bayesian Bootstrap
+
+I have explained [the bootstrap](../slides/slides2.qmd) before. In this section, I introduce the [Bayesian Bootstrap](https://twitter.com/instrumenthull/status/1487469316010389516) and it's [R implementation](https://www.sumsar.net/blog/2015/07/easy-bayesian-bootstrap-in-r/) [^bayesboot]. In the traditional bootstrap we resample observations from the data with replacement so that we create new datasets which are similar but different from the original data. The disadvantage of the traditional approach is that the implicit weight on an observation in each resampled data is discrete and can be 0. The Bayesian bootstrap bootstrap creates explicit weights based on a [Dirichlet distribution](https://en.wikipedia.org/wiki/Dirichlet_distribution) which gives a weight between for each observation so that the sum of the weights equals 1.
+
+We do not need to know this to use the Bayesian bootstrap. We can just use the `bayesboot` package. The only thing we need to do is to create a function that returns the estimate that we are interested in based on the data and the weights. We can use the `bootstrap` function and tell it to start with the `data_2sls`, resample it `R = 1000` times, calculate the beta with `get_beta`, and use weights in that calculation.
+
+[^bayesboot]: You can also find a thorough discussion [here](https://towardsdatascience.com/the-bayesian-bootstrap-6ca4a1d45148).
+
+
+```{r}
+#| label: boot-2sls
+get_beta <- function(data, weights){
+  tsls_manual1 <- lm(x ~ iv, data = data, weights = weights)
+  data$fit_x <- fitted(tsls_manual1)
+  tsls_manual2 <- lm(y ~ fit_x, data = data, weights = weights)
+  beta <- coefficients(tsls_manual2)["fit_x"]
+  return(beta)
+}
+get_beta(data_2sls, weights = rep(1/N, times = N))
+bootstrap <- bayesboot(data_2sls, get_beta, R = 1000,
+                       use.weights = TRUE)
+summary(bootstrap)
+```
+
+## The Bayesian Bootstrap by hand and 
+
+If you want to calculate the Bayesian bootstrap by hand, I give the code below. It's a good introduction on how to run efficient simulations with the `tidyverse` [^efficient_sim]. I need to slightly change the function because we are going to put the simulated weights in the data. The next part is to actual create `nsim` versions of the data. The trick here is to say that we want the data `data_2sls` where we repeat each row `nsim` times.
+
+The rest of the code follows more easy to understand patterns. We first create a `sim` variable so that we can keep track of different data simulations. In this case, the data is the same but we create new weights for each simulation. The weights are derived from a Dirichlet distribution which you can generate by an exponential distribution divided by the sum of the generated values (per simulation). We only keep the variables that are necessary in our `get_beta_2` function. Then we create a dataset per simulation with the `nest` function and calculate the estimate in the last `mutate` step. And that is the Bayesian bootstrap as a simulation exercise.
+
+[^efficient_sim]: This advice is based on the [Grant McDermott's advice] for *very* efficient simulations. I did not implement everything but I did use most of the principles in the `tidyverse` setting.
+
+```{r}
+#| label: boot-by-hand
+get_beta_2 <- function(data){
+  tsls_manual1 <- lm(x ~ iv, data = data, weights = weights)
+  data$fit_x <- fitted(tsls_manual1)
+  tsls_manual2 <- lm(y ~ fit_x, data = data, weights = weights)
+  beta <- coefficients(tsls_manual2)["fit_x"]
+  return(beta)
+}
+nsim <- 1000
+nrows <- nrow(data_2sls)
+bootstrap2 <-
+  data_2sls[rep(1:nrows, times = nsim),] %>%
+  mutate(sim = rep(1:nsim, each = nrows),
+         raw_weights = rexp(nsim *  nrows, 1)) %>%
+  mutate(weights = raw_weights/sum(raw_weights), .by = sim) %>%
+  select(sim, iv, x, y, weights) %>%
+  nest(.by = sim) %>%
+  mutate(beta = map_dbl(data, get_beta_2)) %>%
+  print()
+
+summarise(bootstrap2,
+          estimate = mean(beta),
+          se = sd(beta))
+```

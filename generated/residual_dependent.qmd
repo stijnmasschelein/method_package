@@ -1,0 +1,170 @@
+---
+title: Generated Independent
+toc: true
+---
+
+## Introduction
+
+This page is based on @chen2018 who show the potential problems of using a two-stage approach where in the second stage, we use the residuals from the first regression as a dependent variable. This approach is quite popular in the accounting and finance literature. The paper shows formally and with simulation that (1) these models can typically be estimated with 1 regression and that (2) the two-step procedure can be biased if they are not used carefully. The paper also re-analyses a number of accounting studies and shows that the results sometimes meaningfully change.
+
+I am going to illustrate the issue with a number of simulated examples. As always, we will be interested in the effect of a variable `x` on `y` where we want to control for a variable `z`. The bias of the two-stage procedure will often depend on unobserved correlations between those variables which I will model with the unobserved variable `w`.
+
+The two-step approach is to:
+- First run a regression `y ~ z` and calculate the residuals.
+- Second use those residuals to estimate the effect of x on the residuals `residuals ~ x`
+
+The one-step approach is to just run the regression `y ~ x + z`.
+
+## Setup
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(cowplot)
+theme_set(theme_cowplot(font_size = 18))
+library(broom)
+library(here)
+i_am("generated/residual_dependent.qmd")
+library(modelsummary)
+```
+
+```{r}
+#| label: parameters
+N <- 1000
+gof_map <- c("nobs", "r.squared")
+set.seed(230383)
+```
+## Correlated Step 1 control
+
+The basic problem is that in the two-step approach researchers regularly include `z` in the first regression and not in the second regression. If `z` and `x` are correlated, the two-step procedure will be biased downwards if the second step does not control for `z`. This can be seen in the simulated example below. I also show that the bias can be avoided by running the one-step regression, add `z` as a control variable, or use `z` to residualise both `x` and `y`.
+
+```{r}
+#| label: correlated-step-1
+d1 <- tibble(w = rnorm(N)) %>%
+  mutate(z = rnorm(N, w, 1),
+         x = rnorm(N, w, 1),
+         y = rnorm(N, x + z, 10))
+lm1 <- lm(y ~ x + z, data = d1)
+lm1x <- lm(y ~ z, data = d1)
+lm1y <- lm(x ~ z, data = d1)
+d1 <- mutate(d1,
+             resid_y = resid(lm1x),
+             resid_x = resid(lm1y))
+lm1resy <- lm(resid_y ~ x, data = d1)
+lm1resyz <- lm(resid_y ~ x + z, data = d1)
+lm1resyx <- lm(resid_y ~ resid_x, data = d1)
+modelsummary(list(onestep = lm1, no_control = lm1resy,
+                  with_control = lm1resyz, double_resid = lm1resyx),
+             gof_map = gof_map)
+```
+
+## Extra controls in step 2
+
+In the next step, we can include extra controls, `z2`, in the second step. The bias will now depend on the correlations that the extra control has with the first stage controls and `x` and `y`. More importantly, the bias can now be an overestimation or underestimation. If the additional control is not correlated to `x` or `z1`, we still have the downward bias from before.
+
+```{r}
+#| label: additional-controls
+d2 <- d1 %>%
+  rename(z1 = z) %>%
+  mutate(z2 = rnorm(N, 0, 1),
+         y = rnorm(N, x + z1 + z2, 10))
+lm2 <- lm(y ~ x + z1 + z2, data = d2)
+lm2y <- lm(y ~ z1, data = d2)
+d2 <- d2 %>%
+  mutate(resid_y = resid(lm2y))
+lm2resy <- lm(resid_y ~ x + z2, data = d2)
+modelsummary(list(onestep = lm2, twostep = lm2resy),
+             gof_map = gof_map)
+```
+
+## Extra correlated controls in step 2
+
+However, when the additional control is negatively correlated to both `z1` and `x` but positively to `y`, we get an upward bias.
+
+```{r}
+#| label: additional-correlated-controls
+d3 <- d2 %>%
+  mutate(z3 = rnorm(N, - 2 * w, 1),
+         y = rnorm(N, x + z1 + z3, 10)) %>%
+  mutate(resid_y = resid(lm(y ~ z1, data = .)))
+lm3 <- lm(y ~ x + z1 + z3, data = d3)
+lm3resy <- lm(resid_y ~ x + z3, data = d3)
+modelsummary(list(onestep = lm3, twostep = lm3resy),
+             gof_map = gof_map)
+```
+
+
+## Run simulations as a large dataframe
+
+We can use a simulation approach to see whether that bias is persistent and not just a coincedence in the simulated data. First, we create the two functions that run the two step and one step approach and return the estimate and the p-value from the coefficient table.
+
+```{r}
+#| label: sim-functions
+two_step <- function(data){
+  lm1 <- lm(y ~ z1, data)
+  lm2 <- lm(resid(lm1) ~ x + z3, data = data)
+  coefs <- summary(lm2)$coefficients
+  result <- coefs["x", c(1, 4)]
+  names(result) <- c("estimate", "pvalue")
+  return(result)
+}
+one_step <- function(data){
+  lm <- lm(y ~ x + z1 + z3, data = data)
+  coefs <- summary(lm)$coefficients
+  result <- coefs["x", c(1, 4)]
+  names(result) <- c("estimate", "pvalue")
+  return(result)
+}
+two_step(d3)
+one_step(d3)
+```
+
+Next, we set up the simulation for 1000 simulations with 100 observations per data set. One trick for efficient simulations is to generate the data in one big data frame. You can see that we can still use the two step approach with `tibble` and `mutate` for exogenous and endogenous variables. We just need to be careful with the number of observations and use `ntotal`.
+
+```{r}
+#| label: sim-additional
+N <- 100
+nsim <- 1000
+ntotal <- nsim * N
+simdata <-
+  tibble(
+    sample = rep(1:nsim, each = N),
+    w = rnorm(ntotal)) %>%
+  mutate(
+    z1 = rnorm(ntotal, w, 1),
+    x = rnorm(ntotal, w, 1),
+    z3 = rnorm(ntotal, - 2 * w, 1),
+    y = rnorm(ntotal, x + z1 + z3, 10))
+```
+
+We can than use `nest` to create separate data by sample and calculate the estimate and p-value for each sample with our functions. The results are a vector with two values and we use `unnest_wider` to create separate columns. Finally, I calculate the difference between the two estimates.
+
+```{r}
+results <- simdata %>%
+  nest(.by = sample) %>%
+  mutate(two = map(.x = data, .f = ~ two_step(.x)),
+         one = map(.x = data, .f = ~ one_step(.x))) %>%
+  select(-data) %>%
+  unnest_wider(c(one, two), names_sep = "_") %>%
+  mutate(bias = two_estimate - one_estimate)
+```
+
+Next, we can summarise the results and we see that the two step approach is likely to overestimate the effect of `x`.
+
+```{r}
+results %>%
+  summarise(M = mean(bias), se = sd(bias)/sqrt(n()), 
+            M_one = mean(one_estimate), M_two = mean(two_estimate))
+```
+
+The last part of the code calculates the percentage of simulated samples that gives a significant effect. If we are worried that we might not find a significant effect while there is one, this might be a legitimate problem. In this case, the bad approach is more likely to report a significant effect. It's not always easy doing the right thing.
+
+```{r}
+results %>% select(sample, two_pvalue, one_pvalue) %>%
+  pivot_longer(c(two_pvalue, one_pvalue),
+               names_to = "var", values_to = "pvalue") %>%
+  mutate(is_sign = if_else(pvalue < 0.05, 1, 0)) %>%
+  summarise(mean = mean(is_sign), .by = var)
+```
+
+

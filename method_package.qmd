@@ -1,19 +1,41 @@
 ---
 title: "Content"
+format:
+    html:
+        toc: true
 ---
+
+## Introduction 
+
+This section contains a written [introduction to R and Rstudio](auxilary/introduction_to_r_rstudio_tidyverse.qmd) with the goal of getting you up and running with the main tools for data analysis and reporting results for the unit. The [script](auxilary/introduction_to_rstudio_for_accfin.qmd) I use for this introduction is also available with some explanations. The coding is more advanced and you should see it more as a useful resource than something you should be able to do at the start of the semester.
 
 ## Slides
 
 The slides contain the lecture slides for the first half of the semester.
 
-- [Slides 1](slides/slides1.qmd)
-- [Slides 2](slides/slides2.qmd)
-- [Slides 3](slides/slides3.qmd)
-- [Slides 4](slides/slides4.qmd)
-- [Slides 5](slides/slides5.qmd)
+The [first set of slides](slides/slides1.qmd){target="_blank" rel="noopener noreferrer"} introduce a number of practical issues around the structure, goals,and assignments for the unit. I also demonstrate what research looks like with an example from executive compensation. You can find the data on LMS.^[Or download it yourself with the [introduction script](auxilary/introduction_to_rstudio_for_accfin.qmd).] 
 
-## Freaky Friday
 
-Contains an attempt at a replication from downloading the data to analyzing for @dellavigna2009. 
+The [second set of slides](slides/slides2.qmd){target="_blank" rel="noopener noreferrer"} introduces the notion of simulations and simulated data. Simulations are a way to make an abstract theory more concrete and to test our intuition of statistical tests. This is exactly what we are going to do in this lecture where the theory is a matching theory of firms and CEOs. Finally, we will test whether there is a relation between pay-for-performance and the size of the firm.
 
-[Introduction to the Replication](freaky_friday/index.qmd)
+As background reading, I have also made a more detailed explanation of the [matching theory of CEO compensation](auxilary/matching_theory.qmd). It reinforces the value of knowing how to simulate some data from a theory.
+
+The [third set of slides](slides/slides3.qmd){target="_blank" rel="noopener noreferrer"} looks at the issue of when and how to control (and sometimes not control) for additional effects. It's complicated!
+
+The [fourth](slides/slides5.qmd){target="_blank" rel="noopener noreferrer"} and [fifth](slides/slides5.qmd){target="_blank" rel="noopener noreferrer"} set of slides basically give up on trying to control for everything. The goal is to focus on the research design, i.e. find a situation where we can be reasonable sure that our research question is answerable. I will focus my attention on event studies and its bigger (but slower) brother difference-in-difference and instrumental variables.
+
+## Freaky Friday *or* Friday Earnings Announcements Are Weird
+
+For the remainder of the unit, we will change the mode of teaching. The remaining parts are best seen as case studies into some specific topics. The first case study is an attempt at replicating the main results of @dellavigna2009 from scratch. The goal is twofold. First, the study is an *event study* of the market reaction to the release of news which is the workhorse study design for many finance studies. Second, the study requires different sources of data and it is a good exercise to demonstrate how to manage data in a larger project. Start from the [introduction to the replication](freaky_friday/index.qmd) and go from there. 
+
+## Machine Learning
+
+This is also a two parter. The main goal is to make you aware [when machine learning tools](machine_learning/theory.qmd) are useful. The other part is a long [`R` implementation](machine_learning/application.qmd) of one of the machine learning techniques that is most related to linear regression. The last part is mainly to give you the code as a starting point. 
+
+## Generalised Linear Models
+
+Here I introduce the use of GLM models for [discrete outcomes](generalised/introduction.qmd). As before, I first emphasise why the regulare linear model works reasonably well for a lot of typical applications and when the GLM models are more appropriate. Maybe surprisingly, there is a clear link with the machine learning arguments.
+
+## Generated Variables
+
+This section looks at a diverse set of methods that all have one thing in common. They are often [a combination of two are more regression steps](generated/introduction.qmd). I show how that might effect the uncertainty estimates and how the bootstrap can help to get the uncertainty estimates correct. 
