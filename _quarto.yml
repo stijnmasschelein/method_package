@@ -12,6 +12,7 @@ project:
     - slides/slides3.qmd
     - slides/slides4.qmd
     - slides/slides5.qmd
+    - slides/slides_proposal.qmd
     - freaky_friday/index.qmd
     - freaky_friday/download_linking.qmd
     - freaky_friday/linking.qmd
@@ -44,6 +45,7 @@ website:
         - slides/slides3.qmd
         - slides/slides4.qmd
         - slides/slides5.qmd
+        - slides/slides_proposal.qmd
         - auxilary/matching_theory.qmd
       - section: "Friday Earnings Announcements"
         contents:

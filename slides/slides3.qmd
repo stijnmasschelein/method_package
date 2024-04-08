@@ -121,10 +121,10 @@ lm2 <- lm(Performance ~ CG + TI, data = ds)
 :::
 ::: {.column}
 ```{r}
-gof_omit <- "Adj|IC|Log|Pseudo"
+gof_omit <- "Adj|IC|Log|Pseudo|RMSE"
 stars <- c('*' = .1, '**' = .05, '***' = .01)
 msummary(list(lm1, lm2), stars = stars,
-         gof_omit = gof_omit, output = "html")
+         gof_omit = gof_omit, output = "markdown")
 ```
 :::
 ::::
@@ -173,7 +173,7 @@ lm2 <- lm(Performance ~ CG + TI, data = ds)
 ::: {.column}
 ```{r}
 msummary(list(lm1, lm2), stars = stars,
-         gof_omit = gof_omit, output = "html")
+         gof_omit = gof_omit, output = "markdown")
 ```
 :::
 ::::
@@ -258,7 +258,7 @@ fe <- feols(Performance ~ CG | ind_number, data = ds)
 ```
 
 ```{r}
-msummary(list(lm1, lm2, fe), gof_omit = gof_omit, stars = stars)
+msummary(list(lm1, lm2, fe), gof_omit = gof_omit, stars = stars, output = "markdown")
 ```
 
 ::: {.notes}
@@ -529,7 +529,7 @@ d <- mutate(d, survival = if_else(market_return > 5, 1, 0))
 ```{r}
 lm1 <- lm(acc_profit ~ corp_gov, data = filter(d, survival == 1))
 lm2 <- lm(acc_profit ~ corp_gov * survival, data = d)
-msummary(list(lm1, lm2), gof_omit = gof_omit, stars = stars)
+msummary(list(lm1, lm2), gof_omit = gof_omit, stars = stars, output = "markdown")
 ```
 
 :::::

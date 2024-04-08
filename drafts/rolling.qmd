@@ -1,0 +1,74 @@
+---
+title: "Rolling"
+format: html
+---
+
+## Packages
+
+```{r}
+library(tidyverse)
+```
+
+## Generate Data
+
+- Generate 20 company names A to T
+- Generate the beta compared to the index
+- Generate the number of days
+- Generate the index returns
+
+```{r}
+companies <- LETTERS[1:20]
+betas <- runif(20, -0.5, 0.5)
+days <- 1:300
+index <- rnorm(300, 0, 0.05)
+
+data <- tibble(company = companies, beta = betas) |>
+    expand_grid(tibble(day = days, index = index)) |>
+    mutate(
+        noise = rnorm(20 * 300, 0, 0.03),
+        return = noise + beta * index)
+```
+
+## Calculate rolling statistics
+
+Using the [slider](https://slider.r-lib.org/articles/slider.html) package.
+
+### The mean
+
+Let's first do the mean because it only requires one variable. The code below calculates the rolling mean for 10 days, for each company and it needs complete data. That is the code does not give a result for the first 9 days. 
+
+```{r}
+library(slider)
+mutate(data, 
+    rolling_mean = slide(.x = return, .f = ~ mean(.x), .before = 9, .complete = TRUE), .by = company)
+```
+
+However this returns a list for every mean, which is not very handy. We actually want a number which we can do with `slide_dbl` where dbl stands for a number with double precision. 
+
+```{r}
+mutate(data, 
+    rolling_mean = slide_dbl(.x = return, .f = ~ mean(.x), .before = 9, .complete = TRUE), .by = company) |>
+    print(n = 20)
+```
+
+### Correlation with the index
+
+The trick for working with correlations is to first construct the data.frame with the return and index and then calculate the correlation with `slide_period_dfr` 
+
+```{r}
+data_cor = mutate(data,
+    rolling_cor = slide_dbl(.x = pick(return, index), .f = ~ cor(.x$return, .x$index), .before = 9, .complete = TRUE),
+    .by = company)
+
+data_cor
+
+data_cor |> 
+    filter(day >= 10) |>
+    summarise(cor = mean(rolling_cor),
+              beta = mean(beta),
+               .by = company)
+```
+
+It looks like the correlations, are in line with the betas.
+
+

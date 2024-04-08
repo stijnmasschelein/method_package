@@ -1,0 +1,39 @@
+---
+title: Feedback on Pitch and Proposal
+---
+
+# Proposal 
+
+## Guidance on word count
+
+- Introduction and motivation (500-1000 words)
+- Literature review and hypothesis development (2500-3500 words)
+- Measurement and Methodology (750 - 1250 words)
+
+## Some writing tips
+
+- Explain important concepts and theories
+- Theory first, then literature review
+- Avoid vague and hedging words as much as possible
+
+# Some feedback on the pitching document
+
+## Theory = Different explanations for the same phenomenon
+
+> More ESG disclosure because more capabilities
+
+> More ESG disclosure because more scrutiny
+
+> More ESG disclosure because more need for capital
+
+## Theory = A succint summary of prior literature
+
+> Tokenisation is a market structure change
+
+## Theory = Relevance of your findings
+
+> Is a short-selling ban (sometimes) good?
+
+## Theory = What are the important variables?
+
+> Reasons for delegation: lack of knowledge by decision makers

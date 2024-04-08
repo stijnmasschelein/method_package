@@ -1,0 +1,111 @@
+---
+title: Generated Independent
+---
+
+This is probably not worthwhile further investigating. It's quite niche.
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(modelsummary)
+library(here)
+i_am("generated/residual_independent.qmd")
+```
+
+```{r}
+#| label: parameters
+N <- 100
+nsim <- 1000
+ntotal <- N * nsim
+```
+
+## Residuals
+
+```{r}
+#| label: simulation
+sim_data <-
+  tibble(
+    sim = rep(1:nsim, each = N),
+    x1 = rnorm(ntotal),
+    x2 = rnorm(ntotal),
+    z1 = rnorm(ntotal)
+  ) %>%
+  mutate(
+    z = rnorm(ntotal, z1, 5),
+    y = rnorm(ntotal, x1 + (z - z1), 3)
+  ) %>%
+  nest(.by = sim)
+test_data <- pull(sim_data, data)[[1]]
+```
+
+```{r}
+#| label: two_step_residual
+two_step <- function(data){
+  lm1 <- lm(z ~ z1, data = data)
+  resid_z <- residuals(lm1)
+  lm2 <- lm(y ~ x1 + x2 + resid_z, data = data)
+  coefs <- summary(lm2)$coefficients
+  return(coefs[, 4])
+}
+two_step(test_data)
+```
+
+```{r}
+#| label: sim_residual
+pvalues <- sim_data %>%
+  mutate(pvalues = map(.x = data, .f = ~ two_step(.))) %>%
+  unnest_wider(pvalues) %>%
+  pivot_longer(cols = c(x1, x2, resid_z),
+               values_to = "pvalue", names_to = "variable") %>%
+  select(sim, pvalue, variable)
+
+pvalues %>%
+  mutate(is_sign = if_else(pvalue < 0.05, 1, 0)) %>%
+  summarise(proportion = mean(is_sign), .by = variable)
+```
+
+## Absolute Residuals
+
+```{r}
+#| label: simulation_abs
+sim_data <-
+  tibble(
+    sim = rep(1:nsim, each = N),
+    x1 = rnorm(ntotal),
+    x2 = rnorm(ntotal),
+    z1 = rnorm(ntotal)
+  ) %>%
+  mutate(
+    z = rnorm(ntotal, z1, 5),
+    y = rnorm(ntotal, x1 + abs(z - z1), 3)
+  ) %>%
+  nest(.by = sim)
+test_data <- pull(sim_data, data)[[1]]
+```
+
+```{r}
+#| label: two_step_abs
+two_step_abs <- function(data){
+  lm1 <- lm(z ~ z1, data = data)
+  abs_resid_z <- abs(residuals(lm1))
+  lm2 <- lm(y ~ x1 + x2 + abs_resid_z, data = data)
+  coefs <- summary(lm2)$coefficients
+  return(coefs[, 4])
+}
+two_step_abs(test_data)
+```
+
+```{r}
+#| label: sim_abs
+pvalues <- sim_data %>%
+  mutate(pvalues = map(.x = data, .f = ~ two_step_abs(.))) %>%
+  unnest_wider(pvalues) %>%
+  pivot_longer(cols = c(x1, x2, abs_resid_z),
+               values_to = "pvalue", names_to = "variable") %>%
+  select(sim, pvalue, variable)
+
+pvalues %>%
+  mutate(is_sign = if_else(pvalue < 0.05, 1, 0)) %>%
+  summarise(proportion = mean(is_sign), .by = variable)
+```
+

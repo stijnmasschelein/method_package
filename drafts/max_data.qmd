@@ -1,0 +1,49 @@
+---
+title: "Max Data"
+format: 
+    html:
+        self-contained: true
+---
+
+```{r}
+library(tidyverse)
+library(readit)
+library(here)
+data1 <- readit(here("drafts","dataset 1..xlsx"))
+data2 <- readit(
+    here("drafts", "dataset 2..xlsx"),
+    sheet = "Results")
+```
+
+
+You normally don't need all the print statements below but this should make it easier to follow what the code is doing.
+
+- `pivot_longer" turns the data in a longer format. You see that you suddenly have a lot more observations. Basically there is one row for each firm, each observation of total assets, equity, and number of employees.
+- You need to know this trick but I am basically trying to extract (`str_extract`) the part of the name variable that consists of 20 followed by two other numbers. Name is created by `pivot_longer` and contains the original varialbe names. Than I make that a number instead of a string.
+- I create a nicer variable name from this same `name` variable.
+-  `pivot_wider` than creates a new dataset with a row for each company and year and the tree variables that you have in your dataset.
+
+```{r}
+data2_tidy <- data2 %>% 
+pivot_longer(
+    cols = matches("^(Total assets)|(Equity)|(Number)")) %>%
+print() %>%
+mutate(year = str_extract(name, "20[0-9][0-9]")) %>%
+mutate(year = as.numeric(year), value = as.numeric(value)) %>%
+print() %>%
+mutate(variable = case_when(
+    str_detect(name, "^Total") ~ "total_assets",
+    str_detect(name, "^Equity") ~ "equity",
+    str_detect(name, "^Number") ~ "employees"
+)) %>%
+rename(index = `...1`, 
+    company_name = `Company name Latin alphabet`) %>%
+select(-name) %>%
+print() %>%
+pivot_wider(id_cols = c(index, company_name, 
+    Specialisation, year), 
+    names_from = variable, 
+    values_from = value)
+```
+
+Unfortunately, I don't know how to match the companies to each other. Do you want to do it based on the name? Do you want to use this index that I created and is it the same as the code in the first dataset?

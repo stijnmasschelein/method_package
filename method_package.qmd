@@ -22,7 +22,7 @@ As background reading, I have also made a more detailed explanation of the [matc
 
 The [third set of slides](slides/slides3.qmd){target="_blank" rel="noopener noreferrer"} looks at the issue of when and how to control (and sometimes not control) for additional effects. It's complicated!
 
-The [fourth](slides/slides5.qmd){target="_blank" rel="noopener noreferrer"} and [fifth](slides/slides5.qmd){target="_blank" rel="noopener noreferrer"} set of slides basically give up on trying to control for everything. The goal is to focus on the research design, i.e. find a situation where we can be reasonable sure that our research question is answerable. I will focus my attention on event studies and its bigger (but slower) brother difference-in-difference and instrumental variables.
+The [fourth](slides/slides4.qmd){target="_blank" rel="noopener noreferrer"} and [fifth](slides/slides5.qmd){target="_blank" rel="noopener noreferrer"} set of slides basically give up on trying to control for everything. The goal is to focus on the research design, i.e. find a situation where we can be reasonable sure that our research question is answerable. I will focus my attention on event studies and its bigger (but slower) brother difference-in-difference and instrumental variables.
 
 ## Freaky Friday *or* Friday Earnings Announcements Are Weird
 
