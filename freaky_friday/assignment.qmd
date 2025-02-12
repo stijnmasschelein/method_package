@@ -46,8 +46,10 @@ famafrench <- read_csv(file = here("data", "F-F_Research_Data_Factors_daily.csv"
 
 The following code is almost identical to the [Abnormal returns](abnormal_returns.qmd) page. However, for the three-factor model we need to run the following regression for each announcement.
 
-$$ R_{u,k} = \alpha_{t,k} + beta^{mkt}_{t,k} R_{u,m}
-+ \beta^{size}_{t,k} smb_{u,m} + \beta^{value}_{t,k} hlm_{u,m} + \epsilon_{u,k}$$
+$$ 
+R_{u,k} = \alpha_{t,k} + \beta^{mkt}_{t,k} R_{u,m}
++ \beta^{size}_{t,k} smb_{u,m} + \beta^{value}_{t,k} hlm_{u,m} + \epsilon_{u,k}
+$$
 
 That is, we include two more factors (`smb`, and `hlm`) in the regression model that we run for each announcement. The three-factor model typically works with the stock return and market return adjusted for the risk free rate (i.e. `ret - rf` and `mkt_rf` respectively). The code will give us a column `coefs` with the 4 estimated parameters `alpha`, `beta_mkt`, `beta_size`, `beta_value`.
 

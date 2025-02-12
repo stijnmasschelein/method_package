@@ -1,0 +1,185 @@
+---
+title: Assignment
+---
+
+# Setup
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(lubridate)
+library(cowplot)
+theme_set(theme_cowplot(font_size = 18))
+library(here)
+i_am("freaky_friday/assignment_solution.qmd")
+```
+
+Let's restrict the data to two years. So that the computations do not take too long.
+
+```{r}
+#| label: date-parameters
+begin <- ymd("2003-01-01")
+end <- ymd("2005-12-31")
+```
+
+I keep the full stock price data for now.
+
+```{r}
+#| label: data
+earn_ann <- readRDS(here("data", "freaky_friday", "earn_ann.RDS")) %>%
+  filter(anndat >= begin, anndat <= end)
+analyst <- readRDS(here("data", "freaky_friday", "analyst.RDS")) %>%
+  filter(anndat >= begin, anndat <= end)
+all_stocks <- readRDS(here("data", "freaky_friday", "all_stocks.RDS"))
+famafrench <- read_csv(file = here("data", "F-F_Research_Data_Factors_daily.csv"),
+                       col_names = c("date", "mkt_rf", "smb", "hml", "rf"),
+                       skip = 5, col_type = "ddddd") %>%
+  mutate(date = ymd(date)) %>%
+  mutate_if(is.numeric, ~ . / 100) %>%
+  mutate(mkt = mkt_rf + rf) %>%
+  print()
+```
+
+# Three-Factor model
+
+```{r}
+#| label: three-factor-estimate
+create_coefs_3factor <- function(n = 6){
+  earn_ann %>% head(n = n) %>%
+    distinct(permno, anndat) %>%
+    mutate(start = anndat - 300, end = anndat - 46) %>%
+    left_join(select(all_stocks, permno, date, ret),
+              by = join_by(permno == permno, start <= date, end >= date)) %>%
+    # Change this line
+    left_join(select(famafrench, mkt_rf, rf, smb, hml, date),
+              by = join_by(date == date)) %>%
+    filter(!is.na(ret), !is.infinite(ret)) %>%
+    # Changed this line
+    summarise(y = list(cbind(ret - rf)),
+              X = list(cbind(alpha = 1, beta_mkt = mkt_rf,
+                             beta_size = smb, beta_value = hml)),
+              .by = c(permno, anndat)) %>%
+    mutate(coefs = pmap(list(X, y), ~ lm.fit(..1, ..2) %>% coef()),
+           .by = c(permno, anndat)) %>%
+    select(-y, -X)
+}
+
+test <- create_coefs_3factor()
+
+microbenchmark::microbenchmark(
+                  create_coefs_3factor(1000),
+                  times = 10)
+```
+
+If it takes on average (noticeably) more than 10 seconds to run the three-factor model on 1000 observations, it is ok to limit the sample to 1 year. You can change the `start` and `end` date above.
+
+# Abnormal Returns
+
+```{r}
+#| label: abnormal-returns
+N <- nrow(earn_ann)
+# Change this line
+results <- create_coefs_3factor(N)
+
+abnormal <- results %>%
+  unnest_wider(coefs) %>%
+  mutate(date75 = anndat + 75) %>%
+  left_join(select(all_stocks, permno, date, ret),
+            by = join_by(permno == permno,
+                         date75 >= date, anndat <= date)) %>% print %>%
+  # change this line
+  left_join(select(famafrench, mkt_rf, smb, hml, date),
+            by = join_by(date == date)) %>%
+  mutate(ar = ret - alpha - beta_mkt * mkt_rf - beta_size * smb - beta_value * hml,
+         time_frame = if_else(date - anndat <= 1, "short", "long")) %>%
+    summarise(car_sum = sum(ar),
+              car_prod = prod(1 + ar) - 1,
+            .by = c(permno, anndat, time_frame)) %>%
+  filter(!is.na(car_sum), !is.na(car_prod)) %>%
+  pivot_wider(values_from = c(car_sum, car_prod), names_from = time_frame)
+glimpse(abnormal)
+```
+
+# Putting it all together
+
+```{r}
+#| label: clean-stock-prices
+clean_prices <- all_stocks %>%
+  filter(prc > 0) %>%
+  select(permno, date, prc, shrout) %>%
+  mutate(market_value = prc * shrout) %>%
+  select(-shrout) %>%
+  print()
+```
+
+```{r}
+#| label: merging-everything
+surprise <- earn_ann %>%
+  left_join(analyst,
+            by = join_by(ticker, anndat, actual, pdf)) %>%
+  left_join(abnormal,
+            by = join_by(permno, anndat)) %>%
+  mutate(date_minus5 = anndat - 5) %>%
+  left_join(clean_prices,
+            by = join_by(permno, closest(date_minus5 >= date))) %>%
+  mutate(surprise = (actual - median) / prc) 
+glimpse(surprise)
+```
+
+```{r}
+#| label: data-cleaning
+winsorise <- 5/10000
+main <- surprise %>%
+  filter(!is.na(surprise)) %>%
+  filter(abs(median) < prc, abs(actual) < prc) %>%
+  filter(prc > 2) %>%
+  mutate(weekday = wday(anndat, label = TRUE)) %>%
+  filter(! weekday %in% c("Sat", "Sun")) %>%
+  filter(percent_rank(car_sum_long) >= winsorise,
+         percent_rank(car_sum_long) <= 1 - winsorise,
+         percent_rank(car_sum_short) >= winsorise,
+         percent_rank(car_sum_short) <= 1 - winsorise) %>%
+  mutate(group = if_else(weekday == "Fri", "Friday", "Non-Friday"),
+         year = year(anndat))
+```
+
+# Descriptive Plot
+
+```{r}
+#| label: quantiles
+quantiles <- main %>%
+  mutate(sign = case_when(surprise > 0 ~ "positive",
+                          surprise < 0 ~ "negative",
+                          surprise == 0 ~ "zero")) %>%
+  mutate(
+    quintile = ntile(surprise, 5),
+    .by = c(sign, year)) %>%
+  mutate(
+    quantile = case_when(sign == "positive" ~ 6 + quintile,
+                         sign == "negative" ~ quintile,
+                         sign == "zero" ~ 6
+                         )
+  ) %>%
+  glimpse()
+```
+
+```{r}
+#| label: descriptive-plot
+ggplot(quantiles,
+       aes(y = car_prod_short, x = quantile, group = group, colour = group)) +
+  stat_summary(fun.data = mean_se, geom = "errorbar", width = .2) +
+  stat_summary(fun = mean, geom = "line") +
+  scale_color_grey()
+```
+
+```{r}
+#| label: all-plots
+quantiles %>%
+  pivot_longer(c(car_sum_short, car_prod_short, car_sum_long, car_prod_long),
+               values_to = "car", names_to = "window") %>%
+  ggplot(aes(y = car, x = quantile, group = group, colour = group)) +
+  stat_summary(fun.data = mean_se, geom = "errorbar", width = .2) +
+  stat_summary(fun = mean, geom = "line") +
+  scale_color_grey() +
+  facet_wrap(~ window, nrow = 2)
+```

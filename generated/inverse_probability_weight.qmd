@@ -25,6 +25,7 @@ library(broom)
 library(here)
 library(cowplot)
 library(bayesboot)
+library(fwb)
 theme_set(theme_cowplot(font_size = 18))
 i_am("generated/inverse_probability_weight.qmd")
 ```
@@ -109,6 +110,7 @@ We know by now that the standard errors of these type of procedures with multipl
 ```{r}
 #| label: bootstrap-ipw
 ipw <- function(data, weights){
+  weights <- weights/sum(weights)*nrow(data) 
   prop_glm <- glm(x ~ z1 + z2, data = data,
                  # the quasibinomial is necessary for the bayesian boostrap
                  # weights otherwise R gives warnings which can slow things down
@@ -124,8 +126,11 @@ ipw <- function(data, weights){
   return(beta)
 }
 ipw(sim_data, rep(1, ntotal))
-boot_ipw <- bayesboot(sim_data, ipw, R = 200, use.weights = TRUE)
+boot_ipw <- bayesboot(sim_data, ipw, R = 100, 
+                      use.weights = TRUE)
+fwb_ipw <- fwb(sim_data, ipw, R = 100)
 summary(boot_ipw)
+summary(fwb_ipw)
 ```
 
 The bootstrapped standard error is around 0.20 and noticeably higher. The standard errors are also quite wide given that we are using a quite large simulated data set. Unfortunately, these type of estimators come at a cost. The estimated uncertainty can be quite high because ultimiately when the data is far from ideal, there is only so much information you can glean from it. 
@@ -141,10 +146,15 @@ boot_function <- function(data){
   se <- sd(bb$x)
   return(se)
 }
-
+fwb_function <- function(data){
+  fwb <- fwb(data, ipw, R = 200, verbose = FALSE)
+  se <- summary(fwb)["x", 2]
+  return(se)
+}
+fwb_function(sim_data)
 sim <- sim_data %>%
   nest(.by = sim) %>%
-  mutate(se = future_map_dbl(.x = data, .f = ~ boot_function(.x),
+  mutate(se = future_map_dbl(.x = data, .f = ~ fwb_function(.x),
                              .options = furrr_options(seed = TRUE),
                              .progress = TRUE))
 

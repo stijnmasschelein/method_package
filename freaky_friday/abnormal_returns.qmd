@@ -70,18 +70,19 @@ The `microbenchmark` function allows us to test the time it takes to run this fu
 create_coefs <- function(n = 6){
   earn_ann %>% head(n = n) %>%
     distinct(permno, anndat) %>%
-    mutate(start = anndat - 300, end = anndat - 46) %>%
+    mutate(start = anndat - 300, end = anndat - 46) %>% 
     left_join(select(all_stocks, permno, date, ret),
-              by = join_by(permno == permno, start <= date, end >= date)) %>%
+               by = join_by(permno == permno, start <= date, end >= date)) %>%
     left_join(select(famafrench, mkt, rf, date),
               by = join_by(date == date)) %>%
     filter(!is.na(ret), !is.infinite(ret)) %>%
     summarise(y = list(cbind(ret)), X = list(cbind(alpha = 1, beta = mkt)),
                .by = c(permno, anndat)) %>%
     mutate(coefs = pmap(list(X, y), ~ lm.fit(..1, ..2) %>% coef()),
-           .by = c(permno, anndat)) %>%
+            .by = c(permno, anndat)) %>%
     select(-y, -X)
 }
+create_coefs()
 
 microbenchmark::microbenchmark(
                   create_coefs(100),
@@ -106,17 +107,17 @@ Finally, I use the `pivot_wider` function to transform the dataset from the long
 #| label: abnormal-returns
 N <- nrow(earn_ann)
 results <- create_coefs(N)
-#results <- create_coefs(100)
+# results <- create_coefs(100)
 
 abnormal <- results %>%
-  unnest_wider(coefs) %>%
+  unnest_wider(coefs) %>% 
   mutate(date75 = anndat + 75) %>%
   left_join(select(all_stocks, permno, date, ret),
             by = join_by(permno == permno,
                          date75 >= date, anndat <= date)) %>%
   left_join(select(famafrench, mkt, rf, date),
-            by = join_by(date == date)) %>%
-  mutate(time_frame = if_else(date - anndat <= 1, "short", "long")) %>%
+            by = join_by(date == date)) %>% 
+  mutate(time_frame = if_else(date - anndat <= 1, "short", "long")) %>% 
   summarise(raw = prod(1 + ret), mkt = prod(1 + mkt),
             .by = c(permno, anndat, time_frame, beta)) %>% 
   mutate(car = raw - 1 - beta * (mkt - 1)) %>%

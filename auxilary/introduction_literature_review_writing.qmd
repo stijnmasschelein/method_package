@@ -1,0 +1,201 @@
+---
+author: Stijn Masschelein
+title: Literature search and writing 
+format:
+    html:
+        toc: true
+---
+
+
+# Research Tools - Theory
+
+research project looks like. In this section, I go over some of
+the tools that I have been using in the past for my research.
+These are good starting points for your own research project.
+
+## Literature Search
+
+In the CEO compensation project in the previous chapter, we
+derived the theoretical prediction from a model in the
+literature. This is typical for the research process. You will
+build on prior theoretical and empirical research to build an
+argument for your predictions. To do that you will have to search
+for literature on your topic. There are a number of sources you
+can use to access the relevant academic literature. However, in
+most cases (ssrn is the exception), you will have to be on the
+university's network if you want to actually read the full paper.
+
+- [Google Scholar](https://www.scholar.google.com) is probably
+the most comprehensive repository. This search engine work very
+similar to regular Google search. There are some additional
+tricks you can use `author:lastname-firstname` will help you to
+narrow down papers from a specific author. `intitle:keyword`
+lets you search for keywords in the title of papers. You can
+also narrow down your search based on year of publication. The
+advanced search features hidden in the left side bar give you
+additional options such as searching for certain journals. If you
+are on the university network, Google Scholar will tell you for
+every paper whether it is accessible or not.
+
+- [Onesearch](https://onesearch.library.uwa.edu.au) is the
+university search engine. It's the best way to figure out whether
+there is an easily accessible version of the paper even when you
+are not on the university's network.
+
+- [Webofknowledge](https://apps.webofknowledge.com) and
+[EBSCOhost](https://search.ebscohost.com/login.asp?defaultdb=bth&lang=en)
+are two publisher driven search engines. They work pretty well.
+Each with their own quirks.
+
+- [SSRN (Social Science Research Network)](https://ssrn.com/en/)
+and [NBER (National Bureau of Economic
+Research](https://www.nber.org/papers.html) both provide access
+to their own not-yet-peer-reviewed paper repositories. Here you
+go to find cutting edge research.
+
+My favourite way to start a research project now is to find one
+or two excellent overview or review papers. A (systematic) review
+paper provides a state of a research field and identifies
+interesting new research questions. I find that a good review
+paper gives a good list of papers you can build on and they often
+already compare the most important papers in a field. The trick
+is to be not too picky. You will not find a review for your exact
+research problem but it is unlikely that you will not find a
+partly relevant overview paper.
+^[When you start your literature search, you do not want to start
+too narrow. You are not going to find an overview paper about
+"CEO compensation in Australian mining companies after the GFC".
+However, you can start with an overview paper about CEO
+compensation. Like the one I found:  ["Executive Compensation: A
+Modern Primer"](https://dx.doi.org/10.1257/jel.20161153) by
+@edmans2016executive in *Journal of Economic Literature*.]
+You can search for review papers by adding `intitle:review` or
+`intitle:overview` to your Google Scholar search.
+
+To find other papers relevant to your topic, you can build on the
+review paper by (1) looking up the papers referred to in the
+review paper and (2) search for papers that cite the review
+paper. You can do the latter via Google Scholar and
+Webofknowledge.
+
+To find good reviews, I believe you should start your search in
+the better journals.^[These links form a good starting point for
+[Accounting](http://www.abdc.edu.au/master-journal-list.php?title=&issn=&for=3&rating=A*)
+and
+[Finance](http://www.abdc.edu.au/master-journal-list.php?title=&issn=&for=4&rating=A*).
+Unfortunately, you have to register your email address first.].
+There are even some journals that are dedicated to these
+literature reviews for instance *Journal of Economic Literature*
+and *Journal of Accounting Literature*.^[I also like
+*Psychological Bulletin* for theories in psychology.] I am not
+aware of a similar journal in finance but I will happily add it
+if you let me know.
+
+## Writing (Under Construction)
+
+There are a couple of writing mistakes that are very common for
+first time researchers.^[There is a lot of good writing advice
+available. [Dan Simons' collection](http://www.dansimons.com/resources/writing_tips.html)
+is very pragmatic and is close to my sensibilities.] Below I
+highlight some of the problems I see quite often. Before I tackle
+those issuess it is useful to make a distinction between the
+different levels in a document. I will give you a quick overview
+so that you understand my other advice.
+
+### Different levels in a research paper or thesis. {#levels}
+
+By now, you probably know that there is a general structure in an
+empirical research paper: (1) Introduction, (2) Theory, (3)
+Method, (4) Results, (5) Conclusion. This is the highest
+structural level in a thesis.
+
+The second level is within each of these sections. For instance,
+your introduction will consist of multiple paragraphs. The third
+level is at the level of the paragraph which consists of multiple
+sentences. The fourth level is within those sentence which
+contain multiple words. The most common comment on writing is
+possibly that there are grammatical mistakes or typos in your
+writing. This is an issue at the lowest level, i.e. the level of
+the words.  This is also the least interesting level. Most of my
+feedback will focus on the other issues.
+
+You want to keep two rules in mind at each of the levels. (1) You
+should aim to keep each unit (section, paragraph, sentences)
+coherent.^[For instance, a paragraph should only contain one main
+message.] (2) You should aim to give the reader the information
+that they need in the order that they need it. When you start
+using a new concept or theory, you should give the reader an
+introduction to that concept or theory, unless you can assume
+they already know the concept or theory.
+
+### Explain important concepts and theories. {#concepts}
+
+Introduce the key concepts and theories in your introduction. If
+you write a paper about market efficiency, you should give the
+reader at least an idea of what you mean by market efficiency.
+This should come at the start of your paper otherwise the reader
+will not know whether the literature review is relevant or not.
+An introduction of a concept should include a simplified
+description of what it is not only what it's effects are. If you
+look at the introduction of new legislation, tell the reader what
+the legislation requires of people or businesses. If you
+introduce a theory, explain it's important assumptions.
+
+If your thesis focuses on a practical concept, you should still
+attempt to define your concept in theoretical terms. This
+definition will help you to make the connection with the relevant
+theories and with the mathematical specification in your
+statistical model.
+
+### Theory before literature review. {#theory-first}
+
+To be able to *do* a good research project, you should read a lot
+of literature first and then come up with your research question.
+However, when you *write* your research project up, you should
+explain your theory first and then present the literature.^[This
+one is a personal opinion and you should probably check with your
+supervisor.] The theory will provide structure of your literature
+review: which studies should be discussed together, which ones
+should be contrasted with each other, and which ones are relevant
+for your setting. If you do not start with a theoretical
+motivation, you run the risk that your literature review comes
+across (or is) just a series of empirical results without any
+connection.
+
+You recognise these literature reviews by the following
+conclusion: some papers find a positive effect, some papers find
+a negative effect, we are testing it again in a different sample.
+This is not necessarily a good approach because no matter what
+the result of your study is, the next researcher can just do the
+same thing: some papers find a positive effect, some papers find
+a negative effect, we are testing it again in a different sample.
+Nobody learns anything from these literature reviews and papers.
+
+Sometimes I see students split up the literature review and the
+hypothesis section which artificially forces you to either
+postpone your theoretical arguments or to repeat them almost
+verbatim. You should integrate hypothesis and literature review.
+Don't split them artificially.
+
+### Delete unnecessary words. {#unecessary}
+
+One common mistake is to write too many words. This is an issue
+at the level of the sentence. The trick is to reread your
+sentences and see whether the meaning of a sentence changes if
+you drop certain words. You do not want to use more words than
+necessary because it will only make it harder for the reader to
+understand your main message.
+
+### Avoid vague or hedging words as much as possible. {#hedging}
+
+When we explain a theoretical argument, we all want to express
+that we are not certain that this effect will be true. You maybe
+have the tendency to write " X may increase Y" to reflect that
+uncertainty. However, there are better ways  to do this. You can
+write "According to theory, X increases Y" or "Under this
+assumption, X increases Y". Avoid words like "can", "may",
+"might" and try to be more precise under which circumstances your
+prediction or argument holds.  This will help you to assess
+whether your theory fits your setting. Being  precise will also
+help you to avoid 
+[the trap of writing a noncommital literature review](#theory-first)

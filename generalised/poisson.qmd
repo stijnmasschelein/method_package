@@ -119,12 +119,13 @@ panel <-
 I plot the data on log + 1 scale and you can see that the figure looks distorted or weird for lower values of `ydiscrete` or `ycontinuous`. This is by now means proof but it is indicative of some of the problems with the log or log plus 1 transformation.
 
 ```{r}
-panel %>%
+plot <- panel %>%
   pivot_longer(c(ydiscrete, ycontinuous), values_to = "y") %>%
-  ggplot(aes(y = y + 1, x = x1)) +
+  ggplot(mapping = aes(y = y + 1, x = x1))  +
   geom_point() +
   scale_y_log10() +
   facet_wrap(~name)
+print(plot)
 ```
 
 For both the continuous and count variable, I run four regression models with fixed effects.
@@ -132,7 +133,7 @@ For both the continuous and count variable, I run four regression models with fi
 - The Poisson regression with $y$ as dependent variable.
 - An OlS regression with $\textrm{log}(y + 1)$ as dependent variable.
 - An OLS regression with $y$ as dependent variable. Because this regression is not on the rate of change scale, we do not expect a coefficient of -0.3 here. The main purpose is to show how noisy the estimate is.
-- An OLS regression with $\frac{y/x_2$ as dependent variable. This approach will suffer from the same noisy estimates.
+- An OLS regression with $\frac{y}{x_2}$ as dependent variable. This approach will suffer from the same noisy estimates.
 
 ```{r}
 poisson_disc <- feglm(ydiscrete ~ x1 + x2 | firm,

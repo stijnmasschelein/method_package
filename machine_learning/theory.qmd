@@ -32,9 +32,9 @@ The size of the penalty is given by the parameters $\lambda > 0$ and consists of
 
 The final step is that we need to choose the right values for $\lambda$ and $\alpha$. A common approach is to use cross validation where we split the data that we have in roughly equal sized partitions or folds. For instance, you have 10 folds with each 10% of the data. With cross validation, we will use the 90% of the remaining data, use a number of different values for $\lambda$ and $\alpha$ to estimate $\beta$s and predict the 10% fold that we did not use for estimation. In other words, we use the data that we have to do a prediction task with the advantage that we can evaluate which $\lambda$ and $\alpha$ gives us the best predictions.
 
-:::{::: {.callout-important}
+:::{.callout-important}
 The key insight is that if we care about a prediction task, we can use some of the data and pretend it is data that we have never seen when we estimate our prediction model. We can then test which model is actually good at predicting on data that it has never seen.
-:::}
+:::
 
 We do need a measure to evaluate the quality of the predictions. A common choice is the Root Mean Squared Error (RMSE) which is defined as the square root of the squared difference between the actual value of the outcome and the predictions for the outcome.
 

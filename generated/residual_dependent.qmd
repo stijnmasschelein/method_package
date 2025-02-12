@@ -30,7 +30,7 @@ library(modelsummary)
 
 ```{r}
 #| label: parameters
-N <- 1000
+N <- 10000
 gof_map <- c("nobs", "r.squared")
 set.seed(230383)
 ```

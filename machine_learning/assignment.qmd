@@ -1,0 +1,21 @@
+---
+title: Assignment
+---
+
+## Instructions
+
+Answer the following two questions in no more than 1 A4 page in total. My expectations are 5 to 10 sentences per question depending on your writing style. You can submit your answer on LMS in word, qmd, pdf, or html version.
+
+## Questions
+
+1. Search for an article in the same research area as your thesis that uses any machine learning technique. Give a citation to the paper and based on your reading of the abstract of the paper and skimming the methodology section, argue whether the machine learning improves the researchers' ability to answer their research question. When you look for a paper do not restrict your search too much. I primarily want you to find a paper where you are comfortable with the main research question. For instance, I used [google scholar](https://scholar.google.com.au/) and searched for `"voluntary disclosure" "machine learning" source:accounting` to find an article with a machine learning technique on voluntary disclosure in an accounting journal. If you cannot find an article in your research area, I would also accept a paper in any area that you have discussed in FINA4481, FINA4491, or ACCT4471. Do not spend too much time on finding the right paper!
+
+2. How could a machine learning technique improve the method for your thesis? You can ignore the cost of data collection and can assume that you can use all the data sources that have been used in your research field.
+
+:::{.callout-note}
+For answering the questions, you will have to ask yourself the question whether the main research question involves a prediction task [^prediction]. If not and the research question involves estimating a causal [^causal] or descriptive [^descriptive] estimate, can better out-of-sample prediction help with this research question. Ask yourself the question whether traditional linear models or time series models are sufficient or whether more advanced machine learning methods are required.
+:::
+
+[^prediction]: E.g. what is the future stock return based on current market conditions?
+[^causal]: E.g.: what is the effect of voluntary disclosure on the cost of capital?
+[^descriptive]: E.g.: what percentage of senior accountants supports changing the marginal tax rate?

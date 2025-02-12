@@ -1,0 +1,33 @@
+---
+author: Add your name here
+title: Simulation assignment
+embed-resources: true
+---
+
+## Introduction
+
+The goal of this assignment is to *do* the method section of your proposal instead of *writing* it. It is a good exercise in making sure that the data that you analyse fit the research question, and that the analysis is appropriate for the data and the research question.
+
+## Research Question
+
+In one paragraph write what, at this moment, the research question is for your thesis. You can focus on one or two hypotheses. You do not have to cover your whole planned thesis.
+
+## Generated Data
+
+Generate data that captures the main features of the data you will be using for your thesis. You should start with a simple model with only the dependent and independent variables of interest, maybe you could add one confounding factor.
+
+The [introduction](https://stijn-masschelein.netlify.app/teaching/generated/introduction.html) to Generated Variables has a good example of how to set-up the simulated data.
+
+You can always extend the generated data with
+
+- [Different distributions](https://stijn-masschelein.netlify.app/teaching/slides/slides2.html#/1/6)
+- [Panel Data and Fixed Effects](https://stijn-masschelein.netlify.app/teaching/slides/slides3.html#/fixed-effects-for-industry)
+- [Selection Effects](https://stijn-masschelein.netlify.app/teaching/slides/slides3.html#/survival-bias)
+
+## Graph
+
+Create one graph that visualises the main test that answers your research question. The [figures for friday earnings announcement](https://stijn-masschelein.netlify.app/teaching/freaky_friday/descriptive.html) give some good examples.
+
+## Table
+
+Create a table with 1 to 4 regressions to test your research question. The [tables for friday earnings announcements](https://stijn-masschelein.netlify.app/teaching/freaky_friday/regressions.html) give some good examples.

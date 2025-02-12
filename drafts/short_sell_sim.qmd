@@ -1,0 +1,95 @@
+---
+title: quick simulation
+---
+
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+N <- 1000
+T <- 2
+data <- tibble(
+    firm = rep(1:N, each = T),
+    time = rep(1:T, times = N),
+    short_cost = rnorm(N*T, 0, 1),
+    short_impact = rnorm(N*T, 0, 1),
+)
+```
+
+## Normal situation
+
+```{r}
+mutate(data,
+  short_sell = if_else(short_impact - short_cost > 0, 1, 0),
+  short_impact = short_sell * short_impact,
+  short_cost = short_sell * short_cost) |>
+  pivot_wider(id_cols = firm, values_from = short_impact, names_from = time) |>
+  mutate(change = `2` - `1`) |> 
+  summarise(mean_change = mean(change), 
+            se_change = sd(change)/sqrt(n() - 1),
+            m2 = mean(`2`), 
+            m1 = mean(`1`))
+```
+
+## Soft short selling ban
+
+```{r}
+mutate(data,
+  short_cost = short_cost + 2 * (time - 1), 
+  short_sell = if_else(short_impact - short_cost > 0, 1, 0),
+  short_impact = short_sell * short_impact,
+  short_cost = short_sell * short_cost) |> 
+  pivot_wider(id_cols = firm, values_from = short_impact, names_from = time) |>
+  mutate(change = `2` - `1`) |>
+  summarise(mean_change = mean(change), 
+            se_change = sd(change)/sqrt(n() - 1),
+            m2 = mean(`2`), 
+            m1 = mean(`1`))
+```
+
+There is less short-selling 
+
+### Conditional impact
+
+```{r}
+mutate(data,
+  short_cost = short_cost + 2 * (time - 1), 
+  short_sell = if_else(short_impact - short_cost > 0, 1, 0),
+  short_impact = short_sell * short_impact,
+  short_cost = short_sell * short_cost) |> 
+filter(short_sell == 1) |>
+summarise(mean = mean(short_impact), .by = time)
+```
+
+But actual impact is per short sale is higher!
+
+## Targeted self-regulation
+
+```{r}
+mutate(data,
+    ban = if_else(time == 2 & short_impact > 1, 1, 0),
+    short_sell = (1 - ban) * if_else(short_impact - short_cost > 0, 1 , 0),
+    short_impact = short_sell * short_impact) |> 
+pivot_wider(id_cols = firm, values_from = short_impact, names_from = time) |> 
+mutate(change = `2` - `1`) |>
+summarise(mean_change = mean(change), 
+          se_change = sd(change)/sqrt(n() - 1),
+          m2 = mean(`2`), 
+          m1 = mean(`1`))
+```
+
+There is less short-selling
+
+```{r}
+mutate(data,
+    ban = if_else(time == 2 & short_impact > 1, 1, 0),
+    short_sell = (1 - ban) * if_else(short_impact - short_cost > 0, 1 , 0),
+    short_impact = short_sell * short_impact) |> 
+filter(short_sell == 1) |>
+summarise(mean = mean(short_impact), .by = time)
+```
+
+The actual impact is also lower per short sale.
+

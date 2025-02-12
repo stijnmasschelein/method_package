@@ -236,7 +236,7 @@ augment(lm_fit, test) %>%
   rmse(return, .pred)
 ```
 
-While the RMSE is almost 0 within the sample, it's 1.47 out-of-sample. That is there is a large difference between the prediction error within the training data and the prediction error in the test data. This is the reason why we want to use a regularised regression to do out-of-sample predictions [^rank-deficient]
+While the RMSE is almost 0 within the sample, it's 1.47 out-of-sample. That is, there is a large difference between the prediction error within the training data and the prediction error in the test data. This is the reason why we want to use a regularised regression to do out-of-sample predictions [^rank-deficient]
 
 [^rank-deficient]: Also notice the warning message. The rank-deficient fit is a consequence of having more predictors than observation days. Again, it reflects the difficulty of using an ordinary linear regression.
 
@@ -244,14 +244,14 @@ While the RMSE is almost 0 within the sample, it's 1.47 out-of-sample. That is t
 
 In this section, we are going to run the regularised regression as described in [the theory](theory.qmd). We will center and scale the data so that all returns have a mean of 0 and a standard deviation of 1. Remember that the penalty term punishes coefficients that are higher, however the size of the coefficient also depends on the variation in the variable. To put all the coefficients on equal footing, we scale them first.
 
-We will set the penalty $\lambda = .4$ and the mixture proportion $\alpha = 0.5$ in the elastic net. We will need to install the `glmnet` package because that is the engine we use in our linear regression model. As before, we can put the updated data cleaning and the linear model in a new workflow and fit the model. Finally, we report the in-sample and out-of-sample RMSE.
+We will set the penalty $\lambda = .01$ and the mixture proportion $\alpha = 0.5$ in the elastic net. We will need to install the `glmnet` package because that is the engine we use in our linear regression model. As before, we can put the updated data cleaning and the linear model in a new workflow and fit the model. Finally, we report the in-sample and out-of-sample RMSE.
 
 ```{r}
 #| label: elastic-net
 net_recipe <- lm_recipe %>%
   step_center(all_predictors()) %>%
   step_scale(all_predictors())
-net_model <- linear_reg(penalty = .4, mixture = 0.5) %>%
+net_model <- linear_reg(penalty = .01, mixture = 0.5) %>%
   set_engine("glmnet")
 net_workflow <-
   workflow() %>%
@@ -259,6 +259,8 @@ net_workflow <-
   add_recipe(net_recipe)
 net_fit <- net_workflow %>%
   fit(data = train)
+tidy(net_fit) %>% filter(estimate != 0)
+predict(net_fit, test, type = "numeric")
 augment(net_fit, train) %>%
   rmse(return, .pred)
 augment(net_fit, test) %>%
@@ -308,7 +310,7 @@ net_tune_spec <-
   ) %>%
   set_engine("glmnet")
 grid_hyper <- expand.grid(
-  penalty = c(0, 0.1, 0.2, 0.3, 0.4, 0.5),
+  penalty = c(0.0025, 0.005, 0.01, 0.02, 0.04, 0.1),
   mixture = seq(0, 1, length.out = 11)
 )
 net_tune_wf <-
@@ -330,18 +332,20 @@ Next, we collect the RMSE measures for the out-of-sample predictions for each co
 ```{r}
 #| label: compare-tune
 collect_metrics(net_tune) %>%
-  arrange(mean)
+  arrange(-mean)
 ```
 
 Next, we select the best combination of penalty and mixture and use the final model on all the training data. We can then evaluate the prediction quality based on the RMSE metric.
 
 ```{r}
 best_model <- select_best(net_tune, "rmse")
+best_model
 final_wf <- net_tune_wf %>%
   finalize_workflow(best_model)
 final_fit <-
   final_wf %>%
   last_fit(data_split, metrics = metric_set(rmse))
+extract_fit_parsnip(final_fit) %>% tidy %>% filter(estimate != 0)
 collect_metrics(final_fit)
 ```
 
@@ -353,7 +357,6 @@ theme_set(theme_cowplot(font_size = 18))
 aug_fit <- bind_cols(collect_predictions(final_fit), select(test, day))
 ggplot(aug_fit, aes(x = day, y = return - .pred)) +
   geom_point()
-
 ```
 
 I can see no clear patterns in the deviations between the actual return and the predicted values.
@@ -432,7 +435,7 @@ run_elastic_net <- function(data, event_day = 0){
     ) %>%
       set_engine("glmnet")
   grid_hyper <- expand.grid(
-    penalty = c(0, 0.2, 0.4, 0.6, 0.8, 1),
+    penalty = c(0.0025, 0.005, 0.01, 0.02, 0.04),
     mixture = seq(0, 1, length.out = 6))
   # run model
   net_tune_wf <-

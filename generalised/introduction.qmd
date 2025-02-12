@@ -117,9 +117,9 @@ The choice between a logistic regression or a probit regression is often not con
 
 The poisson distribution (`rpois`) is originally developed to model the number of independent events with a fixed rate happening in a given amount of time. For instance, the number of acquisitions that a firm does in a year or the number of patents they obtained. It is the general workhorse model for any count variable. As, you can see in the figure below, you can think of the poisson distribution as discrete random distribution (the dots) around the the exponentiated linear model (the line). It will be important further on to think of a poisson regression as a model for
 
-$$ g^{-1}(E(y_i | x_i)) = \alpha + \beta x_i$$
+$$ g^{-1}(E(y_i | x_i)) = \alpha + \beta x_i $$
 
-where $g^{-1}(z) = log(z)$ and $g(z) = exp(z)$. That, is the logarithm of the expected value of $y_i$ is given by $\alpha + \beta x_i$. Moreover, in contrast to the exponent, the poisson distribution can give 0 values[^log1].
+where $g^{-1}(z) = log(z)$ and $g(z) = exp(z)$. That is, the logarithm of the expected value of $y_i$ is given by $\alpha + \beta x_i$. Moreover, in contrast to the exponent, the poisson distribution can give 0 values[^log1].
 
 ```{r}
 #| label: poisson

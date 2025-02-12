@@ -38,7 +38,7 @@ y_2 &= \frac{e^{-2 + 3x}}{1 + e^{-2 + 3x}} &&= g(-2 + 3x)
 \end{aligned}
 $$
 
-You can think of $x$ as a characteristic of the company that increases the likelihood of female executives in the company. A casual glance of the equations would give the impression that the effect of the on the CEOs and CFOs is the same because $\beta = 3$ is the same in both equations. We can also plot the two probabilities as functions of $x$ and you can see that that one curve is just the other one shifted horizontally.
+You can think of $x$ as a characteristic of the company that increases the likelihood of female executives in the company. A casual glance of the equations would give the impression that the effect of the characteristic on the CEOs and CFOs is the same because $\beta = 3$ is the same in both equations. We can also plot the two probabilities as functions of $x$ and you can see that that one curve is just the other one shifted horizontally.
 
 ```{r}
 #| label: interpretation

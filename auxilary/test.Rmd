@@ -1,0 +1,38 @@
+---
+title: test
+---
+
+
+```{r}
+#| label: setup
+library(tidyverse)
+```
+
+```{r}
+#| label: data
+N <- 10000
+data <-
+  tibble(
+    size = 1000 * rpois(N, 1),
+    relative_complexity = rnorm(N, 0, 1)) %>%
+  mutate(
+    net_benefit = rnorm(N, 1 + size/100 + 0.5 * relative_complexity, 2),
+    measure_complexity = rbinom(N, size = 4, plogis(relative_complexity)),
+    should_disclose = ifelse(net_benefit > 0, 1, 0),
+    small = ifelse(size < 50, 1, 0)
+  )
+```
+
+
+```{r}
+hist(data$size)
+ggplot(data, aes(x = relative_complexity, y = net_benefit)) +
+  geom_point()
+```
+
+```{r}
+data %>%
+  group_by(measure_complexity) %>%
+  summarise(mean = mean(should_disclose),
+            N = n())
+```

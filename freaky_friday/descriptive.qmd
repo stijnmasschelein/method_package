@@ -120,14 +120,14 @@ quantiles <- main %>%
   glimpse()
 ```
 
-This is a quick version of Figure 1a. It can be further cleaned up with a better axis labels. It shows the main results from @dellavigna2009 that the market reaction is subdued on Fridays. 
+This is a quick version of Figure 1a. It can be further cleaned up with better axis labels. It shows the main results from @dellavigna2009 that the market reaction is subdued on Fridays. 
 
 ```{r}
 #| label: figure1a
 ggplot(quantiles,
        aes(y = car_short, x = quantile, group = group, colour = group)) +
   stat_summary(fun.data = mean_se, geom = "errorbar", width = .2) +
-  stat_summary(fun.y = mean, geom = "line") +
+  stat_summary(fun = mean, geom = "line") +
   scale_color_grey()
 ```
 

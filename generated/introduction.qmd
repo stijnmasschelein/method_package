@@ -137,7 +137,7 @@ bootstrap2 <-
   data_2sls[rep(1:nrows, times = nsim),] %>%
   mutate(sim = rep(1:nsim, each = nrows),
          raw_weights = rexp(nsim *  nrows, 1)) %>%
-  mutate(weights = raw_weights/sum(raw_weights), .by = sim) %>%
+  mutate(weights = raw_weights/sum(raw_weights) * nrows, .by = sim) %>% 
   select(sim, iv, x, y, weights) %>%
   nest(.by = sim) %>%
   mutate(beta = map_dbl(data, get_beta_2)) %>%
